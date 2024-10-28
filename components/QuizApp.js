@@ -22,10 +22,7 @@ const QuizApp = () => {
 
   const fetchQuestions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('MCQ1')
-        .select('*');
-
+      const { data, error } = await supabase.from('MCQ1').select('*');
       if (error) throw error;
       setQuestions(data || []);
       setIsLoading(false);
@@ -51,24 +48,12 @@ const QuizApp = () => {
   };
 
   const currentQuestion = questions[currentQuestionIndex] || {};
-
-  const getOptionStyle = (option) => {
-    if (!selectedOption) {
-      return 'bg-white hover:bg-gray-50';
-    }
-    if (option === currentQuestion.correct_answer) {
-      return 'bg-green-100 border-green-500 text-green-700';
-    }
-    if (option === selectedOption && option !== currentQuestion.correct_answer) {
-      return 'bg-red-100 border-red-500 text-red-700';
-    }
-    return 'bg-white opacity-50';
-  };
+  const progress = ((currentQuestionIndex + 1) / questions.length * 100) || 0;
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#111517] border-t-transparent"></div>
       </div>
     );
   }
@@ -84,83 +69,91 @@ const QuizApp = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Quiz</h1>
-            <div className="flex items-center gap-3">
-              <Shuffle className="h-5 w-5 text-gray-500" />
-              <button
-                onClick={() => setIsRandom(!isRandom)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  isRandom 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Random
-              </button>
+    <div className="relative flex min-h-screen flex-col bg-white overflow-x-hidden" style={{ fontFamily: 'Lexend, "Noto Sans", sans-serif' }}>
+      {/* Header */}
+      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#f0f3f4] px-10 py-3">
+        <div className="flex items-center gap-4 text-[#111517]">
+          <h2 className="text-[#111517] text-lg font-bold leading-tight tracking-[-0.015em]">Quiz App</h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsRandom(!isRandom)}
+            className={`flex min-w-[84px] items-center justify-center overflow-hidden rounded-xl h-10 px-4 ${
+              isRandom ? 'bg-[#111517] text-white' : 'bg-[#f0f3f4] text-[#111517]'
+            } text-sm font-bold leading-normal tracking-[0.015em]`}
+          >
+            <Shuffle className="h-4 w-4 mr-2" />
+            Random
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="px-40 flex flex-1 justify-center py-5">
+        <div className="flex flex-col max-w-[960px] flex-1">
+          {/* Progress Bar */}
+          <div className="flex flex-col gap-3 p-4">
+            <div className="flex gap-6 justify-between">
+              <p className="text-[#111517] text-base font-medium leading-normal">
+                Progress: {currentQuestionIndex + 1}/{questions.length}
+              </p>
+              <p className="text-[#111517] text-sm font-normal leading-normal">{progress.toFixed(0)}%</p>
+            </div>
+            <div className="rounded bg-[#dce1e5]">
+              <div className="h-2 rounded bg-[#111517]" style={{ width: `${progress}%` }}></div>
             </div>
           </div>
 
           {/* Question */}
-          <div className="mb-8">
-            <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-6">
-              {currentQuestion.question_text || 'No questions available'}
-            </h2>
+          <h3 className="text-[#111517] tracking-light text-2xl font-bold leading-tight px-4 text-left pb-2 pt-5">
+            {currentQuestion.question_text}
+          </h3>
 
-            {/* Options */}
-            <div className="space-y-4">
-              {['a', 'b', 'c', 'd'].map((option) => (
-                <button
-                  key={option}
-                  onClick={() => handleOptionSelect(option)}
+          {/* Options */}
+          <div className="flex flex-col gap-3 p-4">
+            {['a', 'b', 'c', 'd'].map((option) => (
+              <label 
+                key={option}
+                className="flex items-center gap-4 rounded-xl border border-solid border-[#dce1e5] p-[15px] cursor-pointer hover:border-[#111517] transition-colors"
+                onClick={() => handleOptionSelect(option)}
+              >
+                <input
+                  type="radio"
+                  name="quiz-option"
                   disabled={selectedOption !== null}
-                  className={`w-full p-6 text-left rounded-xl border-2 transition-all 
-                    ${getOptionStyle(option)}
-                    ${selectedOption ? 'cursor-default' : 'cursor-pointer hover:shadow-md'}
-                    disabled:cursor-not-allowed`}
-                >
-                  <span className="inline-block w-8 text-lg font-bold text-gray-500">
-                    {option.toUpperCase()}.
-                  </span>
-                  <span className="font-medium text-gray-800">
+                  checked={selectedOption === option}
+                  className="h-5 w-5 border-2 border-[#dce1e5] bg-transparent text-transparent checked:border-[#111517] checked:bg-[image:var(--radio-dot-svg)] focus:outline-none focus:ring-0 focus:ring-offset-0 checked:focus:border-[#111517]"
+                  onChange={() => {}}
+                />
+                <div className="flex grow flex-col">
+                  <p className="text-[#111517] text-sm font-medium leading-normal">
                     {currentQuestion[`option_${option}`]}
-                  </span>
-                </button>
-              ))}
-            </div>
+                  </p>
+                </div>
+              </label>
+            ))}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between mt-8 pt-6 border-t">
-            <div className="space-y-1">
-              <p className="text-sm md:text-base text-gray-600">
-                Chapter: <span className="font-medium text-gray-900">{currentQuestion.tag}</span>
-              </p>
-              <p className="text-sm md:text-base text-gray-600">
-                Year: <span className="font-medium text-gray-900">{currentQuestion.year}</span>
-              </p>
-            </div>
-            
+          {/* Next Button */}
+          <div className="flex px-4 py-3 justify-end">
             <button
               onClick={handleNextQuestion}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
-                font-medium transition-colors flex items-center gap-2"
+              className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#f0f3f4] text-[#111517] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#dce1e5] transition-colors"
             >
-              Next Question
-              <svg 
-                className="w-5 h-5" 
-                fill="none" 
-                strokeWidth="2" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path d="M9 5l7 7-7 7"/>
-              </svg>
+              <span className="truncate">Next Question</span>
             </button>
+          </div>
+
+          {/* Footer Info */}
+          <div className="p-4 grid grid-cols-[20%_1fr] gap-x-6">
+            <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#dce1e5] py-5">
+              <p className="text-[#647987] text-sm font-normal leading-normal">Chapter</p>
+              <p className="text-[#111517] text-sm font-normal leading-normal">{currentQuestion.tag}</p>
+            </div>
+            <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#dce1e5] py-5">
+              <p className="text-[#647987] text-sm font-normal leading-normal">Year</p>
+              <p className="text-[#111517] text-sm font-normal leading-normal">{currentQuestion.year}</p>
+            </div>
           </div>
         </div>
       </div>
