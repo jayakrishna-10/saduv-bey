@@ -10,38 +10,37 @@ body {
   font-family: Lexend, "Noto Sans", sans-serif;
 }
 
-/* Markdown content styles */
-.markdown-content {
+.katex-display {
+  margin: 1.5rem 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.explanation-content {
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
-.markdown-content p {
+.explanation-content p {
   margin-bottom: 1rem;
 }
 
-.markdown-content h1, 
-.markdown-content h2, 
-.markdown-content h3, 
-.markdown-content h4 {
+.explanation-content h1, 
+.explanation-content h2, 
+.explanation-content h3, 
+.explanation-content h4 {
   margin-top: 1.5rem;
   margin-bottom: 1rem;
   font-weight: 600;
 }
 
-.markdown-content ul, 
-.markdown-content ol {
+.explanation-content ul, 
+.explanation-content ol {
   margin-bottom: 1rem;
   padding-left: 1.5rem;
+  list-style: disc;
 }
 
-.markdown-content li {
+.explanation-content li {
   margin-bottom: 0.5rem;
-}
-
-/* Add space around math blocks */
-.katex-display {
-  margin: 1.5rem 0 !important;
-  overflow-x: auto;
-  overflow-y: hidden;
 }
