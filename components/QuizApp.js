@@ -77,9 +77,9 @@ const QuizApp = () => {
           <span>Progress: {currentQuestionIndex + 1}/100</span>
           <span>{((currentQuestionIndex + 1) / 100 * 100).toFixed(2)}%</span>
         </div>
-        <div className="h-2 bg-gray-200 rounded">
+        <div className="h-2 bg-[#dce1e5] rounded">
           <div 
-            className="h-full bg-black rounded"
+            className="h-full bg-[#111517] rounded"
             style={{ width: `${((currentQuestionIndex + 1) / 100 * 100)}%` }}
           />
         </div>
@@ -96,21 +96,23 @@ const QuizApp = () => {
       </div>
 
       {/* Options */}
-      <div className="space-y-4 mb-6">
+      <div className="flex flex-col gap-3 mb-6">
         {['a', 'b', 'c', 'd'].map((option) => (
           <label 
             key={option}
-            className="block"
+            className="flex items-center gap-4 rounded-xl border border-solid border-[#dce1e5] p-[15px] cursor-pointer hover:border-[#111517] transition-colors"
           >
-            <div className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="answer"
-                checked={selectedOption === option}
-                onChange={() => handleOptionSelect(option)}
-                className="w-4 h-4"
-              />
-              <span>{currentQuestion[`option_${option}`]}</span>
+            <input
+              type="radio"
+              name="quiz-option"
+              checked={selectedOption === option}
+              onChange={() => handleOptionSelect(option)}
+              className="h-5 w-5 border-2 border-[#dce1e5] bg-transparent text-transparent checked:border-[#111517] checked:bg-[image:var(--radio-dot-svg)] focus:outline-none focus:ring-0 focus:ring-offset-0 checked:focus:border-[#111517]"
+            />
+            <div className="flex grow flex-col">
+              <p className="text-[#111517] text-sm font-medium leading-normal">
+                {currentQuestion[`option_${option}`]}
+              </p>
             </div>
           </label>
         ))}
@@ -120,21 +122,21 @@ const QuizApp = () => {
       <div className="flex justify-end mb-8">
         <button 
           onClick={handleNextQuestion}
-          className="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200"
+          className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#f0f3f4] text-[#111517] text-sm font-bold leading-normal tracking-[0.015em]"
         >
           Next Question
         </button>
       </div>
 
       {/* Footer Section */}
-      <div className="border-t pt-4">
-        <div className="mb-4">
-          <div className="font-bold">Chapter</div>
-          <div>{currentQuestion.tag}</div>
+      <div className="p-4 grid grid-cols-[20%_1fr] gap-x-6">
+        <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#dce1e5] py-5">
+          <p className="text-[#647987] text-sm font-normal leading-normal">Chapter</p>
+          <p className="text-[#111517] text-sm font-normal leading-normal">{currentQuestion.tag}</p>
         </div>
-        <div>
-          <div className="font-bold">Year</div>
-          <div>{currentQuestion.year}</div>
+        <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#dce1e5] py-5">
+          <p className="text-[#647987] text-sm font-normal leading-normal">Year</p>
+          <p className="text-[#111517] text-sm font-normal leading-normal">{currentQuestion.year}</p>
         </div>
       </div>
     </div>
