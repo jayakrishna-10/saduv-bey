@@ -69,12 +69,18 @@ const QuizApp = () => {
     setShowFeedback(false);
   };
 
+  const isCorrectAnswer = (option, correctAnswer) => {
+    return option === correctAnswer || 
+           option.toLowerCase() === correctAnswer || 
+           option.toUpperCase() === correctAnswer;
+  };
+
   const getOptionStyle = (option) => {
     if (!showFeedback) {
       return "border-[#dce1e5] hover:border-[#111517]";
     }
 
-    const isCorrect = currentQuestion.correct_answer === option.toUpperCase();
+    const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     const isSelected = selectedOption === option;
 
     if (isCorrect) {
@@ -130,9 +136,9 @@ const QuizApp = () => {
             />
             <div className="flex grow flex-col">
               <p className={`text-sm font-medium leading-normal ${
-                showFeedback && currentQuestion.correct_answer === option.toUpperCase()
+                showFeedback && isCorrectAnswer(option, currentQuestion.correct_answer)
                   ? 'text-green-700'
-                  : showFeedback && selectedOption === option && currentQuestion.correct_answer !== option.toUpperCase()
+                  : showFeedback && selectedOption === option && !isCorrectAnswer(option, currentQuestion.correct_answer)
                     ? 'text-red-700'
                     : 'text-[#111517]'
               }`}>
