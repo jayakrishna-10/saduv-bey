@@ -1,19 +1,12 @@
-export const metadata = {
-  title: 'Quiz App',
-  description: 'Interactive quiz application',
-}
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?display=swap&family=Lexend:wght@400;500;700;900&family=Noto+Sans:wght@400;500;700;900"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body className="antialiased" style={{ fontFamily: 'Inter, sans-serif' }}>
+        {children}
+      </body>
     </html>
   )
 }
