@@ -20,7 +20,6 @@ const QuizApp = () => {
   }, []);
 
   useEffect(() => {
-    // Initialize or reset remaining indices when questions are loaded or mode changes
     if (questions.length > 0) {
       resetRemainingIndices();
     }
@@ -77,13 +76,13 @@ const QuizApp = () => {
       <div className="flex items-center mb-6">
         <button
           onClick={() => setIsRandom(!isRandom)}
-          className={`flex items-center gap-2 px-3 py-1 border rounded-lg transition-colors ${
+          className={`flex items-center gap-1 px-2 py-0.5 text-xs border rounded-lg transition-colors ${
             isRandom 
               ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
               : 'bg-gray-100 border-gray-200 hover:bg-gray-200'
           }`}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
           </svg>
           Random {isRandom ? 'On' : 'Off'}
@@ -91,9 +90,8 @@ const QuizApp = () => {
       </div>
 
       {/* Question */}
-      <div className="mb-4">
-        <h3 className="font-bold mb-2">Question</h3>
-        <div className="mb-4">{currentQuestion.question_text}</div>
+      <div className="mb-8">
+        <h2 className="text-xl font-medium mb-6">{currentQuestion.question_text}</h2>
       </div>
 
       {/* Options - with reduced width */}
