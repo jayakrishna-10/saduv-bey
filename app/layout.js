@@ -1,5 +1,6 @@
 // app/layout.js
 import './globals.css'
+import 'katex/dist/katex.min.css'
 
 export const metadata = {
   title: 'Quiz App',
