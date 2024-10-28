@@ -1,10 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { AlertCircle, ChevronRight, Shuffle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+import { Shuffle } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,7 +12,6 @@ const QuizApp = () => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [explanation, setExplanation] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRandom, setIsRandom] = useState(false);
@@ -46,8 +42,6 @@ const QuizApp = () => {
 
   const handleNextQuestion = () => {
     setSelectedOption(null);
-    setExplanation('');
-    
     if (isRandom) {
       const randomIndex = Math.floor(Math.random() * questions.length);
       setCurrentQuestionIndex(randomIndex);
@@ -60,21 +54,21 @@ const QuizApp = () => {
 
   const getOptionStyle = (option) => {
     if (!selectedOption) {
-      return 'bg-white hover:bg-gray-50 border-gray-200';
+      return 'bg-white hover:bg-gray-50';
     }
     if (option === currentQuestion.correct_answer) {
-      return 'bg-green-50 border-green-500 text-green-700';
+      return 'bg-green-100 border-green-500 text-green-700';
     }
     if (option === selectedOption && option !== currentQuestion.correct_answer) {
-      return 'bg-red-50 border-red-500 text-red-700';
+      return 'bg-red-100 border-red-500 text-red-700';
     }
-    return 'bg-white border-gray-200 opacity-50';
+    return 'bg-white opacity-50';
   };
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -82,9 +76,8 @@ const QuizApp = () => {
   if (error) {
     return (
       <div className="max-w-3xl mx-auto p-4">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg flex items-center gap-2">
-          <AlertCircle className="h-5 w-5" />
-          <p>{error}</p>
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+          {error}
         </div>
       </div>
     );
@@ -93,24 +86,32 @@ const QuizApp = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
-        <Card className="mb-8">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-            <CardTitle className="text-2xl font-bold">Quiz</CardTitle>
+        <div className="bg-white rounded-xl shadow-lg p-6 md:p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Quiz</h1>
             <div className="flex items-center gap-3">
-              <Shuffle className="h-4 w-4 text-gray-500" />
-              <Switch
-                checked={isRandom}
-                onCheckedChange={setIsRandom}
-                className="data-[state=checked]:bg-primary"
-              />
+              <Shuffle className="h-5 w-5 text-gray-500" />
+              <button
+                onClick={() => setIsRandom(!isRandom)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  isRandom 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Random
+              </button>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent className="space-y-6">
-            <div className="text-xl font-medium text-gray-800">
+          {/* Question */}
+          <div className="mb-8">
+            <h2 className="text-xl md:text-2xl font-medium text-gray-800 mb-6">
               {currentQuestion.question_text || 'No questions available'}
-            </div>
+            </h2>
 
+            {/* Options */}
             <div className="space-y-4">
               {['a', 'b', 'c', 'd'].map((option) => (
                 <button
@@ -120,36 +121,48 @@ const QuizApp = () => {
                   className={`w-full p-6 text-left rounded-xl border-2 transition-all 
                     ${getOptionStyle(option)}
                     ${selectedOption ? 'cursor-default' : 'cursor-pointer hover:shadow-md'}
-                    disabled:cursor-not-allowed font-medium`}
+                    disabled:cursor-not-allowed`}
                 >
-                  <span className="uppercase font-bold mr-3 text-gray-500">
-                    {option}.
+                  <span className="inline-block w-8 text-lg font-bold text-gray-500">
+                    {option.toUpperCase()}.
                   </span>
-                  {currentQuestion[`option_${option}`]}
+                  <span className="font-medium text-gray-800">
+                    {currentQuestion[`option_${option}`]}
+                  </span>
                 </button>
               ))}
             </div>
+          </div>
 
-            <div className="flex items-center justify-between pt-6">
-              <div className="space-y-1">
-                <p className="text-sm text-gray-600">
-                  Chapter: <span className="font-medium text-gray-900">{currentQuestion.tag}</span>
-                </p>
-                <p className="text-sm text-gray-600">
-                  Year: <span className="font-medium text-gray-900">{currentQuestion.year}</span>
-                </p>
-              </div>
-              
-              <Button
-                onClick={handleNextQuestion}
-                className="px-6 py-3 text-base flex items-center gap-2"
-              >
-                Next Question
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-8 pt-6 border-t">
+            <div className="space-y-1">
+              <p className="text-sm md:text-base text-gray-600">
+                Chapter: <span className="font-medium text-gray-900">{currentQuestion.tag}</span>
+              </p>
+              <p className="text-sm md:text-base text-gray-600">
+                Year: <span className="font-medium text-gray-900">{currentQuestion.year}</span>
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            
+            <button
+              onClick={handleNextQuestion}
+              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg 
+                font-medium transition-colors flex items-center gap-2"
+            >
+              Next Question
+              <svg 
+                className="w-5 h-5" 
+                fill="none" 
+                strokeWidth="2" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
