@@ -44,7 +44,7 @@ const QuizApp = () => {
   };
 
   const handleOptionSelect = (option) => {
-    if (selectedOption) return; // If an option is already selected, do nothing
+    if (selectedOption) return;
     setSelectedOption(option);
     setShowFeedback(true);
   };
@@ -74,7 +74,7 @@ const QuizApp = () => {
       return "border-[#dce1e5] hover:border-[#111517]";
     }
 
-    const isCorrect = currentQuestion.correct_answer === option;
+    const isCorrect = currentQuestion.correct_answer === option.toUpperCase();
     const isSelected = selectedOption === option;
 
     if (isCorrect) {
@@ -130,9 +130,9 @@ const QuizApp = () => {
             />
             <div className="flex grow flex-col">
               <p className={`text-sm font-medium leading-normal ${
-                showFeedback && currentQuestion.correct_answer === option 
+                showFeedback && currentQuestion.correct_answer === option.toUpperCase()
                   ? 'text-green-700'
-                  : showFeedback && selectedOption === option && selectedOption !== currentQuestion.correct_answer
+                  : showFeedback && selectedOption === option && currentQuestion.correct_answer !== option.toUpperCase()
                     ? 'text-red-700'
                     : 'text-[#111517]'
               }`}>
