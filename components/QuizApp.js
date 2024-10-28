@@ -13,10 +13,23 @@ const QuizApp = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRandom, setIsRandom] = useState(false);
+  const [remainingIndices, setRemainingIndices] = useState([]);
 
   useEffect(() => {
     fetchQuestions();
   }, []);
+
+  useEffect(() => {
+    // Initialize or reset remaining indices when questions are loaded or mode changes
+    if (questions.length > 0) {
+      resetRemainingIndices();
+    }
+  }, [questions, isRandom]);
+
+  const resetRemainingIndices = () => {
+    const indices = Array.from({ length: questions.length }, (_, i) => i);
+    setRemainingIndices(indices);
+  };
 
   const fetchQuestions = async () => {
     try {
@@ -35,18 +48,23 @@ const QuizApp = () => {
     setSelectedOption(option);
   };
 
+  const getNextRandomIndex = () => {
+    if (remainingIndices.length === 0) {
+      resetRemainingIndices();
+    }
+    const randomPosition = Math.floor(Math.random() * remainingIndices.length);
+    const nextIndex = remainingIndices[randomPosition];
+    setRemainingIndices(remainingIndices.filter((_, index) => index !== randomPosition));
+    return nextIndex;
+  };
+
   const handleNextQuestion = () => {
     if (isRandom) {
-      const randomIndex = Math.floor(Math.random() * questions.length);
-      setCurrentQuestionIndex(randomIndex);
+      setCurrentQuestionIndex(getNextRandomIndex());
     } else {
       setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
     }
     setSelectedOption(null);
-  };
-
-  const handleRandomToggle = () => {
-    setIsRandom(!isRandom);
   };
 
   const currentQuestion = questions[currentQuestionIndex] || {};
@@ -58,27 +76,19 @@ const QuizApp = () => {
       {/* Random Toggle */}
       <div className="flex items-center mb-6">
         <button
-          onClick={handleRandomToggle}
-          className="flex items-center gap-2 px-3 py-1 border rounded-lg bg-gray-100 hover:bg-gray-200"
+          onClick={() => setIsRandom(!isRandom)}
+          className={`flex items-center gap-2 px-3 py-1 border rounded-lg transition-colors ${
+            isRandom 
+              ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
+              : 'bg-gray-100 border-gray-200 hover:bg-gray-200'
+          }`}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
           </svg>
-          Random
+          Random {isRandom ? 'On' : 'Off'}
         </button>
       </div>
-
-      {/* Title Section */}
-      <h1 className="text-2xl font-bold mb-4">Introduction to Machine Learning</h1>
-
-      {/* Simple Progress Text */}
-      <div className="mb-4">
-        Progress: {currentQuestionIndex + 1}/100
-      </div>
-
-      <h2 className="text-lg mb-4">
-        Use the interactive quizzes to test your understanding of the material.
-      </h2>
 
       {/* Question */}
       <div className="mb-4">
