@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Shuffle } from 'lucide-react';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -14,7 +13,6 @@ const QuizApp = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isRandom, setIsRandom] = useState(false);
 
   useEffect(() => {
     fetchQuestions();
@@ -37,126 +35,100 @@ const QuizApp = () => {
     setSelectedOption(option);
   };
 
-  const handleNextQuestion = () => {
-    setSelectedOption(null);
-    if (isRandom) {
-      const randomIndex = Math.floor(Math.random() * questions.length);
-      setCurrentQuestionIndex(randomIndex);
-    } else {
-      setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
-    }
-  };
-
   const currentQuestion = questions[currentQuestionIndex] || {};
   const progress = ((currentQuestionIndex + 1) / questions.length * 100) || 0;
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#111517] border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-3xl mx-auto p-4">
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative flex min-h-screen flex-col bg-white overflow-x-hidden" style={{ fontFamily: 'Lexend, "Noto Sans", sans-serif' }}>
+    <div className="min-h-screen bg-[#F8F9FA]">
       {/* Header */}
-      <header className="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#f0f3f4] px-10 py-3">
-        <div className="flex items-center gap-4 text-[#111517]">
-          <h2 className="text-[#111517] text-lg font-bold leading-tight tracking-[-0.015em]">Quiz App</h2>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsRandom(!isRandom)}
-            className={`flex min-w-[84px] items-center justify-center overflow-hidden rounded-xl h-10 px-4 ${
-              isRandom ? 'bg-[#111517] text-white' : 'bg-[#f0f3f4] text-[#111517]'
-            } text-sm font-bold leading-normal tracking-[0.015em]`}
-          >
-            <Shuffle className="h-4 w-4 mr-2" />
-            Random
-          </button>
+      <header className="border-b bg-white px-6 py-4">
+        <div className="max-w-[1200px] mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">◆</span>
+            <span className="font-bold">Exam Prep</span>
+          </div>
+          <nav className="flex items-center gap-8">
+            <a href="#" className="text-sm">Dashboard</a>
+            <a href="#" className="text-sm">Explore</a>
+            <a href="#" className="text-sm">My classes</a>
+            <a href="#" className="text-sm">My notes</a>
+            <a href="#" className="text-sm">Inbox</a>
+            <a href="#" className="text-sm">Subscriptions</a>
+            <button className="bg-[#F1F3F5] px-4 py-2 rounded-xl text-sm font-medium">
+              New class
+            </button>
+          </nav>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="px-40 flex flex-1 justify-center py-5">
-        <div className="flex flex-col max-w-[960px] flex-1">
+      <main className="max-w-[960px] mx-auto px-4 py-8">
+        <div className="bg-white rounded-3xl p-8 shadow-sm">
+          {/* Title */}
+          <h1 className="text-3xl font-bold mb-8">Introduction to Machine Learning</h1>
+
           {/* Progress Bar */}
-          <div className="flex flex-col gap-3 p-4">
-            <div className="flex gap-6 justify-between">
-              <p className="text-[#111517] text-base font-medium leading-normal">
-                Progress: {currentQuestionIndex + 1}/{questions.length}
-              </p>
-              <p className="text-[#111517] text-sm font-normal leading-normal">{progress.toFixed(0)}%</p>
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm">Progress: {currentQuestionIndex + 1}/10</span>
+              <span className="text-sm">{progress}%</span>
             </div>
-            <div className="rounded bg-[#dce1e5]">
-              <div className="h-2 rounded bg-[#111517]" style={{ width: `${progress}%` }}></div>
+            <div className="h-2 bg-gray-100 rounded-full">
+              <div 
+                className="h-full bg-black rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
           </div>
 
-          {/* Question */}
-          <h3 className="text-[#111517] tracking-light text-2xl font-bold leading-tight px-4 text-left pb-2 pt-5">
-            {currentQuestion.question_text}
-          </h3>
+          {/* Instructions */}
+          <h2 className="text-xl font-bold mb-6">
+            Use the interactive quizzes to test your understanding of the material.
+          </h2>
+
+          {/* Question Section */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Question</label>
+            <div className="min-h-[100px] border rounded-xl p-4">
+              {currentQuestion.question_text}
+            </div>
+          </div>
 
           {/* Options */}
-          <div className="flex flex-col gap-3 p-4">
+          <div className="space-y-3 mb-6">
             {['a', 'b', 'c', 'd'].map((option) => (
               <label 
                 key={option}
-                className="flex items-center gap-4 rounded-xl border border-solid border-[#dce1e5] p-[15px] cursor-pointer hover:border-[#111517] transition-colors"
-                onClick={() => handleOptionSelect(option)}
+                className="flex items-center gap-4 p-4 border rounded-xl cursor-pointer hover:border-black transition-colors"
               >
                 <input
                   type="radio"
                   name="quiz-option"
-                  disabled={selectedOption !== null}
                   checked={selectedOption === option}
-                  className="h-5 w-5 border-2 border-[#dce1e5] bg-transparent text-transparent checked:border-[#111517] checked:bg-[image:var(--radio-dot-svg)] focus:outline-none focus:ring-0 focus:ring-offset-0 checked:focus:border-[#111517]"
-                  onChange={() => {}}
+                  onChange={() => handleOptionSelect(option)}
+                  className="w-5 h-5"
                 />
-                <div className="flex grow flex-col">
-                  <p className="text-[#111517] text-sm font-medium leading-normal">
-                    {currentQuestion[`option_${option}`]}
-                  </p>
-                </div>
+                <span className="text-sm">{currentQuestion[`option_${option}`]}</span>
               </label>
             ))}
           </div>
 
-          {/* Next Button */}
-          <div className="flex px-4 py-3 justify-end">
-            <button
-              onClick={handleNextQuestion}
-              className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-[#f0f3f4] text-[#111517] text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#dce1e5] transition-colors"
-            >
-              <span className="truncate">Next Question</span>
+          {/* Submit Button */}
+          <div className="flex justify-end mb-8">
+            <button className="bg-[#F1F3F5] px-4 py-2 rounded-xl text-sm font-medium">
+              Submit
             </button>
           </div>
 
           {/* Footer Info */}
-          <div className="p-4 grid grid-cols-[20%_1fr] gap-x-6">
-            <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#dce1e5] py-5">
-              <p className="text-[#647987] text-sm font-normal leading-normal">Chapter</p>
-              <p className="text-[#111517] text-sm font-normal leading-normal">{currentQuestion.tag}</p>
-            </div>
-            <div className="col-span-2 grid grid-cols-subgrid border-t border-t-[#dce1e5] py-5">
-              <p className="text-[#647987] text-sm font-normal leading-normal">Year</p>
-              <p className="text-[#111517] text-sm font-normal leading-normal">{currentQuestion.year}</p>
-            </div>
+          <div className="border-t pt-6 grid grid-cols-[100px_1fr] gap-y-6">
+            <div className="text-sm text-gray-500">Chapter</div>
+            <div className="text-sm">{currentQuestion.tag}</div>
+            <div className="text-sm text-gray-500">Year</div>
+            <div className="text-sm">{currentQuestion.year}</div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
