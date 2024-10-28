@@ -121,13 +121,15 @@ const QuizApp = () => {
 
       {/* Footer Section */}
       <div className="border-t pt-4">
-        <div className="mb-2">
-          <div className="text-gray-600 text-sm">Chapter</div>
-          <div className="text-sm">{currentQuestion.tag}</div>
-        </div>
-        <div>
-          <div className="text-gray-600 text-sm">Year</div>
-          <div className="text-sm">{currentQuestion.year}</div>
+        <div className="flex gap-8">
+          <div className="flex gap-2">
+            <div className="text-gray-600 text-sm">Chapter:</div>
+            <div className="text-sm">{currentQuestion.tag}</div>
+          </div>
+          <div className="flex gap-2">
+            <div className="text-gray-600 text-sm">Year:</div>
+            <div className="text-sm">{currentQuestion.year}</div>
+          </div>
         </div>
       </div>
     </div>
