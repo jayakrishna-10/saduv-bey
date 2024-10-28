@@ -1,6 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -15,6 +19,8 @@ const QuizApp = () => {
   const [isRandom, setIsRandom] = useState(false);
   const [remainingIndices, setRemainingIndices] = useState([]);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [explanation, setExplanation] = useState('');
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
 
   useEffect(() => {
     fetchQuestions();
@@ -43,10 +49,27 @@ const QuizApp = () => {
     }
   };
 
-  const handleOptionSelect = (option) => {
+  const fetchExplanation = async (questionId) => {
+    setIsLoadingExplanation(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/nce-resources/${questionId}.md`
+      );
+      if (!response.ok) throw new Error('Failed to fetch explanation');
+      const text = await response.text();
+      setExplanation(text);
+    } catch (err) {
+      console.error('Error fetching explanation:', err);
+      setExplanation('Failed to load explanation.');
+    }
+    setIsLoadingExplanation(false);
+  };
+
+  const handleOptionSelect = async (option) => {
     if (selectedOption) return;
     setSelectedOption(option);
     setShowFeedback(true);
+    await fetchExplanation(currentQuestion.id);
   };
 
   const getNextRandomIndex = () => {
@@ -67,6 +90,7 @@ const QuizApp = () => {
     }
     setSelectedOption(null);
     setShowFeedback(false);
+    setExplanation('');
   };
 
   const isCorrectAnswer = (option, correctAnswer) => {
@@ -158,6 +182,26 @@ const QuizApp = () => {
           Next Question
         </button>
       </div>
+
+      {/* Explanation Section */}
+      {showFeedback && (
+        <div className="mb-6 border-t border-b py-4">
+          <h3 className="text-lg font-medium mb-3">Explanation</h3>
+          {isLoadingExplanation ? (
+            <div>Loading explanation...</div>
+          ) : (
+            <div className="prose prose-sm max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                className="markdown-content"
+              >
+                {explanation}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Footer Section */}
       <div className="border-t pt-4">
