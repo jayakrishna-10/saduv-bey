@@ -14,6 +14,7 @@ const QuizApp = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRandom, setIsRandom] = useState(false);
   const [remainingIndices, setRemainingIndices] = useState([]);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
     fetchQuestions();
@@ -43,8 +44,9 @@ const QuizApp = () => {
   };
 
   const handleOptionSelect = (option) => {
-    if (selectedOption) return;
+    if (selectedOption) return; // If an option is already selected, do nothing
     setSelectedOption(option);
+    setShowFeedback(true);
   };
 
   const getNextRandomIndex = () => {
@@ -64,6 +66,24 @@ const QuizApp = () => {
       setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
     }
     setSelectedOption(null);
+    setShowFeedback(false);
+  };
+
+  const getOptionStyle = (option) => {
+    if (!showFeedback) {
+      return "border-[#dce1e5] hover:border-[#111517]";
+    }
+
+    const isCorrect = currentQuestion.correct_answer === option;
+    const isSelected = selectedOption === option;
+
+    if (isCorrect) {
+      return "border-green-500 bg-green-50";
+    }
+    if (isSelected && !isCorrect) {
+      return "border-red-500 bg-red-50";
+    }
+    return "border-[#dce1e5]";
   };
 
   const currentQuestion = questions[currentQuestionIndex] || {};
@@ -99,7 +119,7 @@ const QuizApp = () => {
         {['a', 'b', 'c', 'd'].map((option) => (
           <label 
             key={option}
-            className="flex items-center gap-3 rounded-lg border border-solid border-[#dce1e5] p-3 cursor-pointer hover:border-[#111517] transition-colors"
+            className={`flex items-center gap-3 rounded-lg border border-solid p-3 cursor-pointer transition-colors ${getOptionStyle(option)}`}
           >
             <input
               type="radio"
@@ -109,7 +129,13 @@ const QuizApp = () => {
               className="h-4 w-4 border-2 border-[#dce1e5] bg-transparent text-transparent checked:border-[#111517] checked:bg-[image:var(--radio-dot-svg)] focus:outline-none focus:ring-0 focus:ring-offset-0 checked:focus:border-[#111517]"
             />
             <div className="flex grow flex-col">
-              <p className="text-[#111517] text-sm font-medium leading-normal">
+              <p className={`text-sm font-medium leading-normal ${
+                showFeedback && currentQuestion.correct_answer === option 
+                  ? 'text-green-700'
+                  : showFeedback && selectedOption === option && selectedOption !== currentQuestion.correct_answer
+                    ? 'text-red-700'
+                    : 'text-[#111517]'
+              }`}>
                 {currentQuestion[`option_${option}`]}
               </p>
             </div>
