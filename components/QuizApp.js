@@ -1,15 +1,12 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { AlertCircle, ChevronRight, Shuffle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 
-// Initialize Supabase client - replace with your credentials
+// Initialize Supabase client
 const supabase = createClient(
-  'YOUR_SUPABASE_URL',
-  'YOUR_SUPABASE_ANON_KEY'
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
 const QuizApp = () => {
@@ -33,7 +30,7 @@ const QuizApp = () => {
 
       if (error) throw error;
 
-      setQuestions(data);
+      setQuestions(data || []);
       setIsLoading(false);
     } catch (err) {
       setError(err.message);
@@ -41,27 +38,9 @@ const QuizApp = () => {
     }
   };
 
-  const fetchExplanation = async (id) => {
-    try {
-      const { data, error } = await supabase
-        .storage
-        .from('nce-resources')
-        .download(`${id}.md`);
-
-      if (error) throw error;
-
-      const text = await data.text();
-      setExplanation(text);
-    } catch (err) {
-      setExplanation('Failed to load explanation.');
-    }
-  };
-
-  const handleOptionSelect = async (option) => {
-    if (selectedOption) return; // Prevent multiple selections
-
+  const handleOptionSelect = (option) => {
+    if (selectedOption) return;
     setSelectedOption(option);
-    await fetchExplanation(currentQuestion.id);
   };
 
   const handleNextQuestion = () => {
@@ -69,8 +48,7 @@ const QuizApp = () => {
     setExplanation('');
     
     if (isRandom) {
-      const remainingQuestions = questions.filter((_, index) => index !== currentQuestionIndex);
-      const randomIndex = Math.floor(Math.random() * remainingQuestions.length);
+      const randomIndex = Math.floor(Math.random() * questions.length);
       setCurrentQuestionIndex(randomIndex);
     } else {
       setCurrentQuestionIndex((prev) => (prev + 1) % questions.length);
@@ -79,85 +57,78 @@ const QuizApp = () => {
 
   const currentQuestion = questions[currentQuestionIndex] || {};
 
-  const getOptionStyle = (option) => {
-    if (!selectedOption) return 'bg-white hover:bg-gray-50';
-    if (option === currentQuestion.correct_answer) return 'bg-green-100 border-green-500';
-    if (option === selectedOption && option !== currentQuestion.correct_answer) {
-      return 'bg-red-100 border-red-500';
-    }
-    return 'bg-white';
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
-  if (isLoading) return (
-    <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-    </div>
-  );
-
-  if (error) return (
-    <Alert variant="destructive" className="m-4">
-      <AlertCircle className="h-4 w-4" />
-      <AlertDescription>{error}</AlertDescription>
-    </Alert>
-  );
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        <AlertCircle className="inline-block mr-2" />
+        {error}
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Quiz</h1>
+          <h1 className="text-2xl font-bold">Quiz</h1>
           <div className="flex items-center gap-2">
             <Shuffle className="h-4 w-4" />
-            <Switch
-              checked={isRandom}
-              onCheckedChange={setIsRandom}
-            />
+            <button
+              onClick={() => setIsRandom(!isRandom)}
+              className={`px-3 py-1 rounded ${
+                isRandom ? 'bg-blue-500 text-white' : 'bg-gray-200'
+              }`}
+            >
+              Random
+            </button>
           </div>
         </div>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              {currentQuestion.question_text}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-lg font-medium mb-4">
+            {currentQuestion.question_text || 'No questions available'}
+          </h2>
+
+          <div className="space-y-3">
             {['a', 'b', 'c', 'd'].map((option) => (
               <button
                 key={option}
                 onClick={() => handleOptionSelect(option)}
                 disabled={selectedOption !== null}
-                className={`w-full p-4 text-left rounded-lg border transition-colors
-                  ${getOptionStyle(option)}
-                  ${selectedOption ? 'cursor-default' : 'cursor-pointer'}
-                `}
+                className={`w-full p-4 text-left rounded-lg border transition-colors ${
+                  selectedOption === option
+                    ? selectedOption === currentQuestion.correct_answer
+                      ? 'bg-green-100 border-green-500'
+                      : 'bg-red-100 border-red-500'
+                    : 'hover:bg-gray-50'
+                }`}
               >
                 {currentQuestion[`option_${option}`]}
               </button>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {selectedOption && (
-          <Card className="mb-6">
-            <CardContent className="prose max-w-none p-4">
-              <div dangerouslySetInnerHTML={{ __html: explanation }} />
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
             <p>Chapter: {currentQuestion.tag}</p>
             <p>Year: {currentQuestion.year}</p>
           </div>
-          <Button
+          <button
             onClick={handleNextQuestion}
-            className="flex items-center gap-2"
+            className="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2"
           >
             Next Question
             <ChevronRight className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
       </div>
     </div>
