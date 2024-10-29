@@ -20,12 +20,18 @@ const supabase = createClient(
 );
 
 const normalizeChapterName = (chapter) => {
+  if (!chapter) return '';
   return chapter
     .replace(/['"]/g, '')
     .trim()
     .replace(/Act,?\s+(\d{4})/g, 'Act $1')
     .replace(/\s+/g, ' ')
-    .replace(/\s+and\s+/g, ' and ');
+    .replace(/\s+and\s+/g, ' and ')
+    .replace(/^Chapter\s+/i, '')  // Remove 'Chapter ' from beginning
+    .replace(/^chapter_/i, '')    // Remove 'chapter_' from beginning
+    .replace(/_/g, ' ')          // Replace underscores with spaces
+    .replace(/\s+/g, ' ')        // Replace multiple spaces with single space
+    .trim();
 };
 
 export function QuizApp() {
@@ -53,21 +59,23 @@ export function QuizApp() {
 
   useEffect(() => {
     if (questions.length > 0) {
-      resetRemainingIndices();
-      setStartTime(new Date());
-    }
-  }, [questions, isRandom]);
-
-  useEffect(() => {
-    if (questions.length > 0) {
-      const uniqueTopics = [...new Set(questions.map(q => q.tag))].sort();
-      const uniqueYears = [...new Set(questions.map(q => q.year))].sort();
+      // Get unique topics after normalizing chapter names
+      const uniqueTopics = [...new Set(questions.map(q => normalizeChapterName(q.tag)))].sort();
+      // Get unique years and ensure they're numbers
+      const uniqueYears = [...new Set(questions.map(q => Number(q.year)))].sort((a, b) => a - b);
       
       setTopics(uniqueTopics);
       setYears(uniqueYears);
       filterQuestions();
     }
   }, [questions, selectedTopic, selectedYear]);
+
+  useEffect(() => {
+    if (questions.length > 0) {
+      resetRemainingIndices();
+      setStartTime(new Date());
+    }
+  }, [questions, isRandom]);
 
   const resetRemainingIndices = () => {
     const indices = Array.from({ length: filteredQuestions.length }, (_, i) => i);
@@ -78,11 +86,14 @@ export function QuizApp() {
     let filtered = [...questions];
     
     if (selectedTopic !== 'all') {
-      filtered = filtered.filter(q => q.tag === selectedTopic);
+      filtered = filtered.filter(q => 
+        normalizeChapterName(q.tag) === selectedTopic
+      );
     }
     
     if (selectedYear !== 'all') {
-      filtered = filtered.filter(q => q.year === selectedYear);
+      const yearNumber = Number(selectedYear);
+      filtered = filtered.filter(q => Number(q.year) === yearNumber);
     }
     
     setFilteredQuestions(filtered);
@@ -129,7 +140,7 @@ export function QuizApp() {
       selectedOption: option,
       correctOption: currentQuestion.correct_answer,
       isCorrect,
-      chapter: currentQuestion.tag,
+      chapter: normalizeChapterName(currentQuestion.tag),
       timestamp: new Date()
     }]);
 
@@ -137,7 +148,6 @@ export function QuizApp() {
     setShowFeedback(true);
     await fetchExplanation(currentQuestion.id);
   };
-
   const getNextRandomIndex = () => {
     if (remainingIndices.length === 0) {
       setRemainingIndices(Array.from({ length: filteredQuestions.length }, (_, i) => i));
@@ -222,6 +232,7 @@ export function QuizApp() {
   const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
   if (isLoading) return <div>Loading...</div>;
+  
   return (
     <div className="min-h-screen bg-white">
       <NavBar />
@@ -282,12 +293,12 @@ export function QuizApp() {
           </button>
         </div>
 
-        {/* Question */}
+        {/* Question Section */}
         <div className="mb-8">
           <h2 className="text-xl font-medium text-gray-900 mb-8">{currentQuestion.question_text}</h2>
         </div>
 
-        {/* Options */}
+        {/* Options Section */}
         <div className="flex flex-col gap-3 mb-8">
           {['a', 'b', 'c', 'd'].map((option) => (
             <label 
@@ -357,7 +368,7 @@ export function QuizApp() {
           <div className="flex gap-8">
             <div className="flex gap-2">
               <div className="text-gray-600 text-sm">Chapter:</div>
-              <div className="text-sm">{currentQuestion.tag}</div>
+              <div className="text-sm">{normalizeChapterName(currentQuestion.tag)}</div>
             </div>
             <div className="flex gap-2">
               <div className="text-gray-600 text-sm">Year:</div>
