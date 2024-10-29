@@ -34,6 +34,14 @@ const normalizeChapterName = (chapter) => {
     .trim();
 };
 
+const normalizeOptionText = (text) => {
+  if (!text) return '';
+  // Remove quotes and trim whitespace
+  let normalizedText = text.replace(/['"]/g, '').trim();
+  // Convert first character to uppercase and rest as is
+  return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
+};
+
 export function QuizApp() {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -98,6 +106,15 @@ export function QuizApp() {
       filtered = filtered.filter(q => Number(q.year) === yearNumber);
     }
 
+    // Normalize options for filtered questions
+    filtered = filtered.map(q => ({
+      ...q,
+      option_a: normalizeOptionText(q.option_a),
+      option_b: normalizeOptionText(q.option_b),
+      option_c: normalizeOptionText(q.option_c),
+      option_d: normalizeOptionText(q.option_d)
+    }));
+
     // Filter out completed questions
     const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.id));
     
@@ -115,7 +132,17 @@ export function QuizApp() {
     try {
       const { data, error } = await supabase.from('MCQ1').select('*');
       if (error) throw error;
-      setQuestions(data || []);
+      
+      // Normalize options for all questions when fetching
+      const normalizedData = data?.map(q => ({
+        ...q,
+        option_a: normalizeOptionText(q.option_a),
+        option_b: normalizeOptionText(q.option_b),
+        option_c: normalizeOptionText(q.option_c),
+        option_d: normalizeOptionText(q.option_d)
+      })) || [];
+      
+      setQuestions(normalizedData);
       setIsLoading(false);
     } catch (err) {
       console.error(err);
@@ -326,7 +353,9 @@ export function QuizApp() {
 
         {/* Question Section */}
         <div className="mb-8">
-          <h2 className="text-xl font-medium text-gray-900 mb-8">{currentQuestion.question_text}</h2>
+          <h2 className="text-xl font-medium text-gray-900 mb-8">
+            {currentQuestion.question_text}
+          </h2>
         </div>
 
         {/* Options Section */}
@@ -403,6 +432,10 @@ export function QuizApp() {
             <div className="flex gap-2">
               <div className="text-gray-600 text-sm">Year:</div>
               <div className="text-sm">{currentQuestion.year}</div>
+            </div>
+            <div className="flex gap-2">
+              <div className="text-gray-600 text-sm">Questions Left:</div>
+              <div className="text-sm">{remainingIndices.length}</div>
             </div>
           </div>
         </div>
