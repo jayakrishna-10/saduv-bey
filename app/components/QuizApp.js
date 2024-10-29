@@ -376,5 +376,6 @@ export function QuizApp() {
         </div>
       )}
     </div>
+  </div>
   );
 }
