@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import NavBar from './NavBar';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -200,7 +201,9 @@ export function QuizApp() {
   if (isLoading) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-white p-4 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-white">
+      <NavBar />
+      <div className="p-4 max-w-2xl mx-auto">
       {/* Random Toggle */}
       <div className="flex items-center mb-6">
         <button
