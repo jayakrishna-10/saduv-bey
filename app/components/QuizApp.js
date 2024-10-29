@@ -153,13 +153,16 @@ export function QuizApp() {
     const incorrectAnswers = totalAnswered - correctAnswers;
     const score = Math.round((correctAnswers / totalAnswered) * 100);
 
-    // Calculate chapter-wise performance
+    // Normalize chapter names and calculate performance
     const chapterPerformance = answeredQuestions.reduce((acc, q) => {
-      if (!acc[q.chapter]) {
-        acc[q.chapter] = { total: 0, correct: 0 };
+      // Normalize chapter name by removing quotes and trimming
+      const normalizedChapter = q.chapter.replace(/^"|"$/g, '').trim();
+      
+      if (!acc[normalizedChapter]) {
+        acc[normalizedChapter] = { total: 0, correct: 0 };
       }
-      acc[q.chapter].total += 1;
-      if (q.isCorrect) acc[q.chapter].correct += 1;
+      acc[normalizedChapter].total += 1;
+      if (q.isCorrect) acc[normalizedChapter].correct += 1;
       return acc;
     }, {});
 
