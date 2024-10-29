@@ -17,6 +17,19 @@ const supabase = createClient(
     }
   }
 );
+const normalizeChapterName = (chapter) => {
+  return chapter
+    // Remove single or double quotes anywhere in the string
+    .replace(/['"]/g, '')
+    // Remove leading/trailing whitespace
+    .trim()
+    // Normalize "Act, 2001" and "Act 2001" variations
+    .replace(/Act,?\s+(\d{4})/g, 'Act $1')
+    // Remove any double spaces
+    .replace(/\s+/g, ' ')
+    // Ensure consistent spacing around "and"
+    .replace(/\s+and\s+/g, ' and ');
+};
 
 export function QuizApp() {
   const [questions, setQuestions] = useState([]);
@@ -156,7 +169,7 @@ export function QuizApp() {
     // Normalize chapter names and calculate performance
     const chapterPerformance = answeredQuestions.reduce((acc, q) => {
       // Normalize chapter name by removing quotes and trimming
-      const normalizedChapter = q.chapter.replace(/^"|"$/g, '').trim();
+      const normalizedChapter = normalizeChapterName(q.chapter);
       
       if (!acc[normalizedChapter]) {
         acc[normalizedChapter] = { total: 0, correct: 0 };
