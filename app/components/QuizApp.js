@@ -273,7 +273,7 @@ export function QuizApp() {
       {/* Explanation Section */}
       {showFeedback && (
         <div className="mb-6 border-t border-b py-4">
-          <h3 className="text-lg font-medium mb-3">Explanation</h3>
+          <h3 className="text-lg font-medium mb-3">is this Explanation</h3>
           {isLoadingExplanation ? (
             <div>Loading explanation...</div>
           ) : (
