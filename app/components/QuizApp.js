@@ -42,6 +42,11 @@ export function QuizApp() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [explanation, setExplanation] = useState('');
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [years, setYears] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState('all');
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [filteredQuestions, setFilteredQuestions] = useState([]);
   
   // New state variables for summary
   const [startTime, setStartTime] = useState(null);
@@ -59,10 +64,40 @@ export function QuizApp() {
     }
   }, [questions, isRandom]);
 
+  useEffect(() => {
+  if (questions.length > 0) {
+    // Extract unique topics and years
+    const uniqueTopics = [...new Set(questions.map(q => q.tag))].sort();
+    const uniqueYears = [...new Set(questions.map(q => q.year))].sort();
+    
+    setTopics(uniqueTopics);
+    setYears(uniqueYears);
+    filterQuestions();
+  }
+}, [questions, selectedTopic, selectedYear]);
+  
   const resetRemainingIndices = () => {
     const indices = Array.from({ length: questions.length }, (_, i) => i);
     setRemainingIndices(indices);
   };
+
+  const filterQuestions = () => {
+  let filtered = [...questions];
+  
+  if (selectedTopic !== 'all') {
+    filtered = filtered.filter(q => q.tag === selectedTopic);
+  }
+  
+  if (selectedYear !== 'all') {
+    filtered = filtered.filter(q => q.year === selectedYear);
+  }
+  
+  setFilteredQuestions(filtered);
+  
+  // Reset current question index and remaining indices
+  setCurrentQuestionIndex(0);
+  setRemainingIndices(Array.from({ length: filtered.length }, (_, i) => i));
+};
 
   const fetchQuestions = async () => {
     try {
@@ -114,14 +149,15 @@ export function QuizApp() {
   };
 
   const getNextRandomIndex = () => {
-    if (remainingIndices.length === 0) {
-      resetRemainingIndices();
-    }
-    const randomPosition = Math.floor(Math.random() * remainingIndices.length);
-    const nextIndex = remainingIndices[randomPosition];
-    setRemainingIndices(remainingIndices.filter((_, index) => index !== randomPosition));
-    return nextIndex;
-  };
+  if (remainingIndices.length === 0) {
+    setRemainingIndices(Array.from({ length: filteredQuestions.length }, (_, i) => i));
+    return 0;
+  }
+  const randomPosition = Math.floor(Math.random() * remainingIndices.length);
+  const nextIndex = remainingIndices[randomPosition];
+  setRemainingIndices(remainingIndices.filter((_, index) => index !== randomPosition));
+  return nextIndex;
+};
 
   const handleNextQuestion = () => {
     if (isRandom) {
@@ -196,30 +232,67 @@ export function QuizApp() {
     return `${minutes}m ${remainingSeconds}s`;
   };
 
-  const currentQuestion = questions[currentQuestionIndex] || {};
+  const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
   if (isLoading) return <div>Loading...</div>;
 
   return (
     <div className="min-h-screen bg-white">
       <NavBar />
-      <div className="p-4 max-w-2xl mx-auto">
-      {/* Random Toggle */}
-      <div className="flex items-center mb-6">
-        <button
-          onClick={() => setIsRandom(!isRandom)}
-          className={`flex items-center gap-1 px-2 py-0.5 text-xs border rounded-lg transition-colors ${
-            isRandom 
-              ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
-              : 'bg-gray-100 border-gray-200 hover:bg-gray-200'
-          }`}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-          </svg>
-          Random {isRandom ? 'On' : 'Off'}
-        </button>
-      </div>
+      <div className="flex items-center gap-4 mb-6">
+  {/* Topic Dropdown */}
+  <div className="relative">
+    <select
+      value={selectedTopic}
+      onChange={(e) => setSelectedTopic(e.target.value)}
+      className="appearance-none bg-white border border-gray-200 rounded-lg px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="all">All Topics</option>
+      {topics.map(topic => (
+        <option key={topic} value={topic}>{topic}</option>
+      ))}
+    </select>
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+      </svg>
+    </div>
+  </div>
+
+  {/* Year Dropdown */}
+  <div className="relative">
+    <select
+      value={selectedYear}
+      onChange={(e) => setSelectedYear(e.target.value)}
+      className="appearance-none bg-white border border-gray-200 rounded-lg px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+      <option value="all">All Years</option>
+      {years.map(year => (
+        <option key={year} value={year}>{year}</option>
+      ))}
+    </select>
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+      <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+      </svg>
+    </div>
+  </div>
+
+  {/* Random Toggle */}
+  <button
+    onClick={() => setIsRandom(!isRandom)}
+    className={`flex items-center gap-1 px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+      isRandom 
+        ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
+        : 'bg-gray-100 border-gray-200 hover:bg-gray-200'
+    }`}
+  >
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+    </svg>
+    Random {isRandom ? 'On' : 'Off'}
+  </button>
+</div>
 
       {/* Question */}
       <div className="mb-8">
