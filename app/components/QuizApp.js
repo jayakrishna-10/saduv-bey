@@ -384,7 +384,6 @@ export function QuizApp() {
           <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">Quiz Summary</h2>
             
-            {/* Calculate and display summary */}
             {(() => {
               const summary = generateSummary();
               return (
@@ -449,6 +448,5 @@ export function QuizApp() {
         </div>
       )}
     </div>
-  </div>
   );
 }
