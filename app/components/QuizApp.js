@@ -27,10 +27,10 @@ const normalizeChapterName = (chapter) => {
     .replace(/Act,?\s+(\d{4})/g, 'Act $1')
     .replace(/\s+/g, ' ')
     .replace(/\s+and\s+/g, ' and ')
-    .replace(/^Chapter\s+/i, '')  // Remove 'Chapter ' from beginning
-    .replace(/^chapter_/i, '')    // Remove 'chapter_' from beginning
-    .replace(/_/g, ' ')          // Replace underscores with spaces
-    .replace(/\s+/g, ' ')        // Replace multiple spaces with single space
+    .replace(/^Chapter\s+/i, '')
+    .replace(/^chapter_/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 };
 
@@ -52,6 +52,8 @@ export function QuizApp() {
   const [startTime, setStartTime] = useState(null);
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
+  const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   useEffect(() => {
     fetchQuestions();
@@ -59,9 +61,7 @@ export function QuizApp() {
 
   useEffect(() => {
     if (questions.length > 0) {
-      // Get unique topics after normalizing chapter names
       const uniqueTopics = [...new Set(questions.map(q => normalizeChapterName(q.tag)))].sort();
-      // Get unique years and ensure they're numbers
       const uniqueYears = [...new Set(questions.map(q => Number(q.year)))].sort((a, b) => a - b);
       
       setTopics(uniqueTopics);
@@ -78,8 +78,10 @@ export function QuizApp() {
   }, [questions, isRandom]);
 
   const resetRemainingIndices = () => {
-    const indices = Array.from({ length: filteredQuestions.length }, (_, i) => i);
-    setRemainingIndices(indices);
+    const availableIndices = filteredQuestions
+      .map((_, index) => index)
+      .filter(index => !completedQuestionIds.has(filteredQuestions[index].id));
+    setRemainingIndices(availableIndices);
   };
 
   const filterQuestions = () => {
@@ -95,10 +97,18 @@ export function QuizApp() {
       const yearNumber = Number(selectedYear);
       filtered = filtered.filter(q => Number(q.year) === yearNumber);
     }
+
+    // Filter out completed questions
+    const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.id));
     
-    setFilteredQuestions(filtered);
+    setFilteredQuestions(availableQuestions);
     setCurrentQuestionIndex(0);
-    setRemainingIndices(Array.from({ length: filtered.length }, (_, i) => i));
+    setRemainingIndices(Array.from({ length: availableQuestions.length }, (_, i) => i));
+
+    // Show completion modal if no questions available
+    if (availableQuestions.length === 0 && filtered.length > 0) {
+      setShowCompletionModal(true);
+    }
   };
 
   const fetchQuestions = async () => {
@@ -144,14 +154,17 @@ export function QuizApp() {
       timestamp: new Date()
     }]);
 
+    // Mark question as completed
+    setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
+
     setSelectedOption(option);
     setShowFeedback(true);
     await fetchExplanation(currentQuestion.id);
   };
   const getNextRandomIndex = () => {
     if (remainingIndices.length === 0) {
-      setRemainingIndices(Array.from({ length: filteredQuestions.length }, (_, i) => i));
-      return 0;
+      setShowCompletionModal(true);
+      return currentQuestionIndex;
     }
     const randomPosition = Math.floor(Math.random() * remainingIndices.length);
     const nextIndex = remainingIndices[randomPosition];
@@ -160,14 +173,32 @@ export function QuizApp() {
   };
 
   const handleNextQuestion = () => {
+    // Check if all questions in current filter are completed
+    if (remainingIndices.length === 0) {
+      setShowCompletionModal(true);
+      return;
+    }
+
     if (isRandom) {
       setCurrentQuestionIndex(getNextRandomIndex());
     } else {
-      setCurrentQuestionIndex((prev) => (prev + 1) % filteredQuestions.length);
+      // Find next available question
+      let nextIndex = (currentQuestionIndex + 1) % filteredQuestions.length;
+      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.id) && 
+             nextIndex !== currentQuestionIndex) {
+        nextIndex = (nextIndex + 1) % filteredQuestions.length;
+      }
+      setCurrentQuestionIndex(nextIndex);
     }
     setSelectedOption(null);
     setShowFeedback(false);
     setExplanation('');
+  };
+
+  const resetFilters = () => {
+    setSelectedTopic('all');
+    setSelectedYear('all');
+    setShowCompletionModal(false);
   };
 
   const isCorrectAnswer = (option, correctAnswer) => {
@@ -326,8 +357,7 @@ export function QuizApp() {
             </label>
           ))}
         </div>
-
-        {/* Buttons Section */}
+{/* Buttons Section */}
         <div className="flex justify-between mb-8">
           {answeredQuestions.length > 0 && (
             <button 
@@ -376,6 +406,35 @@ export function QuizApp() {
             </div>
           </div>
         </div>
+
+        {/* Completion Modal */}
+        {showCompletionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h2 className="text-xl font-bold mb-4">Section Complete!</h2>
+              <p className="text-gray-600 mb-6">
+                You have completed all available questions for the selected filters. Would you like to:
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={resetFilters}
+                  className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  Try Questions from Other Topics/Years
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCompletionModal(false);
+                    setShowSummary(true);
+                  }}
+                  className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
+                >
+                  View Summary
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Results Summary Modal */}
         {showSummary && (
