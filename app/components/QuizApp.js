@@ -91,7 +91,6 @@ export function QuizApp() {
       .filter(index => !completedQuestionIds.has(filteredQuestions[index].id));
     setRemainingIndices(availableIndices);
   };
-
   const filterQuestions = () => {
     let filtered = [...questions];
     
@@ -119,14 +118,27 @@ export function QuizApp() {
     const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.id));
     
     setFilteredQuestions(availableQuestions);
-    setCurrentQuestionIndex(0);
-    setRemainingIndices(Array.from({ length: availableQuestions.length }, (_, i) => i));
+    
+    // Only reset current index if there are available questions
+    if (availableQuestions.length > 0) {
+      setCurrentQuestionIndex(0);
+    }
 
-    // Show completion modal if no questions available
-    if (availableQuestions.length === 0 && filtered.length > 0) {
+    // Update remaining indices
+    const newRemainingIndices = Array.from({ length: availableQuestions.length }, (_, i) => i);
+    setRemainingIndices(newRemainingIndices);
+
+    // Show completion modal only if:
+    // 1. There are no available questions
+    // 2. There were questions matching the filter criteria
+    // 3. User has answered at least one question
+    if (availableQuestions.length === 0 && 
+        filtered.length > 0 && 
+        completedQuestionIds.size > 0) {
       setShowCompletionModal(true);
     }
   };
+
   const fetchQuestions = async () => {
     try {
       const { data, error } = await supabase.from('MCQ1').select('*');
@@ -189,39 +201,62 @@ export function QuizApp() {
   };
 
   const getNextRandomIndex = () => {
-    if (remainingIndices.length === 0) {
-      setShowCompletionModal(true);
+    const availableIndices = remainingIndices.filter(index => 
+      !completedQuestionIds.has(filteredQuestions[index]?.id)
+    );
+
+    if (availableIndices.length === 0) {
       return currentQuestionIndex;
     }
-    const randomPosition = Math.floor(Math.random() * remainingIndices.length);
-    const nextIndex = remainingIndices[randomPosition];
-    setRemainingIndices(remainingIndices.filter((_, index) => index !== randomPosition));
+
+    const randomPosition = Math.floor(Math.random() * availableIndices.length);
+    const nextIndex = availableIndices[randomPosition];
+    setRemainingIndices(availableIndices.filter((_, index) => index !== randomPosition));
     return nextIndex;
   };
 
   const handleNextQuestion = () => {
-    // Check if all questions in current filter are completed
-    if (remainingIndices.length === 0) {
+    // Get the number of available questions
+    const availableQuestionsCount = filteredQuestions.length;
+
+    // If no questions are available and user has answered at least one question
+    if (availableQuestionsCount === 0 && completedQuestionIds.size > 0) {
       setShowCompletionModal(true);
       return;
     }
 
     if (isRandom) {
-      setCurrentQuestionIndex(getNextRandomIndex());
-    } else {
-      // Find next available question
-      let nextIndex = (currentQuestionIndex + 1) % filteredQuestions.length;
-      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.id) && 
-             nextIndex !== currentQuestionIndex) {
-        nextIndex = (nextIndex + 1) % filteredQuestions.length;
+      const nextIndex = getNextRandomIndex();
+      if (nextIndex === currentQuestionIndex && completedQuestionIds.size > 0) {
+        setShowCompletionModal(true);
+        return;
       }
       setCurrentQuestionIndex(nextIndex);
+    } else {
+      // Find next available question
+      let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
+      let loopCount = 0;
+      
+      // Prevent infinite loop by checking if we've gone through all questions
+      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.id) && 
+             loopCount < availableQuestionsCount) {
+        nextIndex = (nextIndex + 1) % availableQuestionsCount;
+        loopCount++;
+      }
+
+      // If we've gone through all questions and found nothing, show completion modal
+      if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
+        setShowCompletionModal(true);
+        return;
+      }
+
+      setCurrentQuestionIndex(nextIndex);
     }
+    
     setSelectedOption(null);
     setShowFeedback(false);
     setExplanation('');
   };
-
   const resetFilters = () => {
     setSelectedTopic('all');
     setSelectedYear('all');
@@ -290,6 +325,7 @@ export function QuizApp() {
   const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
   if (isLoading) return <div>Loading...</div>;
+  
   return (
     <div className="min-h-screen bg-white">
       <NavBar />
