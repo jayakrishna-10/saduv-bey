@@ -127,7 +127,6 @@ export function QuizApp() {
       setShowCompletionModal(true);
     }
   };
-
   const fetchQuestions = async () => {
     try {
       const { data, error } = await supabase.from('MCQ1').select('*');
@@ -188,6 +187,7 @@ export function QuizApp() {
     setShowFeedback(true);
     await fetchExplanation(currentQuestion.id);
   };
+
   const getNextRandomIndex = () => {
     if (remainingIndices.length === 0) {
       setShowCompletionModal(true);
@@ -290,7 +290,6 @@ export function QuizApp() {
   const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
   if (isLoading) return <div>Loading...</div>;
-  
   return (
     <div className="min-h-screen bg-white">
       <NavBar />
@@ -386,7 +385,8 @@ export function QuizApp() {
             </label>
           ))}
         </div>
-{/* Buttons Section */}
+
+        {/* Buttons Section */}
         <div className="flex justify-between mb-8">
           {answeredQuestions.length > 0 && (
             <button 
@@ -422,7 +422,7 @@ export function QuizApp() {
           </div>
         )}
 
-        {/* Footer Section */}
+        {/* Modified Footer Section */}
         <div className="border-t mt-8 pt-6">
           <div className="flex gap-8">
             <div className="flex gap-2">
@@ -432,10 +432,6 @@ export function QuizApp() {
             <div className="flex gap-2">
               <div className="text-gray-600 text-sm">Year:</div>
               <div className="text-sm">{currentQuestion.year}</div>
-            </div>
-            <div className="flex gap-2">
-              <div className="text-gray-600 text-sm">Questions Left:</div>
-              <div className="text-sm">{remainingIndices.length}</div>
             </div>
           </div>
         </div>
