@@ -27,7 +27,6 @@ const NavBar = () => {
 
           {/* Right side - Navigation */}
           <div className="flex items-center gap-4">
-            
               href="/nce"
               className="text-sm font-medium text-gray-600 hover:text-gray-900"
             >
