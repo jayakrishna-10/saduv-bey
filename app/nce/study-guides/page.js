@@ -41,7 +41,7 @@ export default function StudyGuidesPage() {
             <div key={index} className="p-6 bg-white rounded-lg shadow-sm">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
-                  <Book className="w-6 h-6 text-blue-600" />
+                  <BookOpen className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-medium mb-2">{guide.title}</h3>
