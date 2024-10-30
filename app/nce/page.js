@@ -1,6 +1,7 @@
 // app/nce/page.js
-import NavBar from '../components/NavBar';  // Fix the import path
-import { Book, Brain, Cards, FileText } from 'lucide-react';
+'use client'; // Add this to make it a client component
+import NavBar from '../components/NavBar';
+import { BookOpen, Brain, LayoutGrid, FileText } from 'lucide-react'; // Changed Cards to LayoutGrid
 import Link from 'next/link';
 
 export default function NCEPage() {
@@ -16,7 +17,7 @@ export default function NCEPage() {
     {
       title: "Flashcards",
       description: "Review key concepts with interactive flashcards",
-      icon: <Cards className="w-6 h-6" />,
+      icon: <LayoutGrid className="w-6 h-6" />, // Changed from Cards
       href: "/nce/flashcards",
       color: "text-purple-600",
       bgColor: "bg-purple-100"
@@ -24,7 +25,7 @@ export default function NCEPage() {
     {
       title: "Study Guides",
       description: "In-depth materials covering all exam topics",
-      icon: <Book className="w-6 h-6" />,
+      icon: <BookOpen className="w-6 h-6" />, // Changed from Book
       href: "/nce/study-guides",
       color: "text-green-600",
       bgColor: "bg-green-100"
