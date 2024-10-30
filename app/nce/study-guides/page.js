@@ -1,7 +1,7 @@
 // app/nce/study-guides/page.js
 'use client';
 import NavBar from '../../components/NavBar';
-import { Book, CheckCircle, Clock } from 'lucide-react';
+import { BookOpen, CheckCircle, Clock } from 'lucide-react';
 
 export default function StudyGuidesPage() {
   const sampleGuides = [
