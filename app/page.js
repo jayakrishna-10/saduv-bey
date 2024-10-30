@@ -1,8 +1,8 @@
-// app/page.js (Main Homepage)
+// app/page.js
 import Link from 'next/link';
 import NavBar from './components/NavBar';
 
-export default function Home() {
+export default function HomePage() {  // Changed from Home to HomePage
   const examTypes = [
     {
       title: "NCE",
@@ -15,14 +15,12 @@ export default function Home() {
       ],
       href: "/nce"
     }
-    // Add more exam types here as needed
   ];
 
   return (
     <main className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Welcome to Saduv Bey
@@ -32,7 +30,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Exam Types Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {examTypes.map((exam) => (
             <Link 
@@ -61,13 +58,3 @@ export default function Home() {
     </main>
   );
 }
-
-// app/nce/page.js (NCE Homepage)
-import NCEHomepage from '@/components/NCEHomepage';
-
-export default function NCEPage() {
-  return <NCEHomepage />;
-}
-
-// Keep your existing app/layout.js and globals.css as they are
-// They don't need modifications since they're already set up correctly
