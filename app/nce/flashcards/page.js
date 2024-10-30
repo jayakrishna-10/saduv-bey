@@ -5,6 +5,7 @@ import NavBar from '../../components/NavBar';
 // Replace @/components/ui/button with relative import
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import { LayoutGrid } from 'lucide-react';
 
 export default function FlashcardsPage() {
   const [isFlipped, setIsFlipped] = useState(false);
