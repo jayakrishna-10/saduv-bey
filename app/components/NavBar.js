@@ -1,17 +1,13 @@
 // app/components/NavBar.js
-import Link from 'next/link';
+'use client';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export default function NavBar() {
   const pathname = usePathname();
-
-  const navigation = [
-    { name: 'Home', href: '/' },
-    { name: 'Quiz', href: '/nce/quiz' },
-    { name: 'Flashcards', href: '/nce/flashcards' },
-    { name: 'Study Guides', href: '/nce/study-guides' },
-    { name: 'Short Notes', href: '/nce/short-notes' },
-  ];
+  
+  // Function to determine if we're in the NCE section
+  const isNCESection = pathname.startsWith('/nce');
 
   return (
     <nav className="border-b">
@@ -21,23 +17,36 @@ export default function NavBar() {
             <Link href="/" className="text-lg font-bold text-gray-900">
               Saduv Bey
             </Link>
-            <div className="h-6 w-px bg-gray-200"></div>
-            <span className="text-sm font-medium text-gray-600">NCE</span>
+            {isNCESection && (
+              <>
+                <div className="h-6 w-px bg-gray-200"></div>
+                <span className="text-sm font-medium text-gray-600">NCE</span>
+              </>
+            )}
           </div>
-          <div className="hidden md:flex space-x-4">
-            {navigation.map((item) => (
+          
+          {/* Navigation links */}
+          <div className="flex space-x-4">
+            {isNCESection ? (
+              // NCE section navigation
               <Link
-                key={item.name}
-                href={item.href}
-                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                  pathname === item.href
-                    ? 'text-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+                href="/"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
               >
-                {item.name}
+                Home
               </Link>
-            ))}
+            ) : (
+              // Home page navigation (if needed)
+              <div className="flex gap-4">
+                <Link
+                  href="/nce"
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  NCE Exam
+                </Link>
+                {/* Add more exam links here */}
+              </div>
+            )}
           </div>
         </div>
       </div>
