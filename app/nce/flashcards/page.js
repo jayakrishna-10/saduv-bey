@@ -1,9 +1,10 @@
 // app/nce/flashcards/page.js
 'use client';
 import { useState } from 'react';
-import NavBar from '@/components/NavBar';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import NavBar from '../../components/NavBar';
+// Replace @/components/ui/button with relative import
+import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 
 export default function FlashcardsPage() {
   const [isFlipped, setIsFlipped] = useState(false);
