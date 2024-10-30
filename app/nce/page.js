@@ -1,10 +1,9 @@
-// app/components/NCEHomepage.js
+// app/nce/page.js
+import NavBar from '../components/NavBar';  // Fix the import path
+import { Book, Brain, Cards, FileText } from 'lucide-react';
 import Link from 'next/link';
-import NavBar from './NavBar';
-import { Card } from '@/components/ui/card';
-import { Book, Brain, Cards, FileText, PenTool } from 'lucide-react';
 
-export default function NCEHomepage() {
+export default function NCEPage() {
   const sections = [
     {
       title: "Practice Quiz",
@@ -64,7 +63,7 @@ export default function NCEHomepage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           {sections.map((section) => (
             <Link key={section.title} href={section.href}>
-              <Card className="p-6 hover:shadow-lg transition-shadow">
+              <div className="p-6 bg-white rounded-lg shadow-sm hover:shadow-lg transition-shadow">
                 <div className="flex items-start gap-4">
                   <div className={`p-3 rounded-lg ${section.bgColor}`}>
                     <div className={section.color}>{section.icon}</div>
@@ -74,7 +73,7 @@ export default function NCEHomepage() {
                     <p className="text-gray-600">{section.description}</p>
                   </div>
                 </div>
-              </Card>
+              </div>
             </Link>
           ))}
         </div>
