@@ -50,6 +50,7 @@ export function QuizApp() {
   const [isRandom, setIsRandom] = useState(false);
   const [remainingIndices, setRemainingIndices] = useState([]);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [explanation, setExplanation] = useState('');
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [topics, setTopics] = useState([]);
@@ -62,6 +63,7 @@ export function QuizApp() {
   const [showSummary, setShowSummary] = useState(false);
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
 
   useEffect(() => {
     fetchQuestions();
@@ -114,6 +116,14 @@ export function QuizApp() {
       option_d: normalizeOptionText(q.option_d)
     }));
 
+    // Calculate progress
+    const totalQuestions = filtered.length;
+    const attemptedQuestions = filtered.filter(q => completedQuestionIds.has(q.id)).length;
+    setQuestionProgress({
+      total: totalQuestions,
+      attempted: attemptedQuestions
+    });
+
     // Filter out completed questions
     const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.id));
     
@@ -128,10 +138,6 @@ export function QuizApp() {
     const newRemainingIndices = Array.from({ length: availableQuestions.length }, (_, i) => i);
     setRemainingIndices(newRemainingIndices);
 
-    // Show completion modal only if:
-    // 1. There are no available questions
-    // 2. There were questions matching the filter criteria
-    // 3. User has answered at least one question
     if (availableQuestions.length === 0 && 
         filtered.length > 0 && 
         completedQuestionIds.size > 0) {
@@ -177,6 +183,30 @@ export function QuizApp() {
     setIsLoadingExplanation(false);
   };
 
+  const handleGetAnswer = () => {
+    setShowAnswer(true);
+    setShowFeedback(true);
+    fetchExplanation(currentQuestion.id);
+    // Mark question as completed
+    setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
+    // Add to answered questions with null selection
+    setAnsweredQuestions(prev => [...prev, {
+      questionId: currentQuestion.id,
+      question: currentQuestion.question_text,
+      selectedOption: null,
+      correctOption: currentQuestion.correct_answer,
+      isCorrect: false,
+      chapter: normalizeChapterName(currentQuestion.tag),
+      timestamp: new Date()
+    }]);
+
+    // Update progress
+    setQuestionProgress(prev => ({
+      ...prev,
+      attempted: prev.attempted + 1
+    }));
+  };
+
   const handleOptionSelect = async (option) => {
     if (selectedOption) return;
     
@@ -194,6 +224,12 @@ export function QuizApp() {
 
     // Mark question as completed
     setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
+
+    // Update progress
+    setQuestionProgress(prev => ({
+      ...prev,
+      attempted: prev.attempted + 1
+    }));
 
     setSelectedOption(option);
     setShowFeedback(true);
@@ -216,6 +252,8 @@ export function QuizApp() {
   };
 
   const handleNextQuestion = () => {
+    setShowAnswer(false);
+    
     // Get the number of available questions
     const availableQuestionsCount = filteredQuestions.length;
 
@@ -270,7 +308,7 @@ export function QuizApp() {
   };
 
   const getOptionStyle = (option) => {
-    if (!showFeedback) {
+    if (!showFeedback && !showAnswer) {
       return "border-gray-200 hover:border-gray-300";
     }
 
@@ -386,6 +424,22 @@ export function QuizApp() {
           </button>
         </div>
 
+        {/* Progress Bar */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Progress: {questionProgress.attempted} of {questionProgress.total} questions</span>
+            <span>Remaining: {questionProgress.total - questionProgress.attempted}</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full" 
+              style={{ 
+                width: `${(questionProgress.attempted / questionProgress.total) * 100}%` 
+              }}
+            ></div>
+          </div>
+        </div>
+
         {/* Question Section */}
         <div className="mb-8">
           <h2 className="text-xl font-medium text-gray-900 mb-8">
@@ -405,11 +459,12 @@ export function QuizApp() {
                 name="quiz-option"
                 checked={selectedOption === option}
                 onChange={() => handleOptionSelect(option)}
+                disabled={showAnswer}
                 className="h-4 w-4 border-2 border-gray-300 bg-transparent text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               />
               <div className="flex grow flex-col">
                 <p className={`text-sm font-medium leading-normal ${
-                  showFeedback && isCorrectAnswer(option, currentQuestion.correct_answer)
+                  (showFeedback || showAnswer) && isCorrectAnswer(option, currentQuestion.correct_answer)
                     ? 'text-green-700'
                     : showFeedback && selectedOption === option && !isCorrectAnswer(option, currentQuestion.correct_answer)
                       ? 'text-red-700'
@@ -423,7 +478,7 @@ export function QuizApp() {
         </div>
 
         {/* Buttons Section */}
-        <div className="flex justify-between mb-8">
+        <div className="flex justify-between items-center mb-8">
           {answeredQuestions.length > 0 && (
             <button 
               onClick={() => setShowSummary(true)}
@@ -432,16 +487,25 @@ export function QuizApp() {
               Finish Quiz
             </button>
           )}
-          <button 
-            onClick={handleNextQuestion}
-            className="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium"
-          >
-            Next Question
-          </button>
+          <div className="flex gap-2 ml-auto">
+            <button 
+              onClick={handleGetAnswer}
+              disabled={showFeedback || showAnswer}
+              className="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Get Answer
+            </button>
+            <button 
+              onClick={handleNextQuestion}
+              className="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium"
+            >
+              Next Question
+            </button>
+          </div>
         </div>
 
         {/* Explanation Section */}
-        {showFeedback && (
+        {(showFeedback || showAnswer) && (
           <div className="mb-8 border-t border-b py-6">
             {isLoadingExplanation ? (
               <div>Loading explanation...</div>
