@@ -52,7 +52,7 @@ export default function NCEPage() {
               NCE Exam Preparation
             </h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Comprehensive study materials and practice tests to help you succeed in the National Counselor Examination
+              Comprehensive study materials and practice tests to help you succeed in the National Certification Examination for Energy Managers and Energy Auditors
             </p>
           </div>
         </div>
