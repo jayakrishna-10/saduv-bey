@@ -1,9 +1,6 @@
 // app/nce/study-guides/page.js
 'use client';
 import NavBar from '../../components/NavBar';
-// Replace @/components/ui/button with relative import
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
 import { Book, CheckCircle, Clock } from 'lucide-react';
 
 export default function StudyGuidesPage() {
@@ -41,7 +38,7 @@ export default function StudyGuidesPage() {
         {/* Sample Study Guides */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {sampleGuides.map((guide, index) => (
-            <Card key={index} className="p-6">
+            <div key={index} className="p-6 bg-white rounded-lg shadow-sm">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Book className="w-6 h-6 text-blue-600" />
@@ -61,7 +58,7 @@ export default function StudyGuidesPage() {
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       </div>
