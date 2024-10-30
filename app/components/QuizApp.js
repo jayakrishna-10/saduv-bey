@@ -36,9 +36,7 @@ const normalizeChapterName = (chapter) => {
 
 const normalizeOptionText = (text) => {
   if (!text) return '';
-  // Remove quotes and trim whitespace
   let normalizedText = text.replace(/['"]/g, '').trim();
-  // Convert first character to uppercase and rest as is
   return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
 };
 
@@ -64,7 +62,6 @@ export function QuizApp() {
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
-
   useEffect(() => {
     fetchQuestions();
   }, []);
@@ -93,6 +90,7 @@ export function QuizApp() {
       .filter(index => !completedQuestionIds.has(filteredQuestions[index].id));
     setRemainingIndices(availableIndices);
   };
+
   const filterQuestions = () => {
     let filtered = [...questions];
     
@@ -107,7 +105,6 @@ export function QuizApp() {
       filtered = filtered.filter(q => Number(q.year) === yearNumber);
     }
 
-    // Normalize options for filtered questions
     filtered = filtered.map(q => ({
       ...q,
       option_a: normalizeOptionText(q.option_a),
@@ -116,7 +113,6 @@ export function QuizApp() {
       option_d: normalizeOptionText(q.option_d)
     }));
 
-    // Calculate progress
     const totalQuestions = filtered.length;
     const attemptedQuestions = filtered.filter(q => completedQuestionIds.has(q.id)).length;
     setQuestionProgress({
@@ -124,17 +120,14 @@ export function QuizApp() {
       attempted: attemptedQuestions
     });
 
-    // Filter out completed questions
     const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.id));
     
     setFilteredQuestions(availableQuestions);
     
-    // Only reset current index if there are available questions
     if (availableQuestions.length > 0) {
       setCurrentQuestionIndex(0);
     }
 
-    // Update remaining indices
     const newRemainingIndices = Array.from({ length: availableQuestions.length }, (_, i) => i);
     setRemainingIndices(newRemainingIndices);
 
@@ -150,7 +143,6 @@ export function QuizApp() {
       const { data, error } = await supabase.from('MCQ1').select('*');
       if (error) throw error;
       
-      // Normalize options for all questions when fetching
       const normalizedData = data?.map(q => ({
         ...q,
         option_a: normalizeOptionText(q.option_a),
@@ -187,9 +179,7 @@ export function QuizApp() {
     setShowAnswer(true);
     setShowFeedback(true);
     fetchExplanation(currentQuestion.id);
-    // Mark question as completed
     setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
-    // Add to answered questions with null selection
     setAnsweredQuestions(prev => [...prev, {
       questionId: currentQuestion.id,
       question: currentQuestion.question_text,
@@ -200,13 +190,11 @@ export function QuizApp() {
       timestamp: new Date()
     }]);
 
-    // Update progress
     setQuestionProgress(prev => ({
       ...prev,
       attempted: prev.attempted + 1
     }));
   };
-
   const handleOptionSelect = async (option) => {
     if (selectedOption) return;
     
@@ -222,10 +210,7 @@ export function QuizApp() {
       timestamp: new Date()
     }]);
 
-    // Mark question as completed
     setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
-
-    // Update progress
     setQuestionProgress(prev => ({
       ...prev,
       attempted: prev.attempted + 1
@@ -254,10 +239,8 @@ export function QuizApp() {
   const handleNextQuestion = () => {
     setShowAnswer(false);
     
-    // Get the number of available questions
     const availableQuestionsCount = filteredQuestions.length;
 
-    // If no questions are available and user has answered at least one question
     if (availableQuestionsCount === 0 && completedQuestionIds.size > 0) {
       setShowCompletionModal(true);
       return;
@@ -271,18 +254,15 @@ export function QuizApp() {
       }
       setCurrentQuestionIndex(nextIndex);
     } else {
-      // Find next available question
       let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
       let loopCount = 0;
       
-      // Prevent infinite loop by checking if we've gone through all questions
       while (completedQuestionIds.has(filteredQuestions[nextIndex]?.id) && 
              loopCount < availableQuestionsCount) {
         nextIndex = (nextIndex + 1) % availableQuestionsCount;
         loopCount++;
       }
 
-      // If we've gone through all questions and found nothing, show completion modal
       if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
         setShowCompletionModal(true);
         return;
@@ -295,6 +275,7 @@ export function QuizApp() {
     setShowFeedback(false);
     setExplanation('');
   };
+
   const resetFilters = () => {
     setSelectedTopic('all');
     setSelectedYear('all');
@@ -363,7 +344,6 @@ export function QuizApp() {
   const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
   if (isLoading) return <div>Loading...</div>;
-  
   return (
     <div className="min-h-screen bg-white">
       <NavBar />
@@ -478,7 +458,7 @@ export function QuizApp() {
         </div>
 
         {/* Buttons Section */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           {answeredQuestions.length > 0 && (
             <button 
               onClick={() => setShowSummary(true)}
@@ -506,7 +486,7 @@ export function QuizApp() {
 
         {/* Explanation Section */}
         {(showFeedback || showAnswer) && (
-          <div className="mb-8 border-t border-b py-6">
+          <div className="mb-4">
             {isLoadingExplanation ? (
               <div>Loading explanation...</div>
             ) : (
@@ -522,8 +502,8 @@ export function QuizApp() {
           </div>
         )}
 
-        {/* Modified Footer Section */}
-        <div className="border-t mt-8 pt-6">
+        {/* Footer Section - Modified */}
+        <div className="border-t pt-4">
           <div className="flex gap-8">
             <div className="flex gap-2">
               <div className="text-gray-600 text-sm">Chapter:</div>
