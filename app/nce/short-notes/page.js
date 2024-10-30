@@ -1,9 +1,6 @@
 // app/nce/short-notes/page.js
 'use client';
 import NavBar from '../../components/NavBar';
-// Replace @/components/ui/button with relative import
-import { Button } from '../../components/ui/button';
-import { Card } from '../../components/ui/card';
 import { FileText, Star } from 'lucide-react';
 
 export default function ShortNotesPage() {
@@ -39,7 +36,7 @@ export default function ShortNotesPage() {
         {/* Sample Notes */}
         <div className="space-y-6 mb-8">
           {sampleNotes.map((note, index) => (
-            <Card key={index} className="p-6">
+            <div key={index} className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <FileText className="w-5 h-5 text-purple-600" />
@@ -59,27 +56,27 @@ export default function ShortNotesPage() {
                   </div>
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
 
         {/* Features Preview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="p-6 text-center">
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
             <Star className="w-6 h-6 mx-auto mb-3 text-yellow-500" />
             <h3 className="font-medium mb-2">Important Concepts</h3>
             <p className="text-sm text-gray-600">Key points highlighted for quick revision</p>
-          </Card>
-          <Card className="p-6 text-center">
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
             <FileText className="w-6 h-6 mx-auto mb-3 text-blue-500" />
             <h3 className="font-medium mb-2">Structured Format</h3>
             <p className="text-sm text-gray-600">Clear and concise note organization</p>
-          </Card>
-          <Card className="p-6 text-center">
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
             <Star className="w-6 h-6 mx-auto mb-3 text-green-500" />
             <h3 className="font-medium mb-2">Quick Access</h3>
             <p className="text-sm text-gray-600">Easy navigation between topics</p>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
