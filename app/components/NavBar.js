@@ -8,7 +8,7 @@ const NavBar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
           <div className="flex-shrink-0 flex items-center">
-            <span className="text-xl font-bold text-gray-900">Saduv Bey</span>
+            <span className="text-xl font-bold text-gray-900">Saduv Bey / NCE</span>
           </div>
           
           {/* Navigation Links - right side */}
