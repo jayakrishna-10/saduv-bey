@@ -3,7 +3,7 @@ import NavBar from '../components/NavBar';
 
 export const metadata = {
   title: 'NCE',
-  description: 'National Certification Examination for Energy Managers and Energy Auditors preparation materials',
+  description: 'National Counselor Examination preparation materials',
 }
 
 export default function NCELayout({ children }) {
