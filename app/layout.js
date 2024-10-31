@@ -1,6 +1,7 @@
 // app/layout.js
 import './globals.css'
 import 'katex/dist/katex.min.css'
+import ErrorBoundary from './components/ErrorBoundary'
 
 export const metadata = {
   title: {
@@ -12,8 +13,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="h-full">{children}</body>
+    <html lang="en">
+      <body>
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+      </body>
     </html>
   );
 }
