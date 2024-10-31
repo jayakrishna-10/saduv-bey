@@ -9,7 +9,6 @@ export const metadata = {
 export default function NCELayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      <NavBar />
       {children}
     </div>
   );
