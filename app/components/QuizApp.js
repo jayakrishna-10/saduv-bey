@@ -362,7 +362,7 @@ export function QuizApp() {
           </div>
         </div>
       </header>
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto px-4 py-8 pt-16">
         {/* Filters Section */}
         <div className="flex items-center gap-4 mb-8">
           {/* Topic Dropdown */}
