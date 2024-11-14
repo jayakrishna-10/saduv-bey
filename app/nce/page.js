@@ -1,7 +1,15 @@
 'use client';
 // app/nce/page.js
 import Link from 'next/link';
-import { Book, FileText, ListChecks, NotebookPen, BookOpen, Library, GraduationCap } from 'lucide-react';
+import { 
+  Book, 
+  FileText, 
+  ListChecks, 
+  PenTool, // Changed from NotebookPen to PenTool
+  BookOpen, 
+  Library, 
+  GraduationCap 
+} from 'lucide-react';
 
 function NavCard({ icon: Icon, title, description, href }) {
   const CardWrapper = href ? Link : 'div';
@@ -65,7 +73,7 @@ export default function NCEHomePage() {
             href="/nce/quiz"
           />
           <NavCard
-            icon={NotebookPen}
+            icon={PenTool} // Changed icon here
             title="Test"
             description="Full-length mock exams with detailed solutions"
           />
