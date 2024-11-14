@@ -1,4 +1,6 @@
 // app/nce/layout.js
+import Link from 'next/link';
+
 export const metadata = {
   title: 'saduvbey | NCE',
   description: 'National Certification Examination preparation materials',
@@ -10,15 +12,15 @@ export default function NCELayout({ children }) {
       <header className="fixed top-0 z-50 w-full bg-white border-b">
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            <a href="/" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <span className="text-xl font-bold text-gray-900">saduvbey | NCE</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/"
               className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Home
-            </a>
+            </Link>
           </div>
         </div>
       </header>
