@@ -1,10 +1,14 @@
+'use client';
 // app/nce/page.js
 import Link from 'next/link';
 import { Book, FileText, ListChecks, NotebookPen, BookOpen, Library, GraduationCap } from 'lucide-react';
 
 function NavCard({ icon: Icon, title, description, href }) {
+  const CardWrapper = href ? Link : 'div';
+  const cardProps = href ? { href } : {};
+
   return (
-    <Link href={href || '#'}>
+    <CardWrapper {...cardProps}>
       <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 cursor-pointer group">
         <div className="flex items-center space-x-4">
           <div className="bg-blue-50 p-3 rounded-lg group-hover:bg-blue-100 transition-colors duration-300">
@@ -16,7 +20,7 @@ function NavCard({ icon: Icon, title, description, href }) {
           </div>
         </div>
       </div>
-    </Link>
+    </CardWrapper>
   );
 }
 
