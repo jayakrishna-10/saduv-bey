@@ -1,15 +1,30 @@
 // app/nce/layout.js
-import NavBar from '../components/NavBar';
-
 export const metadata = {
-  title: 'NCE',
+  title: 'saduvbey | NCE',
   description: 'National Certification Examination preparation materials',
 }
 
 export default function NCELayout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50">
-      {children}
+      <header className="fixed top-0 z-50 w-full bg-white border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            <a href="/" className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-gray-900">saduvbey | NCE</span>
+            </a>
+            <a
+              href="/"
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              Home
+            </a>
+          </div>
+        </div>
+      </header>
+      <div className="pt-16">
+        {children}
+      </div>
     </div>
   );
 }
