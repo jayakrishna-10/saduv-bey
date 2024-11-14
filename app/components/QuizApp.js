@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import NavBar from './NavBar';
+import Link from 'next/link';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -345,8 +345,23 @@ export function QuizApp() {
 
   if (isLoading) return <div>Loading...</div>;
   return (
-    <div className="min-h-screen bg-white">
-      <NavBar />
+    <div className="min-h-screen bg-gradient-to-br from-[#e6f7ff] to-[#ffffff]">
+      {/* New consistent header */}
+      <header className="fixed top-0 z-50 w-full bg-transparent px-4">
+        <div className="container mx-auto">
+          <div className="flex h-16 items-center justify-between">
+            <Link href="/" className="flex items-center space-x-2">
+              <span className="text-xl font-bold text-gray-800">saduvbey</span>
+            </Link>
+            <Link
+              href="/"
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+            >
+              Home
+            </Link>
+          </div>
+        </div>
+      </header>
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* Filters Section */}
         <div className="flex items-center gap-4 mb-8">
