@@ -2,18 +2,18 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'saduvbey | NCE',
+  title: 'NCE',
   description: 'National Certification Examination preparation materials',
 }
 
 export default function NCELayout({ children }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="fixed top-0 z-50 w-full bg-white border-b">
-        <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e6f7ff] to-[#ffffff]">
+      <header className="fixed top-0 z-50 w-full bg-transparent px-4">
+        <div className="container mx-auto">
           <div className="flex h-16 items-center justify-between">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-900">saduvbey | NCE</span>
+              <span className="text-xl font-bold text-gray-800">saduvbey</span>
             </Link>
             <Link
               href="/"
@@ -24,7 +24,7 @@ export default function NCELayout({ children }) {
           </div>
         </div>
       </header>
-      <div className="pt-16">
+      <div>
         {children}
       </div>
     </div>
