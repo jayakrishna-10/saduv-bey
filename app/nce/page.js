@@ -14,7 +14,6 @@ import {
 function NavCard({ icon: Icon, title, description, href }) {
   const CardWrapper = href ? Link : 'div';
   const cardProps = href ? { href } : {};
-
   return (
     <CardWrapper {...cardProps} className="block transition-transform hover:scale-105">
       <div className="bg-gradient-to-br from-white to-blue-50 rounded-3xl shadow-lg p-8 transition-shadow hover:shadow-xl">
@@ -50,7 +49,6 @@ export default function NCEHomePage() {
               For Energy Managers and Energy Auditors
             </p>
           </div>
-
           {/* Navigation Cards */}
           <div className="w-full max-w-6xl px-4">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -74,6 +72,7 @@ export default function NCEHomePage() {
                 icon={FileText}
                 title="Short Notes"
                 description="Concise study materials for quick reference"
+                href="/nce/notes"
               />
               <NavCard
                 icon={BookOpen}
@@ -89,7 +88,6 @@ export default function NCEHomePage() {
           </div>
         </div>
       </div>
-
       {/* Decorative Elements */}
       <div className="fixed left-0 top-0 h-72 w-72 rounded-full bg-pink-200/20 blur-3xl" />
       <div className="fixed bottom-0 right-0 h-72 w-72 rounded-full bg-cyan-200/20 blur-3xl" />
