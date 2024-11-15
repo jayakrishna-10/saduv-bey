@@ -1,13 +1,13 @@
-// app/nce/notes/page.js
+// File: app/nce/notes/page.js
 'use client'
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import Link from 'next/link'
 import { Book, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import Link from 'next/link'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 // Book data with chapters
 const books = [
@@ -49,7 +49,7 @@ export default function NotesPage() {
   const [isOpen, setIsOpen] = useState(false)
 
   const handleBookSelect = (bookId) => {
-    setSelectedBook(bookId)
+    setSelectedBook(bookId === selectedBook ? null : bookId)
     setSelectedChapter(null)
   }
 
@@ -89,72 +89,81 @@ export default function NotesPage() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {books.map((book) => (
-            <motion.div
-              key={book.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className={`bg-gradient-to-br ${book.color} rounded-lg shadow-lg overflow-hidden`}
-            >
-              <div 
-                className="p-6 cursor-pointer"
-                onClick={() => handleBookSelect(book.id)}
+            <div key={book.id} className="h-fit"> {/* Added h-fit to contain height */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className={`bg-gradient-to-br ${book.color} rounded-lg shadow-lg overflow-hidden`}
               >
-                <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                  <Book className="mr-2 h-5 w-5" />
-                  {book.title}
-                </h2>
-                <AnimatePresence>
-                  {selectedBook === book.id && (
-                    <motion.ul
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-2"
-                    >
-                      {book.chapters.map((chapter) => (
-                        <motion.li
-                          key={chapter.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <Dialog open={isOpen && selectedChapter === chapter.id} onOpenChange={setIsOpen}>
-                            <DialogTrigger asChild>
-                              <button
-                                className="w-full text-left py-2 px-4 rounded bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors text-white"
-                                onClick={() => setSelectedChapter(chapter.id)}
-                              >
-                                {chapter.title}
-                              </button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-gray-800">
-                              <DialogHeader>
-                                <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
-                                  {book.title} - {chapter.title}
-                                </DialogTitle>
-                              </DialogHeader>
-                              <ScrollArea className="flex-grow mt-4">
-                                <div className="p-4">
-                                  <ReactMarkdown>{getChapterContent()}</ReactMarkdown>
-                                </div>
-                              </ScrollArea>
-                              <button
-                                className="absolute right-4 top-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                onClick={() => setIsOpen(false)}
-                              >
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Close</span>
-                              </button>
-                            </DialogContent>
-                          </Dialog>
-                        </motion.li>
-                      ))}
-                    </motion.ul>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
+                <div className="p-6">
+                  <button
+                    onClick={() => handleBookSelect(book.id)}
+                    className="w-full text-left"
+                  >
+                    <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                      <Book className="mr-2 h-5 w-5" />
+                      {book.title}
+                    </h2>
+                  </button>
+                  
+                  <AnimatePresence>
+                    {selectedBook === book.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="space-y-2">
+                          {book.chapters.map((chapter) => (
+                            <motion.div
+                              key={chapter.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <Dialog open={isOpen && selectedChapter === chapter.id} onOpenChange={(open) => {
+                                setIsOpen(open)
+                                if (!open) setSelectedChapter(null)
+                              }}>
+                                <DialogTrigger asChild>
+                                  <button
+                                    className="w-full text-left py-2 px-4 rounded bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors text-white"
+                                    onClick={() => setSelectedChapter(chapter.id)}
+                                  >
+                                    {chapter.title}
+                                  </button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-gray-800">
+                                  <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
+                                      {book.title} - {chapter.title}
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <ScrollArea className="flex-grow mt-4">
+                                    <div className="p-4">
+                                      <ReactMarkdown>{getChapterContent()}</ReactMarkdown>
+                                    </div>
+                                  </ScrollArea>
+                                  <button
+                                    className="absolute right-4 top-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                    onClick={() => setIsOpen(false)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                    <span className="sr-only">Close</span>
+                                  </button>
+                                </DialogContent>
+                              </Dialog>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
+            </div>
           ))}
         </div>
       </div>
