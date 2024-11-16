@@ -1,8 +1,15 @@
 // File: app/nce/notes/chapters/b1c1.js
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2, Anchor } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+// Dynamically import mermaid with no SSR
+const Mermaid = dynamic(() => import('./MermaidChart'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-md"></div>
+});
 
 // Component definitions
 const CollapsibleSection = ({ title, icon, children }) => {
@@ -51,6 +58,15 @@ const NoteCard = ({ type = 'info', title, children }) => {
 };
 
 const ChapterSummary = () => {
+  useEffect(() => {
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      fontFamily: 'inter',
+    });
+  }, []);
+
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
@@ -163,8 +179,7 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <div className="mermaid text-center my-8">
-                {`gantt
+              <Mermaid chart={`gantt
                     title Global Resource Timeline
                     dateFormat YYYY
                     axisFormat %Y
@@ -176,8 +191,7 @@ const ChapterSummary = () => {
                     Reserves           : 2024, 2089
                     
                     section Coal
-                    Reserves           : 2024, 2224`}
-              </div>
+                    Reserves           : 2024, 2224`} />
             </div>
           </div>
 
@@ -219,6 +233,30 @@ const ChapterSummary = () => {
                   <li>Critical thresholds: 2°C global temperature rise limit</li>
                 </ul>
               </NoteCard>
+              
+              <Mermaid chart={`flowchart LR
+                  Energy[Energy Use] --> Emissions[GHG Emissions]
+                  Emissions --> Impact[Environmental Impact]
+                  
+                  Impact --> A[Air Quality]
+                  Impact --> B[Global Warming]
+                  Impact --> C[Acid Rain]
+                  
+                  A --> A1[SO2]
+                  A --> A2[NOx]
+                  A --> A3[Particulates]
+                  
+                  B --> B1[CO2]
+                  B --> B2[Methane]
+                  B --> B3[Temperature Rise]
+                  
+                  C --> C1[Water Bodies]
+                  C --> C2[Soil Quality]
+                  C --> C3[Biodiversity]
+                  
+                  style Energy fill:#f66,stroke:#333
+                  style Emissions fill:#f96,stroke:#333
+                  style Impact fill:#f69,stroke:#333`} />
             </div>
           </div>
         </div>
@@ -239,6 +277,22 @@ const ChapterSummary = () => {
                   <li>International cooperation</li>
                 </ol>
               </NoteCard>
+              
+              <Mermaid chart={`flowchart TD
+                  Security[Energy Security] --> Strategy[Strategic Actions]
+                  Security --> Risk[Risk Mitigation]
+                  
+                  Strategy --> S1[Source Diversification]
+                  Strategy --> S2[Domestic Production]
+                  Strategy --> S3[Efficiency Improvement]
+                  
+                  Risk --> R1[Strategic Reserves]
+                  Risk --> R2[International Cooperation]
+                  Risk --> R3[Demand Management]
+                  
+                  style Security fill:#f9f,stroke:#333
+                  style Strategy fill:#bbf,stroke:#333
+                  style Risk fill:#fbf,stroke:#333`} />
             </div>
           </div>
 
