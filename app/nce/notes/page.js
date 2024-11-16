@@ -8,6 +8,7 @@ import { Book, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import Book1Chapter1 from './chapters/b1c1' // Updated import name
 
 // Book data with chapters
 const books = [
@@ -15,11 +16,20 @@ const books = [
     id: 1,
     title: "General Aspects of Energy Management and Energy Audit",
     color: "from-blue-500 to-indigo-600",
-    chapters: Array.from({ length: 9 }, (_, i) => ({
-      id: i + 1,
-      title: `Chapter ${i + 1}`,
-      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`
-    }))
+    chapters: [
+      {
+        id: 1,
+        title: "Chapter 1: Energy Scenario",
+        content: null,
+        isReactComponent: true
+      },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        id: i + 2,
+        title: `Chapter ${i + 2}`,
+        content: `# Chapter ${i + 2}\n\nDefault content for chapter ${i + 2}`,
+        isReactComponent: false
+      }))
+    ]
   },
   {
     id: 2,
@@ -28,7 +38,8 @@ const books = [
     chapters: Array.from({ length: 11 }, (_, i) => ({
       id: i + 1,
       title: `Chapter ${i + 1}`,
-      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`
+      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`,
+      isReactComponent: false
     }))
   },
   {
@@ -38,7 +49,8 @@ const books = [
     chapters: Array.from({ length: 10 }, (_, i) => ({
       id: i + 1,
       title: `Chapter ${i + 1}`,
-      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`
+      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`,
+      isReactComponent: false
     }))
   }
 ]
@@ -57,7 +69,12 @@ export default function NotesPage() {
     const book = books.find(b => b.id === selectedBook)
     if (book) {
       const chapter = book.chapters.find(c => c.id === selectedChapter)
-      return chapter ? chapter.content : ''
+      if (chapter) {
+        if (chapter.isReactComponent) {
+          return <Book1Chapter1 /> // Updated component name
+        }
+        return chapter.content
+      }
     }
     return ''
   }
@@ -89,7 +106,7 @@ export default function NotesPage() {
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {books.map((book) => (
-            <div key={book.id} className="h-fit"> {/* Added h-fit to contain height */}
+            <div key={book.id} className="h-fit">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -135,7 +152,7 @@ export default function NotesPage() {
                                     {chapter.title}
                                   </button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col bg-white dark:bg-gray-800">
+                                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-white dark:bg-gray-800">
                                   <DialogHeader>
                                     <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
                                       {book.title} - {chapter.title}
@@ -143,7 +160,11 @@ export default function NotesPage() {
                                   </DialogHeader>
                                   <ScrollArea className="flex-grow mt-4">
                                     <div className="p-4">
-                                      <ReactMarkdown>{getChapterContent()}</ReactMarkdown>
+                                      {chapter.isReactComponent ? (
+                                        getChapterContent()
+                                      ) : (
+                                        <ReactMarkdown>{getChapterContent()}</ReactMarkdown>
+                                      )}
                                     </div>
                                   </ScrollArea>
                                   <button
