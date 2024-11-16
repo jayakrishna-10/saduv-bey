@@ -152,14 +152,14 @@ export default function NotesPage() {
                                     {chapter.title}
                                   </button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col bg-white dark:bg-gray-800">
-                                  <DialogHeader>
+                                <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col bg-white dark:bg-gray-800">
+                                  <DialogHeader className="px-6 py-4 border-b">
                                     <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
                                       {book.title} - {chapter.title}
                                     </DialogTitle>
                                   </DialogHeader>
-                                  <ScrollArea className="flex-grow mt-4">
-                                    <div className="p-4">
+                                  <ScrollArea className="flex-1 px-6">
+                                    <div className="py-6">
                                       {chapter.isReactComponent ? (
                                         getChapterContent()
                                       ) : (
