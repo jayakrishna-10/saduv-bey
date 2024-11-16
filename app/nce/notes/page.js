@@ -152,7 +152,7 @@ export default function NotesPage() {
                                     {chapter.title}
                                   </button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-5xl h-[90vh] p-0 overflow-hidden flex flex-col bg-white dark:bg-gray-800">
+                                <DialogContent className="w-[95vw] max-w-7xl h-[90vh] p-0 overflow-hidden flex flex-col bg-white">
                                   <DialogHeader className="px-6 py-4 border-b">
                                     <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
                                       {book.title} - {chapter.title}
