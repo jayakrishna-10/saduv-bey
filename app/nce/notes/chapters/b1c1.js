@@ -1,7 +1,10 @@
+// File: app/nce/notes/chapters/b1c1.js
+'use client'
+
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2, Anchor } from 'lucide-react';
 
-// Component definitions (same as before)
+// Component definitions
 const CollapsibleSection = ({ title, icon, children }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -75,10 +78,10 @@ const ChapterSummary = () => {
           <h3 className="text-xl font-semibold">Key Takeaways</h3>
           <ul className="list-disc list-inside space-y-2 text-gray-700">
             <li>Energy resources classification systems and their importance</li>
-            <li>India's energy security challenges and import dependencies</li>
+            <li>India&apos;s energy security challenges and import dependencies</li>
             <li>Energy efficiency as key strategy for sustainable development</li>
             <li>Climate change and environmental impact concerns</li>
-            <li>Energy Conservation Act 2001's legal framework</li>
+            <li>Energy Conservation Act 2001&apos;s legal framework</li>
           </ul>
 
           <h3 className="text-xl font-semibold">Critical Formulas</h3>
@@ -112,27 +115,6 @@ const ChapterSummary = () => {
                   <li>Renewable vs Non-renewable: Replenishment capability based</li>
                 </ul>
               </NoteCard>
-              
-              <div className="mermaid">
-                {`flowchart TD
-                  Energy[Energy Sources]
-                  PrimSec[By Source]
-                  ComNon[By Market]
-                  RenNon[By Renewability]
-                  
-                  Energy --> PrimSec
-                  Energy --> ComNon
-                  Energy --> RenNon
-                  
-                  PrimSec --> Primary[Primary:<br/>Coal, Oil, Gas,<br/>Solar, Wind]
-                  PrimSec --> Secondary[Secondary:<br/>Electricity,<br/>Petrol, Steam]
-                  
-                  ComNon --> Commercial[Commercial:<br/>Coal, Oil,<br/>Natural Gas]
-                  ComNon --> NonCommercial[Non-Commercial:<br/>Firewood,<br/>Animal Waste]
-                  
-                  RenNon --> Renewable[Renewable:<br/>Solar, Wind,<br/>Hydro]
-                  RenNon --> NonRenewable[Non-Renewable:<br/>Coal, Oil, Gas]`}
-              </div>
             </div>
           </div>
 
@@ -146,22 +128,6 @@ const ChapterSummary = () => {
                   <li>Coal reserves: ~200 years remaining</li>
                 </ul>
               </NoteCard>
-              
-              <div className="mermaid">
-                {`gantt
-                    title Global Resource Timeline
-                    dateFormat  YYYY
-                    axisFormat %Y
-                    
-                    section Oil
-                    Reserves           : 2024, 2069
-                    
-                    section Gas
-                    Reserves           : 2024, 2089
-                    
-                    section Coal
-                    Reserves           : 2024, 2224`}
-              </div>
             </div>
           </div>
 
@@ -188,7 +154,7 @@ const ChapterSummary = () => {
               <ul className="list-disc list-inside space-y-2">
                 <li>Direct influences: Energy demand, infrastructure development</li>
                 <li>Inverse relationships: Energy intensity with efficiency improvements</li>
-                <li>Critical thresholds: GDP growth > 8% requires significant infrastructure</li>
+                <li>Critical thresholds: GDP growth {'>'}8% requires significant infrastructure</li>
               </ul>
             </NoteCard>
           </div>
@@ -203,32 +169,6 @@ const ChapterSummary = () => {
                   <li>Critical thresholds: 2°C global temperature rise limit</li>
                 </ul>
               </NoteCard>
-              
-              <div className="mermaid">
-                {`flowchart LR
-                  Energy[Energy Use] --> Emissions[GHG Emissions]
-                  Emissions --> Impact[Environmental Impact]
-                  
-                  Impact --> A[Air Quality]
-                  Impact --> B[Global Warming]
-                  Impact --> C[Acid Rain]
-                  
-                  A --> A1[SO2]
-                  A --> A2[NOx]
-                  A --> A3[Particulates]
-                  
-                  B --> B1[CO2]
-                  B --> B2[Methane]
-                  B --> B3[Temperature Rise]
-                  
-                  C --> C1[Water Bodies]
-                  C --> C2[Soil Quality]
-                  C --> C3[Biodiversity]
-                  
-                  style Energy fill:#f66,stroke:#333
-                  style Emissions fill:#f96,stroke:#333
-                  style Impact fill:#f69,stroke:#333`}
-              </div>
             </div>
           </div>
         </div>
@@ -249,28 +189,6 @@ const ChapterSummary = () => {
                   <li>International cooperation</li>
                 </ol>
               </NoteCard>
-              
-              <div className="mermaid">
-                {`graph TD
-                  Security[Energy Security]
-                  Strategy[Strategic Actions]
-                  Risk[Risk Mitigation]
-                  
-                  Security --> Strategy
-                  Security --> Risk
-                  
-                  Strategy --> S1[Source<br/>Diversification]
-                  Strategy --> S2[Domestic<br/>Production]
-                  Strategy --> S3[Efficiency<br/>Improvement]
-                  
-                  Risk --> R1[Strategic<br/>Reserves]
-                  Risk --> R2[International<br/>Cooperation]
-                  Risk --> R3[Demand<br/>Management]
-                  
-                  style Security fill:#f9f,stroke:#333
-                  style Strategy fill:#bbf,stroke:#333
-                  style Risk fill:#fbf,stroke:#333`}
-              </div>
             </div>
           </div>
 
