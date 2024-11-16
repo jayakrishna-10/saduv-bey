@@ -52,7 +52,7 @@ const NoteCard = ({ type = 'info', title, children }) => {
 
 const ChapterSummary = () => {
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="w-full max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Energy Scenario</h1>
@@ -115,6 +115,40 @@ const ChapterSummary = () => {
                   <li>Renewable vs Non-renewable: Replenishment capability based</li>
                 </ul>
               </NoteCard>
+              
+              <div className="mermaid text-center">
+                {`flowchart TD
+                  A[Energy Sources] --> B[By Source]
+                  A --> C[By Market]
+                  A --> D[By Renewability]
+                  
+                  B --> B1[Primary Sources]
+                  B --> B2[Secondary Sources]
+                  
+                  B1 --> B1a[Coal, Oil, Gas]
+                  B1 --> B1b[Solar, Wind]
+                  
+                  B2 --> B2a[Electricity]
+                  B2 --> B2b[Petrol, Steam]
+                  
+                  C --> C1[Commercial]
+                  C --> C2[Non-Commercial]
+                  
+                  C1 --> C1a[Coal, Oil]
+                  C1 --> C1b[Natural Gas]
+                  
+                  C2 --> C2a[Firewood]
+                  C2 --> C2b[Animal Waste]
+                  
+                  D --> D1[Renewable]
+                  D --> D2[Non-Renewable]
+                  
+                  D1 --> D1a[Solar, Wind]
+                  D1 --> D1b[Hydro]
+                  
+                  D2 --> D2a[Coal, Oil]
+                  D2 --> D2b[Natural Gas]`}
+              </div>
             </div>
           </div>
 
@@ -128,6 +162,22 @@ const ChapterSummary = () => {
                   <li>Coal reserves: ~200 years remaining</li>
                 </ul>
               </NoteCard>
+              
+              <div className="mermaid text-center my-8">
+                {`gantt
+                    title Global Resource Timeline
+                    dateFormat YYYY
+                    axisFormat %Y
+                    
+                    section Oil
+                    Reserves           : 2024, 2069
+                    
+                    section Gas
+                    Reserves           : 2024, 2089
+                    
+                    section Coal
+                    Reserves           : 2024, 2224`}
+              </div>
             </div>
           </div>
 
