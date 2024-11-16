@@ -3,9 +3,14 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  
-  // Remove standalone output as it's not needed for Vercel
-  // Remove experimental.appDir as it's no longer needed in Next.js 14
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+    };
+    return config;
+  },
 }
 
 module.exports = nextConfig
