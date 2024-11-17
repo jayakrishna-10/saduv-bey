@@ -11,14 +11,16 @@ const MermaidChart = ({ chart, className = '' }) => {
 
   useEffect(() => {
     let mounted = true;
+    console.log('Attempting to render chart:', chart); // Debug log
 
     const initializeMermaid = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        // Import mermaid dynamically
-        const { default: mermaid } = await import('mermaid');
+        console.log('Importing mermaid...'); // Debug log
+        const mermaid = (await import('mermaid')).default;
+        console.log('Mermaid imported successfully'); // Debug log
         
         if (!mounted) return;
 
@@ -31,6 +33,7 @@ const MermaidChart = ({ chart, className = '' }) => {
           flowchart: {
             htmlLabels: true,
             curve: 'basis',
+            useMaxWidth: true
           },
           er: {
             useMaxWidth: true
@@ -43,21 +46,34 @@ const MermaidChart = ({ chart, className = '' }) => {
           }
         });
 
-        // Generate a unique id for this render
-        const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Mermaid initialized with config'); // Debug log
 
-        // Render the diagram
-        const { svg } = await mermaid.render(id, chart);
-        
-        if (!mounted) return;
-        
-        // Set the SVG content
-        setSvgContent(svg);
-        setError(null);
+        // Generate a unique id for this render
+        const elementId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+        console.log('Generated element ID:', elementId); // Debug log
+
+        try {
+          // First, check if the chart is valid
+          await mermaid.parse(chart);
+          console.log('Chart syntax validated successfully'); // Debug log
+
+          // Render the diagram
+          const { svg } = await mermaid.render(elementId, chart);
+          console.log('Chart rendered successfully'); // Debug log
+          
+          if (!mounted) return;
+          
+          // Set the SVG content
+          setSvgContent(svg);
+          setError(null);
+        } catch (parseError) {
+          console.error('Chart parsing/rendering failed:', parseError); // Debug log
+          throw parseError;
+        }
       } catch (err) {
         if (!mounted) return;
         console.error('Mermaid chart rendering failed:', err);
-        setError('Failed to render diagram. Please check the syntax.');
+        setError(err.message || 'Failed to render diagram. Please check the syntax.');
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -72,31 +88,39 @@ const MermaidChart = ({ chart, className = '' }) => {
     };
   }, [chart]);
 
-  // Show error state
-  if (error) {
+  // Show loading state
+  if (isLoading) {
     return (
-      <div className="p-4 text-sm text-red-500 bg-red-50 rounded-md">
-        {error}
+      <div className="flex items-center justify-center min-h-[200px] bg-gray-50 rounded-md">
+        <div className="animate-pulse text-gray-400">Loading diagram...</div>
       </div>
     );
   }
 
-  // Return the component
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-4 text-sm text-red-500 bg-red-50 rounded-md">
+        <p className="font-medium">Error rendering diagram:</p>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  // Return the rendered diagram
   return (
-    <div className={`relative ${className}`}>
-      {/* Loading state */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-pulse bg-gray-100 rounded-md w-full h-full min-h-[200px]" />
+    <div className={`mermaid-wrapper ${className}`}>
+      {svgContent ? (
+        <div 
+          ref={elementRef}
+          className="mermaid"
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
+      ) : (
+        <div className="p-4 text-sm text-gray-500 bg-gray-50 rounded-md">
+          No diagram content available
         </div>
       )}
-      
-      {/* Rendered diagram */}
-      <div 
-        ref={elementRef}
-        className={`transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-        dangerouslySetInnerHTML={svgContent ? { __html: svgContent } : undefined}
-      />
     </div>
   );
 };
