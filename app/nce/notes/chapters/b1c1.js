@@ -1,15 +1,28 @@
 // File: app/nce/notes/chapters/b1c1.js
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2, Anchor } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import ReactFlow, { 
+  Handle, 
+  Position, 
+  Background,
+  Controls,
+  MiniMap 
+} from 'reactflow';
+import 'reactflow/dist/style.css';
 
-// Dynamically import MermaidChart with no SSR
-const MermaidChart = dynamic(
-  () => import('@/components/ui/mermaid-chart'),
-  { ssr: false, loading: () => <div>Loading diagram...</div> }
-);
+// Custom Node Component
+const CustomNode = ({ data }) => {
+  return (
+    <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 ${data.borderColor || 'border-gray-200'}`}>
+      <div className="font-bold">{data.label}</div>
+      {data.description && <div className="text-xs text-gray-500">{data.description}</div>}
+      <Handle type="target" position={Position.Top} className="w-2 h-2" />
+      <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
+    </div>
+  );
+};
 
 // Reusable Components
 const CollapsibleSection = ({ title, icon, children }) => {
@@ -58,104 +71,6 @@ const NoteCard = ({ type = 'info', title, children }) => {
 };
 
 const ChapterSummary = () => {
-  // Energy Classification System diagram
-  const energyClassificationDiagram = `
-    graph TD
-      A[Energy Sources] --> B[By Source]
-      A --> C[By Market]
-      A --> D[By Renewability]
-      
-      B --> B1[Primary Sources]
-      B --> B2[Secondary Sources]
-      
-      B1 --> B1a[Coal, Oil, Gas]
-      B1 --> B1b[Solar, Wind]
-      
-      B2 --> B2a[Electricity]
-      B2 --> B2b[Petrol, Steam]
-      
-      C --> C1[Commercial]
-      C --> C2[Non-Commercial]
-      
-      C1 --> C1a[Coal, Oil]
-      C1 --> C1b[Natural Gas]
-      
-      C2 --> C2a[Firewood]
-      C2 --> C2b[Animal Waste]
-      
-      D --> D1[Renewable]
-      D --> D2[Non-Renewable]
-      
-      D1 --> D1a[Solar, Wind]
-      D1 --> D1b[Hydro]
-      
-      D2 --> D2a[Coal, Oil]
-      D2 --> D2b[Natural Gas]
-  `;
-
-  // Global Resource Timeline diagram
-  const resourceTimelineDiagram = `
-    gantt
-      title Global Resource Timeline
-      dateFormat YYYY
-      axisFormat %Y
-      
-      section Oil
-      Reserves           : 2024, 2069
-      
-      section Gas
-      Reserves           : 2024, 2089
-      
-      section Coal
-      Reserves           : 2024, 2224
-  `;
-
-  // Environmental Impact diagram
-  const environmentalImpactDiagram = `
-    flowchart LR
-      Energy[Energy Use] --> Emissions[GHG Emissions]
-      Emissions --> Impact[Environmental Impact]
-      
-      Impact --> A[Air Quality]
-      Impact --> B[Global Warming]
-      Impact --> C[Acid Rain]
-      
-      A --> A1[SO2]
-      A --> A2[NOx]
-      A --> A3[Particulates]
-      
-      B --> B1[CO2]
-      B --> B2[Methane]
-      B --> B3[Temperature Rise]
-      
-      C --> C1[Water Bodies]
-      C --> C2[Soil Quality]
-      C --> C3[Biodiversity]
-      
-      style Energy fill:#f66,stroke:#333
-      style Emissions fill:#f96,stroke:#333
-      style Impact fill:#f69,stroke:#333
-  `;
-
-  // Energy Security diagram
-  const energySecurityDiagram = `
-    flowchart TD
-      Security[Energy Security] --> Strategy[Strategic Actions]
-      Security --> Risk[Risk Mitigation]
-      
-      Strategy --> S1[Source Diversification]
-      Strategy --> S2[Domestic Production]
-      Strategy --> S3[Efficiency Improvement]
-      
-      Risk --> R1[Strategic Reserves]
-      Risk --> R2[International Cooperation]
-      Risk --> R3[Demand Management]
-      
-      style Security fill:#f9f,stroke:#333
-      style Strategy fill:#bbf,stroke:#333
-      style Risk fill:#fbf,stroke:#333
-  `;
-
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
@@ -221,7 +136,7 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <MermaidChart chart={energyClassificationDiagram} />
+              <FlowChart nodes={energyClassificationFlow.nodes} edges={energyClassificationFlow.edges} />
             </div>
           </div>
 
@@ -235,8 +150,6 @@ const ChapterSummary = () => {
                   <li>Coal reserves: ~200 years remaining</li>
                 </ul>
               </NoteCard>
-              
-              <MermaidChart chart={resourceTimelineDiagram} />
             </div>
           </div>
 
@@ -279,7 +192,7 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <MermaidChart chart={environmentalImpactDiagram} />
+              <FlowChart nodes={environmentalImpactFlow.nodes} edges={environmentalImpactFlow.edges} />
             </div>
           </div>
         </div>
@@ -301,7 +214,7 @@ const ChapterSummary = () => {
                 </ol>
               </NoteCard>
               
-              <MermaidChart chart={energySecurityDiagram} />
+              <FlowChart nodes={energySecurityFlow.nodes} edges={energySecurityFlow.edges} />
             </div>
           </div>
 
@@ -354,3 +267,308 @@ const ChapterSummary = () => {
 };
 
 export default ChapterSummary;
+const nodeTypes = {
+  custom: CustomNode,
+};
+
+// Chart Components
+const FlowChart = ({ nodes, edges }) => {
+  return (
+    <div className="h-[500px] w-full border rounded-lg bg-gray-50 my-4">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        fitView
+        className="bg-gray-50"
+      >
+        <Background />
+        <Controls />
+        <MiniMap />
+      </ReactFlow>
+    </div>
+  );
+};
+
+// Flow Diagrams Data
+const energyClassificationFlow = {
+  nodes: [
+    {
+      id: '1',
+      type: 'custom',
+      data: { label: 'Energy Sources' },
+      position: { x: 250, y: 0 },
+    },
+    // By Source branch
+    {
+      id: '2',
+      type: 'custom',
+      data: { label: 'By Source' },
+      position: { x: 50, y: 100 },
+    },
+    {
+      id: '3',
+      type: 'custom',
+      data: { label: 'Primary Sources', description: 'Coal, Oil, Solar' },
+      position: { x: 0, y: 200 },
+    },
+    {
+      id: '4',
+      type: 'custom',
+      data: { label: 'Secondary Sources', description: 'Electricity, Petrol' },
+      position: { x: 150, y: 200 },
+    },
+    // By Market branch
+    {
+      id: '5',
+      type: 'custom',
+      data: { label: 'By Market' },
+      position: { x: 250, y: 100 },
+    },
+    {
+      id: '6',
+      type: 'custom',
+      data: { label: 'Commercial', description: 'Coal, Oil, Gas' },
+      position: { x: 250, y: 200 },
+    },
+    {
+      id: '7',
+      type: 'custom',
+      data: { label: 'Non-Commercial', description: 'Firewood, Waste' },
+      position: { x: 400, y: 200 },
+    },
+    // By Renewability branch
+    {
+      id: '8',
+      type: 'custom',
+      data: { label: 'By Renewability' },
+      position: { x: 450, y: 100 },
+    },
+    {
+      id: '9',
+      type: 'custom',
+      data: { label: 'Renewable', description: 'Solar, Wind, Hydro' },
+      position: { x: 500, y: 200 },
+    },
+    {
+      id: '10',
+      type: 'custom',
+      data: { label: 'Non-Renewable', description: 'Coal, Oil, Gas' },
+      position: { x: 650, y: 200 },
+    },
+  ],
+  edges: [
+    { id: 'e1-2', source: '1', target: '2', animated: true },
+    { id: 'e1-5', source: '1', target: '5', animated: true },
+    { id: 'e1-8', source: '1', target: '8', animated: true },
+    { id: 'e2-3', source: '2', target: '3' },
+    { id: 'e2-4', source: '2', target: '4' },
+    { id: 'e5-6', source: '5', target: '6' },
+    { id: 'e5-7', source: '5', target: '7' },
+    { id: 'e8-9', source: '8', target: '9' },
+    { id: 'e8-10', source: '8', target: '10' },
+  ],
+};
+
+const environmentalImpactFlow = {
+  nodes: [
+    {
+      id: '1',
+      type: 'custom',
+      data: { 
+        label: 'Energy Use',
+        borderColor: 'border-red-200'
+      },
+      position: { x: 250, y: 0 },
+    },
+    {
+      id: '2',
+      type: 'custom',
+      data: { 
+        label: 'GHG Emissions',
+        borderColor: 'border-orange-200'
+      },
+      position: { x: 250, y: 100 },
+    },
+    {
+      id: '3',
+      type: 'custom',
+      data: { 
+        label: 'Environmental Impact',
+        borderColor: 'border-yellow-200'
+      },
+      position: { x: 250, y: 200 },
+    },
+    // Air Quality Branch
+    {
+      id: '4',
+      type: 'custom',
+      data: { label: 'Air Quality' },
+      position: { x: 50, y: 300 },
+    },
+    {
+      id: '5',
+      type: 'custom',
+      data: { label: 'SO2' },
+      position: { x: 0, y: 400 },
+    },
+    {
+      id: '6',
+      type: 'custom',
+      data: { label: 'NOx' },
+      position: { x: 50, y: 400 },
+    },
+    {
+      id: '7',
+      type: 'custom',
+      data: { label: 'Particulates' },
+      position: { x: 100, y: 400 },
+    },
+    // Global Warming Branch
+    {
+      id: '8',
+      type: 'custom',
+      data: { label: 'Global Warming' },
+      position: { x: 250, y: 300 },
+    },
+    {
+      id: '9',
+      type: 'custom',
+      data: { label: 'CO2' },
+      position: { x: 200, y: 400 },
+    },
+    {
+      id: '10',
+      type: 'custom',
+      data: { label: 'Methane' },
+      position: { x: 250, y: 400 },
+    },
+    {
+      id: '11',
+      type: 'custom',
+      data: { label: 'Temperature Rise' },
+      position: { x: 300, y: 400 },
+    },
+    // Acid Rain Branch
+    {
+      id: '12',
+      type: 'custom',
+      data: { label: 'Acid Rain' },
+      position: { x: 450, y: 300 },
+    },
+    {
+      id: '13',
+      type: 'custom',
+      data: { label: 'Water Bodies' },
+      position: { x: 400, y: 400 },
+    },
+    {
+      id: '14',
+      type: 'custom',
+      data: { label: 'Soil Quality' },
+      position: { x: 450, y: 400 },
+    },
+    {
+      id: '15',
+      type: 'custom',
+      data: { label: 'Biodiversity' },
+      position: { x: 500, y: 400 },
+    },
+  ],
+  edges: [
+    { id: 'e1-2', source: '1', target: '2', animated: true },
+    { id: 'e2-3', source: '2', target: '3', animated: true },
+    { id: 'e3-4', source: '3', target: '4' },
+    { id: 'e3-8', source: '3', target: '8' },
+    { id: 'e3-12', source: '3', target: '12' },
+    { id: 'e4-5', source: '4', target: '5' },
+    { id: 'e4-6', source: '4', target: '6' },
+    { id: 'e4-7', source: '4', target: '7' },
+    { id: 'e8-9', source: '8', target: '9' },
+    { id: 'e8-10', source: '8', target: '10' },
+    { id: 'e8-11', source: '8', target: '11' },
+    { id: 'e12-13', source: '12', target: '13' },
+    { id: 'e12-14', source: '12', target: '14' },
+    { id: 'e12-15', source: '12', target: '15' },
+  ],
+};
+
+const energySecurityFlow = {
+  nodes: [
+    {
+      id: '1',
+      type: 'custom',
+      data: { 
+        label: 'Energy Security',
+        borderColor: 'border-purple-200'
+      },
+      position: { x: 250, y: 0 },
+    },
+    // Strategic Actions
+    {
+      id: '2',
+      type: 'custom',
+      data: { 
+        label: 'Strategic Actions',
+        borderColor: 'border-blue-200'
+      },
+      position: { x: 100, y: 100 },
+    },
+    {
+      id: '3',
+      type: 'custom',
+      data: { label: 'Source Diversification' },
+      position: { x: 0, y: 200 },
+    },
+    {
+      id: '4',
+      type: 'custom',
+      data: { label: 'Domestic Production' },
+      position: { x: 100, y: 200 },
+    },
+    {
+      id: '5',
+      type: 'custom',
+      data: { label: 'Efficiency Improvement' },
+      position: { x: 200, y: 200 },
+    },
+    // Risk Mitigation
+    {
+      id: '6',
+      type: 'custom',
+      data: { 
+        label: 'Risk Mitigation',
+        borderColor: 'border-pink-200'
+      },
+      position: { x: 400, y: 100 },
+    },
+    {
+      id: '7',
+      type: 'custom',
+      data: { label: 'Strategic Reserves' },
+      position: { x: 300, y: 200 },
+    },
+    {
+      id: '8',
+      type: 'custom',
+      data: { label: 'International Cooperation' },
+      position: { x: 400, y: 200 },
+    },
+    {
+      id: '9',
+      type: 'custom',
+      data: { label: 'Demand Management' },
+      position: { x: 500, y: 200 },
+    },
+  ],
+  edges: [
+    { id: 'e1-2', source: '1', target: '2', animated: true },
+    { id: 'e1-6', source: '1', target: '6', animated: true },
+    { id: 'e2-3', source: '2', target: '3' },
+    { id: 'e2-4', source: '2', target: '4' },
+    { id: 'e2-5', source: '2', target: '5' },
+    { id: 'e6-7', source: '6', target: '7' },
+    { id: 'e6-8', source: '6', target: '8' },
+    { id: 'e6-9', source: '6', target: '9' },
+  ],
+};
