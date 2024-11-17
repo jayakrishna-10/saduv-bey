@@ -8,24 +8,17 @@ const nextConfig = {
       ...config.resolve.fallback,
       fs: false,
       path: false,
-      canvas: false,  // Add this for mermaid
+      canvas: false,
     };
     
-    // Add additional module rules for mermaid
-    config.module = {
-      ...config.module,
-      exprContextCritical: false,  // Suppress warnings from mermaid
-      rules: [
-        ...config.module.rules,
-        {
-          test: /mermaid/,
-          use: {
-            loader: 'null-loader'
-          }
-        }
-      ]
-    };
-    
+    // Remove the null-loader rule for mermaid
+    config.module.rules = config.module.rules.filter(rule => {
+      if (rule.test?.toString().includes('mermaid')) {
+        return false;
+      }
+      return true;
+    });
+
     return config;
   },
   // Add transpilePackages for mermaid
