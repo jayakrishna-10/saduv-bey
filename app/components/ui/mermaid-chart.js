@@ -15,18 +15,32 @@ const MermaidChart = ({ chart, className = '' }) => {
     const initializeMermaid = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         
         // Import mermaid dynamically
         const { default: mermaid } = await import('mermaid');
         
         if (!mounted) return;
 
-        // Initialize mermaid with basic config
+        // Initialize mermaid with specific config
         mermaid.initialize({
           startOnLoad: false,
           theme: 'default',
           securityLevel: 'loose',
           fontFamily: 'inter',
+          flowchart: {
+            htmlLabels: true,
+            curve: 'basis',
+          },
+          er: {
+            useMaxWidth: true
+          },
+          sequence: {
+            useMaxWidth: true
+          },
+          gantt: {
+            useMaxWidth: true
+          }
         });
 
         // Generate a unique id for this render
@@ -43,7 +57,7 @@ const MermaidChart = ({ chart, className = '' }) => {
       } catch (err) {
         if (!mounted) return;
         console.error('Mermaid chart rendering failed:', err);
-        setError(err.message);
+        setError('Failed to render diagram. Please check the syntax.');
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -62,7 +76,7 @@ const MermaidChart = ({ chart, className = '' }) => {
   if (error) {
     return (
       <div className="p-4 text-sm text-red-500 bg-red-50 rounded-md">
-        Failed to render diagram. Please check the syntax.
+        {error}
       </div>
     );
   }
@@ -79,6 +93,7 @@ const MermaidChart = ({ chart, className = '' }) => {
       
       {/* Rendered diagram */}
       <div 
+        ref={elementRef}
         className={`transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
         dangerouslySetInnerHTML={svgContent ? { __html: svgContent } : undefined}
       />
