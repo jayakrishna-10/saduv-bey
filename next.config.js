@@ -4,7 +4,6 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   webpack: (config) => {
-    // Existing fallbacks
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -12,25 +11,19 @@ const nextConfig = {
       canvas: false,
     };
     
-    // Add specific rule for handling mermaid
-    config.module = {
-      ...config.module,
-      rules: [
-        ...config.module.rules,
-        {
-          test: /mermaid/,
-          use: {
-            loader: 'null-loader',
-          },
-        },
-      ],
-    };
+    // Remove any existing mermaid-related rules
+    config.module.rules = config.module.rules.filter(rule => {
+      if (rule.test?.toString().includes('mermaid')) {
+        return false;
+      }
+      return true;
+    });
 
     return config;
   },
-  // Add experimental features for better module support
+  // Enable better module support
   experimental: {
-    esmExternals: 'loose', // This might help with mermaid imports
+    esmExternals: 'loose',
   },
   // Ensure mermaid is transpiled
   transpilePackages: ['mermaid']
