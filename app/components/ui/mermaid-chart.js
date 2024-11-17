@@ -14,23 +14,45 @@ const MermaidChart = ({ chart, className = '' }) => {
     const initializeMermaid = async () => {
       try {
         setIsLoading(true);
+        
+        // Dynamic import with specific configuration
         const mermaid = (await import('mermaid')).default;
         
         if (!mounted) return;
 
+        // Configure mermaid with minimal setup
         mermaid.initialize({
           startOnLoad: false,
           theme: 'default',
           securityLevel: 'loose',
           fontFamily: 'inter',
-          flowchart: {
-            padding: 20,
+          // Disable features that might cause issues
+          mindmap: {
             useMaxWidth: true,
           },
+          // Use simple renderer for flowcharts
+          flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis',
+          },
+          // Sequence diagram configuration
+          sequence: {
+            useMaxWidth: true,
+            showSequenceNumbers: false,
+          },
+          // Gantt chart configuration
+          gantt: {
+            useMaxWidth: true,
+          }
         });
 
         if (elementRef.current) {
           elementRef.current.innerHTML = '';
+          
+          // Force async rendering
+          await new Promise(resolve => setTimeout(resolve, 0));
+          
           const { svg } = await mermaid.render('mermaid-svg', chart);
           
           if (!mounted) return;
