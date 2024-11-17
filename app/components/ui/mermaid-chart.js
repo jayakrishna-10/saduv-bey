@@ -7,73 +7,62 @@ const MermaidChart = ({ chart, className = '' }) => {
   const elementRef = useRef(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [svgContent, setSvgContent] = useState('');
 
   useEffect(() => {
     let mounted = true;
-    console.log('Attempting to render chart:', chart); // Debug log
+    console.log('Chart prop received:', chart); // Debug log
 
-    const initializeMermaid = async () => {
+    const renderChart = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        console.log('Importing mermaid...'); // Debug log
-        const mermaid = (await import('mermaid')).default;
-        console.log('Mermaid imported successfully'); // Debug log
-        
+
+        console.log('Loading mermaid...'); // Debug log
+        const { default: mermaid } = await import('mermaid');
+        console.log('Mermaid loaded successfully'); // Debug log
+
         if (!mounted) return;
 
-        // Initialize mermaid with specific config
         mermaid.initialize({
           startOnLoad: false,
           theme: 'default',
           securityLevel: 'loose',
           fontFamily: 'inter',
+          fontSize: 14,
           flowchart: {
             htmlLabels: true,
             curve: 'basis',
-            useMaxWidth: true
-          },
-          er: {
-            useMaxWidth: true
-          },
-          sequence: {
-            useMaxWidth: true
-          },
-          gantt: {
-            useMaxWidth: true
+            useMaxWidth: true,
+            padding: 20
           }
         });
+        console.log('Mermaid initialized'); // Debug log
 
-        console.log('Mermaid initialized with config'); // Debug log
+        if (elementRef.current) {
+          elementRef.current.innerHTML = '';
+          const id = `mermaid-${Date.now()}`;
+          elementRef.current.id = id;
 
-        // Generate a unique id for this render
-        const elementId = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
-        console.log('Generated element ID:', elementId); // Debug log
-
-        try {
-          // First, check if the chart is valid
-          await mermaid.parse(chart);
-          console.log('Chart syntax validated successfully'); // Debug log
-
-          // Render the diagram
-          const { svg } = await mermaid.render(elementId, chart);
-          console.log('Chart rendered successfully'); // Debug log
-          
-          if (!mounted) return;
-          
-          // Set the SVG content
-          setSvgContent(svg);
-          setError(null);
-        } catch (parseError) {
-          console.error('Chart parsing/rendering failed:', parseError); // Debug log
-          throw parseError;
+          try {
+            console.log('Parsing chart...'); // Debug log
+            await mermaid.parse(chart);
+            console.log('Chart parsed successfully'); // Debug log
+            
+            console.log('Rendering chart...'); // Debug log
+            await mermaid.run({
+              nodes: [elementRef.current]
+            });
+            console.log('Chart rendered successfully'); // Debug log
+          } catch (renderError) {
+            console.error('Mermaid rendering error:', renderError);
+            setError('Failed to render diagram. Please check syntax.');
+          }
         }
       } catch (err) {
-        if (!mounted) return;
-        console.error('Mermaid chart rendering failed:', err);
-        setError(err.message || 'Failed to render diagram. Please check the syntax.');
+        console.error('Mermaid chart error:', err);
+        if (mounted) {
+          setError(err.message || 'Error loading diagram library');
+        }
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -81,14 +70,13 @@ const MermaidChart = ({ chart, className = '' }) => {
       }
     };
 
-    initializeMermaid();
+    renderChart();
 
     return () => {
       mounted = false;
     };
   }, [chart]);
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px] bg-gray-50 rounded-md">
@@ -97,7 +85,6 @@ const MermaidChart = ({ chart, className = '' }) => {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <div className="p-4 text-sm text-red-500 bg-red-50 rounded-md">
@@ -107,20 +94,12 @@ const MermaidChart = ({ chart, className = '' }) => {
     );
   }
 
-  // Return the rendered diagram
   return (
     <div className={`mermaid-wrapper ${className}`}>
-      {svgContent ? (
-        <div 
-          ref={elementRef}
-          className="mermaid"
-          dangerouslySetInnerHTML={{ __html: svgContent }}
-        />
-      ) : (
-        <div className="p-4 text-sm text-gray-500 bg-gray-50 rounded-md">
-          No diagram content available
-        </div>
-      )}
+      <div 
+        ref={elementRef}
+        className="mermaid overflow-x-auto"
+      />
     </div>
   );
 };
