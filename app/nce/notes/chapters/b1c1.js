@@ -1,17 +1,11 @@
 // File: app/nce/notes/chapters/b1c1.js
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2, Anchor } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import MermaidChart from '@/components/ui/mermaid-chart';
 
-// Dynamically import mermaid with no SSR
-const Mermaid = dynamic(() => import('./MermaidChart'), {
-  ssr: false,
-  loading: () => <div className="animate-pulse bg-gray-200 h-64 rounded-md"></div>
-});
-
-// Component definitions
+// Reusable Components
 const CollapsibleSection = ({ title, icon, children }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -58,15 +52,6 @@ const NoteCard = ({ type = 'info', title, children }) => {
 };
 
 const ChapterSummary = () => {
-  useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'default',
-      securityLevel: 'loose',
-      fontFamily: 'inter',
-    });
-  }, []);
-
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
@@ -132,8 +117,8 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <div className="mermaid text-center">
-                {`flowchart TD
+              <MermaidChart 
+                chart={`flowchart TD
                   A[Energy Sources] --> B[By Source]
                   A --> C[By Market]
                   A --> D[By Renewability]
@@ -164,7 +149,7 @@ const ChapterSummary = () => {
                   
                   D2 --> D2a[Coal, Oil]
                   D2 --> D2b[Natural Gas]`}
-              </div>
+              />
             </div>
           </div>
 
@@ -179,19 +164,21 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <Mermaid chart={`gantt
-                    title Global Resource Timeline
-                    dateFormat YYYY
-                    axisFormat %Y
-                    
-                    section Oil
-                    Reserves           : 2024, 2069
-                    
-                    section Gas
-                    Reserves           : 2024, 2089
-                    
-                    section Coal
-                    Reserves           : 2024, 2224`} />
+              <MermaidChart 
+                chart={`gantt
+                  title Global Resource Timeline
+                  dateFormat YYYY
+                  axisFormat %Y
+                  
+                  section Oil
+                  Reserves           : 2024, 2069
+                  
+                  section Gas
+                  Reserves           : 2024, 2089
+                  
+                  section Coal
+                  Reserves           : 2024, 2224`}
+              />
             </div>
           </div>
 
@@ -234,7 +221,8 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <Mermaid chart={`flowchart LR
+              <MermaidChart 
+                chart={`flowchart LR
                   Energy[Energy Use] --> Emissions[GHG Emissions]
                   Emissions --> Impact[Environmental Impact]
                   
@@ -256,7 +244,8 @@ const ChapterSummary = () => {
                   
                   style Energy fill:#f66,stroke:#333
                   style Emissions fill:#f96,stroke:#333
-                  style Impact fill:#f69,stroke:#333`} />
+                  style Impact fill:#f69,stroke:#333`}
+              />
             </div>
           </div>
         </div>
@@ -278,7 +267,8 @@ const ChapterSummary = () => {
                 </ol>
               </NoteCard>
               
-              <Mermaid chart={`flowchart TD
+              <MermaidChart 
+                chart={`flowchart TD
                   Security[Energy Security] --> Strategy[Strategic Actions]
                   Security --> Risk[Risk Mitigation]
                   
@@ -292,7 +282,8 @@ const ChapterSummary = () => {
                   
                   style Security fill:#f9f,stroke:#333
                   style Strategy fill:#bbf,stroke:#333
-                  style Risk fill:#fbf,stroke:#333`} />
+                  style Risk fill:#fbf,stroke:#333`}
+              />
             </div>
           </div>
 
