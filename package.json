@@ -24,7 +24,8 @@
     "mermaid": "9.3.0",
     "rehype-katex": "^7.0.0",
     "remark-math": "^6.0.0",
-    "tailwind-merge": "^2.2.0"
+    "tailwind-merge": "^2.2.0",
+    "null-loader": "^4.0.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
