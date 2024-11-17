@@ -1,9 +1,15 @@
 // File: app/nce/notes/chapters/b1c1.js
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2, Anchor } from 'lucide-react';
-import MermaidChart from '@/components/ui/mermaid-chart';
+import dynamic from 'next/dynamic';
+
+// Dynamically import MermaidChart with no SSR
+const MermaidChart = dynamic(
+  () => import('@/components/ui/mermaid-chart'),
+  { ssr: false, loading: () => <div>Loading diagram...</div> }
+);
 
 // Reusable Components
 const CollapsibleSection = ({ title, icon, children }) => {
@@ -52,6 +58,104 @@ const NoteCard = ({ type = 'info', title, children }) => {
 };
 
 const ChapterSummary = () => {
+  // Energy Classification System diagram
+  const energyClassificationDiagram = `
+    graph TD
+      A[Energy Sources] --> B[By Source]
+      A --> C[By Market]
+      A --> D[By Renewability]
+      
+      B --> B1[Primary Sources]
+      B --> B2[Secondary Sources]
+      
+      B1 --> B1a[Coal, Oil, Gas]
+      B1 --> B1b[Solar, Wind]
+      
+      B2 --> B2a[Electricity]
+      B2 --> B2b[Petrol, Steam]
+      
+      C --> C1[Commercial]
+      C --> C2[Non-Commercial]
+      
+      C1 --> C1a[Coal, Oil]
+      C1 --> C1b[Natural Gas]
+      
+      C2 --> C2a[Firewood]
+      C2 --> C2b[Animal Waste]
+      
+      D --> D1[Renewable]
+      D --> D2[Non-Renewable]
+      
+      D1 --> D1a[Solar, Wind]
+      D1 --> D1b[Hydro]
+      
+      D2 --> D2a[Coal, Oil]
+      D2 --> D2b[Natural Gas]
+  `;
+
+  // Global Resource Timeline diagram
+  const resourceTimelineDiagram = `
+    gantt
+      title Global Resource Timeline
+      dateFormat YYYY
+      axisFormat %Y
+      
+      section Oil
+      Reserves           : 2024, 2069
+      
+      section Gas
+      Reserves           : 2024, 2089
+      
+      section Coal
+      Reserves           : 2024, 2224
+  `;
+
+  // Environmental Impact diagram
+  const environmentalImpactDiagram = `
+    flowchart LR
+      Energy[Energy Use] --> Emissions[GHG Emissions]
+      Emissions --> Impact[Environmental Impact]
+      
+      Impact --> A[Air Quality]
+      Impact --> B[Global Warming]
+      Impact --> C[Acid Rain]
+      
+      A --> A1[SO2]
+      A --> A2[NOx]
+      A --> A3[Particulates]
+      
+      B --> B1[CO2]
+      B --> B2[Methane]
+      B --> B3[Temperature Rise]
+      
+      C --> C1[Water Bodies]
+      C --> C2[Soil Quality]
+      C --> C3[Biodiversity]
+      
+      style Energy fill:#f66,stroke:#333
+      style Emissions fill:#f96,stroke:#333
+      style Impact fill:#f69,stroke:#333
+  `;
+
+  // Energy Security diagram
+  const energySecurityDiagram = `
+    flowchart TD
+      Security[Energy Security] --> Strategy[Strategic Actions]
+      Security --> Risk[Risk Mitigation]
+      
+      Strategy --> S1[Source Diversification]
+      Strategy --> S2[Domestic Production]
+      Strategy --> S3[Efficiency Improvement]
+      
+      Risk --> R1[Strategic Reserves]
+      Risk --> R2[International Cooperation]
+      Risk --> R3[Demand Management]
+      
+      style Security fill:#f9f,stroke:#333
+      style Strategy fill:#bbf,stroke:#333
+      style Risk fill:#fbf,stroke:#333
+  `;
+
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
@@ -117,39 +221,7 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <MermaidChart 
-                chart={`flowchart TD
-                  A[Energy Sources] --> B[By Source]
-                  A --> C[By Market]
-                  A --> D[By Renewability]
-                  
-                  B --> B1[Primary Sources]
-                  B --> B2[Secondary Sources]
-                  
-                  B1 --> B1a[Coal, Oil, Gas]
-                  B1 --> B1b[Solar, Wind]
-                  
-                  B2 --> B2a[Electricity]
-                  B2 --> B2b[Petrol, Steam]
-                  
-                  C --> C1[Commercial]
-                  C --> C2[Non-Commercial]
-                  
-                  C1 --> C1a[Coal, Oil]
-                  C1 --> C1b[Natural Gas]
-                  
-                  C2 --> C2a[Firewood]
-                  C2 --> C2b[Animal Waste]
-                  
-                  D --> D1[Renewable]
-                  D --> D2[Non-Renewable]
-                  
-                  D1 --> D1a[Solar, Wind]
-                  D1 --> D1b[Hydro]
-                  
-                  D2 --> D2a[Coal, Oil]
-                  D2 --> D2b[Natural Gas]`}
-              />
+              <MermaidChart chart={energyClassificationDiagram} />
             </div>
           </div>
 
@@ -164,21 +236,7 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <MermaidChart 
-                chart={`gantt
-                  title Global Resource Timeline
-                  dateFormat YYYY
-                  axisFormat %Y
-                  
-                  section Oil
-                  Reserves           : 2024, 2069
-                  
-                  section Gas
-                  Reserves           : 2024, 2089
-                  
-                  section Coal
-                  Reserves           : 2024, 2224`}
-              />
+              <MermaidChart chart={resourceTimelineDiagram} />
             </div>
           </div>
 
@@ -221,31 +279,7 @@ const ChapterSummary = () => {
                 </ul>
               </NoteCard>
               
-              <MermaidChart 
-                chart={`flowchart LR
-                  Energy[Energy Use] --> Emissions[GHG Emissions]
-                  Emissions --> Impact[Environmental Impact]
-                  
-                  Impact --> A[Air Quality]
-                  Impact --> B[Global Warming]
-                  Impact --> C[Acid Rain]
-                  
-                  A --> A1[SO2]
-                  A --> A2[NOx]
-                  A --> A3[Particulates]
-                  
-                  B --> B1[CO2]
-                  B --> B2[Methane]
-                  B --> B3[Temperature Rise]
-                  
-                  C --> C1[Water Bodies]
-                  C --> C2[Soil Quality]
-                  C --> C3[Biodiversity]
-                  
-                  style Energy fill:#f66,stroke:#333
-                  style Emissions fill:#f96,stroke:#333
-                  style Impact fill:#f69,stroke:#333`}
-              />
+              <MermaidChart chart={environmentalImpactDiagram} />
             </div>
           </div>
         </div>
@@ -267,23 +301,7 @@ const ChapterSummary = () => {
                 </ol>
               </NoteCard>
               
-              <MermaidChart 
-                chart={`flowchart TD
-                  Security[Energy Security] --> Strategy[Strategic Actions]
-                  Security --> Risk[Risk Mitigation]
-                  
-                  Strategy --> S1[Source Diversification]
-                  Strategy --> S2[Domestic Production]
-                  Strategy --> S3[Efficiency Improvement]
-                  
-                  Risk --> R1[Strategic Reserves]
-                  Risk --> R2[International Cooperation]
-                  Risk --> R3[Demand Management]
-                  
-                  style Security fill:#f9f,stroke:#333
-                  style Strategy fill:#bbf,stroke:#333
-                  style Risk fill:#fbf,stroke:#333`}
-              />
+              <MermaidChart chart={energySecurityDiagram} />
             </div>
           </div>
 
