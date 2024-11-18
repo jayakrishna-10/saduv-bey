@@ -1,4 +1,5 @@
 // File: app/nce/notes/page.js
+
 'use client';
 
 import { useState } from 'react';
@@ -6,7 +7,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { Book, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogTrigger 
+} from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import dynamic from 'next/dynamic';
 
@@ -22,14 +30,16 @@ const Book1Chapter1 = dynamic(() => import('./chapters/b1c1'), {
 
 // Book data with chapters
 const books = [
-  {
+   {
     id: 1,
     title: "General Aspects of Energy Management and Energy Audit",
+    description: "Fundamental concepts and principles of energy management",
     color: "from-blue-500 to-indigo-600",
     chapters: [
       {
         id: 1,
         title: "Chapter 1: Energy Scenario",
+        description: "Overview of global and local energy scenarios",
         content: null,
         isReactComponent: true,
         component: Book1Chapter1
@@ -37,6 +47,7 @@ const books = [
       ...Array.from({ length: 8 }, (_, i) => ({
         id: i + 2,
         title: `Chapter ${i + 2}`,
+        description: `Comprehensive guide for Chapter ${i + 2}`,
         content: `# Chapter ${i + 2}\n\nDefault content for chapter ${i + 2}`,
         isReactComponent: false
       }))
@@ -89,6 +100,11 @@ export default function NotesPage() {
       }
     }
     return '';
+  };
+
+  const getCurrentChapter = () => {
+    const book = books.find(b => b.id === selectedBook);
+    return book?.chapters.find(c => c.id === selectedChapter);
   };
 
   return (
@@ -169,6 +185,9 @@ export default function NotesPage() {
                                     <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
                                       {book.title} - {chapter.title}
                                     </DialogTitle>
+                                    <DialogDescription>
+                                      {chapter.description || 'Comprehensive study material and explanations'}
+                                    </DialogDescription>
                                   </DialogHeader>
                                   <ScrollArea className="flex-1 px-6">
                                     <div className="py-6">
