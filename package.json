@@ -24,7 +24,8 @@
     "rehype-katex": "^7.0.0",
     "remark-math": "^6.0.0",
     "tailwind-merge": "^2.2.0",
-    "reactflow": "^11.10.1"
+    "reactflow": "^11.10.1",
+    "@tailwindcss/typography": "^0.5.10"
   },
   "devDependencies": {
     "autoprefixer": "^10.0.1",
