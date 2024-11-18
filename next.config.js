@@ -1,4 +1,3 @@
-// File: next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -11,22 +10,12 @@ const nextConfig = {
       canvas: false,
     };
     
-    // Remove any existing mermaid-related rules
-    config.module.rules = config.module.rules.filter(rule => {
-      if (rule.test?.toString().includes('mermaid')) {
-        return false;
-      }
-      return true;
-    });
-
     return config;
   },
-  // Enable better module support
+  transpilePackages: ['markmap-lib', 'markmap-view', 'markmap-common'],
   experimental: {
     esmExternals: 'loose',
-  },
-  // Ensure mermaid is transpiled
-  transpilePackages: ['mermaid']
+  }
 }
 
 module.exports = nextConfig
