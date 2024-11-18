@@ -1,14 +1,24 @@
 // File: app/nce/notes/page.js
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import Link from 'next/link'
-import { Book, X } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import Book1Chapter1 from './chapters/b1c1' // Updated import name
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { Book, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import dynamic from 'next/dynamic';
+
+// Dynamically import the chapter component with no SSR
+const Book1Chapter1 = dynamic(() => import('./chapters/b1c1'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+    </div>
+  )
+});
 
 // Book data with chapters
 const books = [
@@ -21,7 +31,8 @@ const books = [
         id: 1,
         title: "Chapter 1: Energy Scenario",
         content: null,
-        isReactComponent: true
+        isReactComponent: true,
+        component: Book1Chapter1
       },
       ...Array.from({ length: 8 }, (_, i) => ({
         id: i + 2,
@@ -53,31 +64,32 @@ const books = [
       isReactComponent: false
     }))
   }
-]
+];
 
 export default function NotesPage() {
-  const [selectedBook, setSelectedBook] = useState(null)
-  const [selectedChapter, setSelectedChapter] = useState(null)
-  const [isOpen, setIsOpen] = useState(false)
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [selectedChapter, setSelectedChapter] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleBookSelect = (bookId) => {
-    setSelectedBook(bookId === selectedBook ? null : bookId)
-    setSelectedChapter(null)
-  }
+    setSelectedBook(bookId === selectedBook ? null : bookId);
+    setSelectedChapter(null);
+  };
 
   const getChapterContent = () => {
-    const book = books.find(b => b.id === selectedBook)
+    const book = books.find(b => b.id === selectedBook);
     if (book) {
-      const chapter = book.chapters.find(c => c.id === selectedChapter)
+      const chapter = book.chapters.find(c => c.id === selectedChapter);
       if (chapter) {
-        if (chapter.isReactComponent) {
-          return <Book1Chapter1 /> // Updated component name
+        if (chapter.isReactComponent && chapter.component) {
+          const ChapterComponent = chapter.component;
+          return <ChapterComponent />;
         }
-        return chapter.content
+        return chapter.content;
       }
     }
-    return ''
-  }
+    return '';
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f7ff] to-[#ffffff]">
@@ -141,8 +153,8 @@ export default function NotesPage() {
                               transition={{ duration: 0.3 }}
                             >
                               <Dialog open={isOpen && selectedChapter === chapter.id} onOpenChange={(open) => {
-                                setIsOpen(open)
-                                if (!open) setSelectedChapter(null)
+                                setIsOpen(open);
+                                if (!open) setSelectedChapter(null);
                               }}>
                                 <DialogTrigger asChild>
                                   <button
@@ -189,5 +201,5 @@ export default function NotesPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
