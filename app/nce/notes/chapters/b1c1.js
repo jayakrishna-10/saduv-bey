@@ -1,4 +1,3 @@
-// app/nce/notes/chapters/b1c1.js
 'use client';
 
 import React, { useState } from 'react';
@@ -141,155 +140,60 @@ const ChapterSummary = () => {
             <li>Climate change and environmental impact concerns</li>
             <li>Energy Conservation Act 2001&apos;s legal framework</li>
           </ul>
-
-          <h3 className="text-xl font-semibold">Critical Formulas</h3>
-          <div className="space-y-4">
-            <FormulaCard 
-              formula="Energy Intensity = Energy Consumption / GDP"
-              description="Measures energy efficiency of economy"
-            />
-            <FormulaCard 
-              formula="R/P Ratio = Reserves / Annual Production"
-              description="Estimates remaining years of resource availability"
-            />
-          </div>
         </div>
       </CollapsibleSection>
 
-      {/* Main Summary Section */}
-      <CollapsibleSection title="Main Summary" icon={<BookOpen className="w-5 h-5" />}>
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-xl font-semibold">Energy Classification Systems</h3>
-            <NoteCard type="info">
-              <ul className="list-disc list-inside space-y-2">
-                <li>Primary vs Secondary: Source-based classification</li>
-                <li>Commercial vs Non-commercial: Market availability based</li>
-                <li>Renewable vs Non-renewable: Replenishment capability based</li>
-              </ul>
-            </NoteCard>
-            <MarkmapChart content={energyClassificationContent} />
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold">Environmental Impact Analysis</h3>
-            <NoteCard type="warning" title="Critical Concerns">
-              <ul className="list-disc list-inside space-y-2">
-                <li>Air quality degradation from emissions</li>
-                <li>Global warming and climate change</li>
-                <li>Acidification of water bodies</li>
-              </ul>
-            </NoteCard>
-            <MarkmapChart content={environmentalImpactContent} />
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold">Energy Security Framework</h3>
-            <NoteCard type="info" title="Strategic Approach">
-              <ul className="list-disc list-inside space-y-2">
-                <li>Source diversification for stability</li>
-                <li>Strategic reserves management</li>
-                <li>International cooperation importance</li>
-              </ul>
-            </NoteCard>
-            <MarkmapChart content={energySecurityContent} />
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Parameter Dependencies Section */}
-      <CollapsibleSection title="Parameter Dependencies" icon={<Share2 className="w-5 h-5" />}>
+      {/* Main Content Sections */}
+      <CollapsibleSection title="Energy Classification" icon={<Share2 className="w-5 h-5" />}>
         <div className="space-y-4">
-          <div>
-            <h3 className="text-xl font-semibold">Economic Growth</h3>
-            <NoteCard type="info">
-              <ul className="list-disc list-inside space-y-2">
-                <li>Direct influences: Energy demand, infrastructure development</li>
-                <li>Inverse relationships: Energy intensity with efficiency improvements</li>
-                <li>Critical thresholds: GDP growth {'>'}8% requires significant infrastructure</li>
-              </ul>
-            </NoteCard>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold">Environmental Impact</h3>
-            <div className="space-y-4">
-              <NoteCard type="warning">
-                <ul className="list-disc list-inside space-y-2">
-                  <li>Direct influences: GHG emissions, air pollution</li>
-                  <li>Inverse relationships: Clean energy adoption vs pollution</li>
-                  <li>Critical thresholds: 2°C global temperature rise limit</li>
-                </ul>
-              </NoteCard>
-              
-              <FlowChart nodes={environmentalImpactFlow.nodes} edges={environmentalImpactFlow.edges} />
-            </div>
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Problem-Solving Approaches Section */}
-      <CollapsibleSection title="Problem-Solving Approaches" icon={<LineChart className="w-5 h-5" />}>
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-xl font-semibold">Energy Security Enhancement</h3>
-            <div className="space-y-4">
-              <NoteCard type="success">
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>Diversification of energy sources</li>
-                  <li>Increasing domestic production</li>
-                  <li>Energy efficiency improvements</li>
-                  <li>Building strategic reserves</li>
-                  <li>International cooperation</li>
-                </ol>
-              </NoteCard>
-              
-              <FlowChart nodes={energySecurityFlow.nodes} edges={energySecurityFlow.edges} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold">Energy Conservation Implementation</h3>
-            <NoteCard type="success">
-              <ol className="list-decimal list-inside space-y-2">
-                <li>Identification of energy-intensive sectors</li>
-                <li>Energy audit and assessment</li>
-                <li>Implementation of efficiency measures</li>
-                <li>Monitoring and verification</li>
-                <li>Continuous improvement</li>
-              </ol>
-            </NoteCard>
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      {/* Important Notes & Pitfalls Section */}
-      <CollapsibleSection title="Important Notes & Pitfalls" icon={<AlertTriangle className="w-5 h-5" />}>
-        <div className="space-y-4">
-          <NoteCard type="warning" title="Common Misconceptions">
+          <NoteCard type="info">
             <ul className="list-disc list-inside space-y-2">
-              <li>Energy conservation equals reduced comfort/productivity</li>
-              <li>Renewable energy can immediately replace fossil fuels</li>
-              <li>Energy efficiency always has long payback periods</li>
+              <li>Primary vs Secondary: Source-based classification</li>
+              <li>Commercial vs Non-commercial: Market availability based</li>
+              <li>Renewable vs Non-renewable: Replenishment capability based</li>
             </ul>
           </NoteCard>
+          <MarkmapChart content={energyClassificationContent} />
+        </div>
+      </CollapsibleSection>
 
-          <NoteCard type="info" title="Critical Assumptions">
+      <CollapsibleSection title="Environmental Impact" icon={<AlertTriangle className="w-5 h-5" />}>
+        <div className="space-y-4">
+          <NoteCard type="warning" title="Critical Concerns">
             <ul className="list-disc list-inside space-y-2">
-              <li>Energy demand grows with GDP</li>
-              <li>Technology improvements enhance efficiency</li>
-              <li>International energy prices remain volatile</li>
+              <li>Air quality degradation from emissions</li>
+              <li>Global warming and climate change</li>
+              <li>Acidification of water bodies</li>
             </ul>
           </NoteCard>
+          <MarkmapChart content={environmentalImpactContent} />
+        </div>
+      </CollapsibleSection>
 
-          <NoteCard type="warning" title="Special Considerations">
+      <CollapsibleSection title="Energy Security" icon={<LineChart className="w-5 h-5" />}>
+        <div className="space-y-4">
+          <NoteCard type="success" title="Key Strategies">
             <ul className="list-disc list-inside space-y-2">
-              <li>Regional variations in energy availability</li>
-              <li>Sector-specific energy needs</li>
-              <li>Social and economic impacts</li>
-              <li>Infrastructure development requirements</li>
+              <li>Source diversification for stability</li>
+              <li>Strategic reserves management</li>
+              <li>International cooperation importance</li>
             </ul>
           </NoteCard>
+          <MarkmapChart content={energySecurityContent} />
+        </div>
+      </CollapsibleSection>
+
+      {/* Additional Information */}
+      <CollapsibleSection title="Key Formulas & Notes" icon={<BookOpen className="w-5 h-5" />}>
+        <div className="space-y-4">
+          <FormulaCard 
+            formula="Energy Intensity = Energy Consumption / GDP"
+            description="Measures energy efficiency of economy"
+          />
+          <FormulaCard 
+            formula="R/P Ratio = Reserves / Annual Production"
+            description="Estimates remaining years of resource availability"
+          />
         </div>
       </CollapsibleSection>
     </div>
@@ -297,308 +201,3 @@ const ChapterSummary = () => {
 };
 
 export default ChapterSummary;
-const nodeTypes = {
-  custom: CustomNode,
-};
-
-// Chart Components
-const FlowChart = ({ nodes, edges }) => {
-  return (
-    <div className="h-[500px] w-full border rounded-lg bg-gray-50 my-4">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        fitView
-        className="bg-gray-50"
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
-    </div>
-  );
-};
-
-// Flow Diagrams Data
-const energyClassificationFlow = {
-  nodes: [
-    {
-      id: '1',
-      type: 'custom',
-      data: { label: 'Energy Sources' },
-      position: { x: 250, y: 0 },
-    },
-    // By Source branch
-    {
-      id: '2',
-      type: 'custom',
-      data: { label: 'By Source' },
-      position: { x: 50, y: 100 },
-    },
-    {
-      id: '3',
-      type: 'custom',
-      data: { label: 'Primary Sources', description: 'Coal, Oil, Solar' },
-      position: { x: 0, y: 200 },
-    },
-    {
-      id: '4',
-      type: 'custom',
-      data: { label: 'Secondary Sources', description: 'Electricity, Petrol' },
-      position: { x: 150, y: 200 },
-    },
-    // By Market branch
-    {
-      id: '5',
-      type: 'custom',
-      data: { label: 'By Market' },
-      position: { x: 250, y: 100 },
-    },
-    {
-      id: '6',
-      type: 'custom',
-      data: { label: 'Commercial', description: 'Coal, Oil, Gas' },
-      position: { x: 250, y: 200 },
-    },
-    {
-      id: '7',
-      type: 'custom',
-      data: { label: 'Non-Commercial', description: 'Firewood, Waste' },
-      position: { x: 400, y: 200 },
-    },
-    // By Renewability branch
-    {
-      id: '8',
-      type: 'custom',
-      data: { label: 'By Renewability' },
-      position: { x: 450, y: 100 },
-    },
-    {
-      id: '9',
-      type: 'custom',
-      data: { label: 'Renewable', description: 'Solar, Wind, Hydro' },
-      position: { x: 500, y: 200 },
-    },
-    {
-      id: '10',
-      type: 'custom',
-      data: { label: 'Non-Renewable', description: 'Coal, Oil, Gas' },
-      position: { x: 650, y: 200 },
-    },
-  ],
-  edges: [
-    { id: 'e1-2', source: '1', target: '2', animated: true },
-    { id: 'e1-5', source: '1', target: '5', animated: true },
-    { id: 'e1-8', source: '1', target: '8', animated: true },
-    { id: 'e2-3', source: '2', target: '3' },
-    { id: 'e2-4', source: '2', target: '4' },
-    { id: 'e5-6', source: '5', target: '6' },
-    { id: 'e5-7', source: '5', target: '7' },
-    { id: 'e8-9', source: '8', target: '9' },
-    { id: 'e8-10', source: '8', target: '10' },
-  ],
-};
-
-const environmentalImpactFlow = {
-  nodes: [
-    {
-      id: '1',
-      type: 'custom',
-      data: { 
-        label: 'Energy Use',
-        borderColor: 'border-red-200'
-      },
-      position: { x: 250, y: 0 },
-    },
-    {
-      id: '2',
-      type: 'custom',
-      data: { 
-        label: 'GHG Emissions',
-        borderColor: 'border-orange-200'
-      },
-      position: { x: 250, y: 100 },
-    },
-    {
-      id: '3',
-      type: 'custom',
-      data: { 
-        label: 'Environmental Impact',
-        borderColor: 'border-yellow-200'
-      },
-      position: { x: 250, y: 200 },
-    },
-    // Air Quality Branch
-    {
-      id: '4',
-      type: 'custom',
-      data: { label: 'Air Quality' },
-      position: { x: 50, y: 300 },
-    },
-    {
-      id: '5',
-      type: 'custom',
-      data: { label: 'SO2' },
-      position: { x: 0, y: 400 },
-    },
-    {
-      id: '6',
-      type: 'custom',
-      data: { label: 'NOx' },
-      position: { x: 50, y: 400 },
-    },
-    {
-      id: '7',
-      type: 'custom',
-      data: { label: 'Particulates' },
-      position: { x: 100, y: 400 },
-    },
-    // Global Warming Branch
-    {
-      id: '8',
-      type: 'custom',
-      data: { label: 'Global Warming' },
-      position: { x: 250, y: 300 },
-    },
-    {
-      id: '9',
-      type: 'custom',
-      data: { label: 'CO2' },
-      position: { x: 200, y: 400 },
-    },
-    {
-      id: '10',
-      type: 'custom',
-      data: { label: 'Methane' },
-      position: { x: 250, y: 400 },
-    },
-    {
-      id: '11',
-      type: 'custom',
-      data: { label: 'Temperature Rise' },
-      position: { x: 300, y: 400 },
-    },
-    // Acid Rain Branch
-    {
-      id: '12',
-      type: 'custom',
-      data: { label: 'Acid Rain' },
-      position: { x: 450, y: 300 },
-    },
-    {
-      id: '13',
-      type: 'custom',
-      data: { label: 'Water Bodies' },
-      position: { x: 400, y: 400 },
-    },
-    {
-      id: '14',
-      type: 'custom',
-      data: { label: 'Soil Quality' },
-      position: { x: 450, y: 400 },
-    },
-    {
-      id: '15',
-      type: 'custom',
-      data: { label: 'Biodiversity' },
-      position: { x: 500, y: 400 },
-    },
-  ],
-  edges: [
-    { id: 'e1-2', source: '1', target: '2', animated: true },
-    { id: 'e2-3', source: '2', target: '3', animated: true },
-    { id: 'e3-4', source: '3', target: '4' },
-    { id: 'e3-8', source: '3', target: '8' },
-    { id: 'e3-12', source: '3', target: '12' },
-    { id: 'e4-5', source: '4', target: '5' },
-    { id: 'e4-6', source: '4', target: '6' },
-    { id: 'e4-7', source: '4', target: '7' },
-    { id: 'e8-9', source: '8', target: '9' },
-    { id: 'e8-10', source: '8', target: '10' },
-    { id: 'e8-11', source: '8', target: '11' },
-    { id: 'e12-13', source: '12', target: '13' },
-    { id: 'e12-14', source: '12', target: '14' },
-    { id: 'e12-15', source: '12', target: '15' },
-  ],
-};
-
-const energySecurityFlow = {
-  nodes: [
-    {
-      id: '1',
-      type: 'custom',
-      data: { 
-        label: 'Energy Security',
-        borderColor: 'border-purple-200'
-      },
-      position: { x: 250, y: 0 },
-    },
-    // Strategic Actions
-    {
-      id: '2',
-      type: 'custom',
-      data: { 
-        label: 'Strategic Actions',
-        borderColor: 'border-blue-200'
-      },
-      position: { x: 100, y: 100 },
-    },
-    {
-      id: '3',
-      type: 'custom',
-      data: { label: 'Source Diversification' },
-      position: { x: 0, y: 200 },
-    },
-    {
-      id: '4',
-      type: 'custom',
-      data: { label: 'Domestic Production' },
-      position: { x: 100, y: 200 },
-    },
-    {
-      id: '5',
-      type: 'custom',
-      data: { label: 'Efficiency Improvement' },
-      position: { x: 200, y: 200 },
-    },
-    // Risk Mitigation
-    {
-      id: '6',
-      type: 'custom',
-      data: { 
-        label: 'Risk Mitigation',
-        borderColor: 'border-pink-200'
-      },
-      position: { x: 400, y: 100 },
-    },
-    {
-      id: '7',
-      type: 'custom',
-      data: { label: 'Strategic Reserves' },
-      position: { x: 300, y: 200 },
-    },
-    {
-      id: '8',
-      type: 'custom',
-      data: { label: 'International Cooperation' },
-      position: { x: 400, y: 200 },
-    },
-    {
-      id: '9',
-      type: 'custom',
-      data: { label: 'Demand Management' },
-      position: { x: 500, y: 200 },
-    },
-  ],
-  edges: [
-    { id: 'e1-2', source: '1', target: '2', animated: true },
-    { id: 'e1-6', source: '1', target: '6', animated: true },
-    { id: 'e2-3', source: '2', target: '3' },
-    { id: 'e2-4', source: '2', target: '4' },
-    { id: 'e2-5', source: '2', target: '5' },
-    { id: 'e6-7', source: '6', target: '7' },
-    { id: 'e6-8', source: '6', target: '8' },
-    { id: 'e6-9', source: '6', target: '9' },
-  ],
-};
