@@ -1,28 +1,66 @@
-// File: app/nce/notes/chapters/b1c1.js
+// app/nce/notes/chapters/b1c1.js
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2, Anchor } from 'lucide-react';
-import ReactFlow, { 
-  Handle, 
-  Position, 
-  Background,
-  Controls,
-  MiniMap 
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2 } from 'lucide-react';
+import MarkmapChart from '@/components/ui/markmap';
 
-// Custom Node Component
-const CustomNode = ({ data }) => {
-  return (
-    <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 ${data.borderColor || 'border-gray-200'}`}>
-      <div className="font-bold">{data.label}</div>
-      {data.description && <div className="text-xs text-gray-500">{data.description}</div>}
-      <Handle type="target" position={Position.Top} className="w-2 h-2" />
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
-    </div>
-  );
-};
+// Markmap content definitions
+const energyClassificationContent = `# Energy Sources
+## By Source
+### Primary Sources
+- Coal
+- Oil
+- Solar
+### Secondary Sources
+- Electricity
+- Petrol
+
+## By Market
+### Commercial
+- Coal
+- Oil
+- Gas
+### Non-Commercial
+- Firewood
+- Waste
+
+## By Renewability
+### Renewable
+- Solar
+- Wind
+- Hydro
+### Non-Renewable
+- Coal
+- Oil
+- Gas`;
+
+const environmentalImpactContent = `# Energy Use
+## GHG Emissions
+### Environmental Impact
+#### Air Quality
+- SO₂
+- NOₓ
+- Particulates
+#### Global Warming
+- CO₂
+- Methane
+- Temperature Rise
+#### Acid Rain
+- Water Bodies
+- Soil Quality
+- Biodiversity`;
+
+const energySecurityContent = `# Energy Security
+## Strategic Actions
+- Source Diversification
+- Domestic Production
+- Efficiency Improvement
+
+## Risk Mitigation
+- Strategic Reserves
+- International Cooperation
+- Demand Management`;
 
 // Reusable Components
 const CollapsibleSection = ({ title, icon, children }) => {
@@ -48,14 +86,6 @@ const CollapsibleSection = ({ title, icon, children }) => {
   );
 };
 
-const FormulaCard = ({ formula, description, units }) => (
-  <div className="bg-gray-50 rounded-md p-4 mb-4 border-l-4 border-blue-500">
-    <div className="text-lg mb-2">{formula}</div>
-    {description && <p className="text-gray-600 mb-2">{description}</p>}
-    {units && <p className="text-sm text-gray-500">Units: {units}</p>}
-  </div>
-);
-
 const NoteCard = ({ type = 'info', title, children }) => {
   const styles = {
     info: 'bg-blue-50 border-blue-500',
@@ -69,6 +99,14 @@ const NoteCard = ({ type = 'info', title, children }) => {
     </div>
   );
 };
+
+const FormulaCard = ({ formula, description, units }) => (
+  <div className="bg-gray-50 rounded-md p-4 mb-4 border-l-4 border-blue-500">
+    <div className="text-lg mb-2">{formula}</div>
+    {description && <p className="text-gray-600 mb-2">{description}</p>}
+    {units && <p className="text-sm text-gray-500">Units: {units}</p>}
+  </div>
+);
 
 const ChapterSummary = () => {
   return (
@@ -114,10 +152,6 @@ const ChapterSummary = () => {
               formula="R/P Ratio = Reserves / Annual Production"
               description="Estimates remaining years of resource availability"
             />
-            <FormulaCard 
-              formula="GDP Growth of 6% → ~9% Energy Demand (India)"
-              description="Relationship between economic and energy growth"
-            />
           </div>
         </div>
       </CollapsibleSection>
@@ -127,42 +161,38 @@ const ChapterSummary = () => {
         <div className="space-y-6">
           <div>
             <h3 className="text-xl font-semibold">Energy Classification Systems</h3>
-            <div className="space-y-4">
-              <NoteCard type="info">
-                <ul className="list-disc list-inside space-y-2">
-                  <li>Primary vs Secondary: Source-based classification</li>
-                  <li>Commercial vs Non-commercial: Market availability based</li>
-                  <li>Renewable vs Non-renewable: Replenishment capability based</li>
-                </ul>
-              </NoteCard>
-              
-              <FlowChart nodes={energyClassificationFlow.nodes} edges={energyClassificationFlow.edges} />
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold">Global Energy Scenario</h3>
-            <div className="space-y-4">
-              <NoteCard type="warning" title="Resource Availability">
-                <ul className="list-disc list-inside space-y-2">
-                  <li>Oil reserves: ~45 years remaining</li>
-                  <li>Gas reserves: ~65 years remaining</li>
-                  <li>Coal reserves: ~200 years remaining</li>
-                </ul>
-              </NoteCard>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-semibold">Indian Energy Scenario</h3>
-            <NoteCard type="info" title="Key Statistics">
+            <NoteCard type="info">
               <ul className="list-disc list-inside space-y-2">
-                <li>Coal: 55% of primary energy</li>
-                <li>Oil imports: 70% of consumption</li>
-                <li>Power deficit: ~14% peak demand</li>
-                <li>Natural gas: 8.9% of energy consumption</li>
+                <li>Primary vs Secondary: Source-based classification</li>
+                <li>Commercial vs Non-commercial: Market availability based</li>
+                <li>Renewable vs Non-renewable: Replenishment capability based</li>
               </ul>
             </NoteCard>
+            <MarkmapChart content={energyClassificationContent} />
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold">Environmental Impact Analysis</h3>
+            <NoteCard type="warning" title="Critical Concerns">
+              <ul className="list-disc list-inside space-y-2">
+                <li>Air quality degradation from emissions</li>
+                <li>Global warming and climate change</li>
+                <li>Acidification of water bodies</li>
+              </ul>
+            </NoteCard>
+            <MarkmapChart content={environmentalImpactContent} />
+          </div>
+
+          <div>
+            <h3 className="text-xl font-semibold">Energy Security Framework</h3>
+            <NoteCard type="info" title="Strategic Approach">
+              <ul className="list-disc list-inside space-y-2">
+                <li>Source diversification for stability</li>
+                <li>Strategic reserves management</li>
+                <li>International cooperation importance</li>
+              </ul>
+            </NoteCard>
+            <MarkmapChart content={energySecurityContent} />
           </div>
         </div>
       </CollapsibleSection>
