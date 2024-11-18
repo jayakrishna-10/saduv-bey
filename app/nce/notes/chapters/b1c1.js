@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Settings, BookOpen, AlertTriangle, LineChart, Share2 } from 'lucide-react';
 import MarkmapChart from '@/components/ui/markmap';
+import ChartErrorBoundary from '@/components/ui/chart-error-boundary';
 
 // Markmap content definitions
 const energyClassificationContent = `# Energy Sources
@@ -140,6 +141,18 @@ const ChapterSummary = () => {
             <li>Climate change and environmental impact concerns</li>
             <li>Energy Conservation Act 2001&apos;s legal framework</li>
           </ul>
+
+          <h3 className="text-xl font-semibold">Critical Formulas</h3>
+          <div className="space-y-4">
+            <FormulaCard 
+              formula="Energy Intensity = Energy Consumption / GDP"
+              description="Measures energy efficiency of economy"
+            />
+            <FormulaCard 
+              formula="R/P Ratio = Reserves / Annual Production"
+              description="Estimates remaining years of resource availability"
+            />
+          </div>
         </div>
       </CollapsibleSection>
 
@@ -153,7 +166,12 @@ const ChapterSummary = () => {
               <li>Renewable vs Non-renewable: Replenishment capability based</li>
             </ul>
           </NoteCard>
-          <MarkmapChart content={energyClassificationContent} />
+          <ChartErrorBoundary>
+            <MarkmapChart 
+              content={energyClassificationContent} 
+              className="border-blue-100"
+            />
+          </ChartErrorBoundary>
         </div>
       </CollapsibleSection>
 
@@ -166,7 +184,12 @@ const ChapterSummary = () => {
               <li>Acidification of water bodies</li>
             </ul>
           </NoteCard>
-          <MarkmapChart content={environmentalImpactContent} />
+          <ChartErrorBoundary>
+            <MarkmapChart 
+              content={environmentalImpactContent} 
+              className="border-amber-100"
+            />
+          </ChartErrorBoundary>
         </div>
       </CollapsibleSection>
 
@@ -179,21 +202,43 @@ const ChapterSummary = () => {
               <li>International cooperation importance</li>
             </ul>
           </NoteCard>
-          <MarkmapChart content={energySecurityContent} />
+          <ChartErrorBoundary>
+            <MarkmapChart 
+              content={energySecurityContent}
+              className="border-green-100"
+            />
+          </ChartErrorBoundary>
         </div>
       </CollapsibleSection>
 
       {/* Additional Information */}
-      <CollapsibleSection title="Key Formulas & Notes" icon={<BookOpen className="w-5 h-5" />}>
+      <CollapsibleSection title="Further Reading" icon={<BookOpen className="w-5 h-5" />}>
         <div className="space-y-4">
-          <FormulaCard 
-            formula="Energy Intensity = Energy Consumption / GDP"
-            description="Measures energy efficiency of economy"
-          />
-          <FormulaCard 
-            formula="R/P Ratio = Reserves / Annual Production"
-            description="Estimates remaining years of resource availability"
-          />
+          <NoteCard type="info" title="Important Resources">
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
+              <li>Energy Conservation Act 2001</li>
+              <li>National Energy Policy</li>
+              <li>International Energy Agency Reports</li>
+              <li>Bureau of Energy Efficiency Guidelines</li>
+            </ul>
+          </NoteCard>
+
+          <NoteCard type="warning" title="Common Misconceptions">
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
+              <li>Energy conservation always means reduced productivity</li>
+              <li>Renewable energy can immediately replace all fossil fuels</li>
+              <li>Energy efficiency measures have long payback periods</li>
+            </ul>
+          </NoteCard>
+
+          <NoteCard type="success" title="Best Practices">
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
+              <li>Regular energy audits and monitoring</li>
+              <li>Implementation of energy management systems</li>
+              <li>Employee awareness and training programs</li>
+              <li>Continuous improvement in energy performance</li>
+            </ul>
+          </NoteCard>
         </div>
       </CollapsibleSection>
     </div>
