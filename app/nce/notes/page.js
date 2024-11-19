@@ -19,7 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import dynamic from 'next/dynamic';
 
 // Dynamically import the chapter component with no SSR
-const Book1Chapter1 = dynamic(() => import('./chapters/b1c2'), { 
+const Book1Chapter1 = dynamic(() => import('./chapters/b1c8'), { 
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center p-8">
