@@ -1,4 +1,4 @@
-```jsx
+
 'use client';
 import React, { useState } from 'react';
 import { 
@@ -582,5 +582,3 @@ return (
 };
 
 export default EnergyFormsChapter;
-
-```
