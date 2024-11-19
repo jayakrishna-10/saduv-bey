@@ -181,51 +181,6 @@ return (
                     ]} />
                 </Section>
 
-                <Section
-                    title="2.2.1 Potential Energy"
-                    level={3}
-                    icon={<Wind className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />}
-                >
-                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed">Potential energy is stored energy and the energy of position (gravitational).</p>
-                    <List items={[
-                        <b>Chemical Energy:</b>, 'Energy stored in the bonds of atoms and molecules (e.g., biomass, petroleum, natural gas).',
-                        <b>Nuclear Energy:</b>, 'Energy stored in the nucleus of an atom.',
-                        <b>Stored Mechanical Energy:</b>, 'Energy stored in objects by applying a force (e.g., compressed springs).',
-                        <b>Gravitational Energy:</b>, 'Energy of place or position (e.g., water in a reservoir).'
-                    ]} />
-                </Section>
-                <Section
-                    title="2.2.2 Kinetic Energy"
-                    level={3}
-                    icon={<Flame className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />}
-                >
-                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed">Kinetic energy is energy in motion.</p>
-                    <List items={[
-                        <b>Radiant Energy:</b>, 'Electromagnetic energy that travels in transverse waves (e.g., light, x-rays).',
-                        <b>Thermal Energy:</b>, 'Internal energy in substances due to vibration and movement of atoms and molecules.',
-                        <b>Motion:</b>, 'Movement of objects (e.g., wind, hydropower).',
-                        <b>Sound:</b>, 'Movement of energy through substances in longitudinal waves.',
-                        <b>Electrical Energy:</b>, 'Movement of electrons (e.g., lightning, electricity).'
-                    ]} />
-                </Section>
-                <Section
-                    title="2.2.3 Energy Conversion"
-                    level={3}
-                    icon={<Battery className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />}
-                >
-                    <p className="text-sm sm:text-base text-gray-700 leading-relaxed">Energy can be transformed from one type to another. Multiple conversion stages reduce overall efficiency.</p>
-                </Section>
-                <Section
-                    title="2.2.4 Grades of Energy"
-                    level={3}
-                    icon={<BarChart2 className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />}
-                >
-                <List items={[
-                        <b>High-Grade Energy:</b>, 'Concentrated energy (e.g., electrical, chemical) capable of doing significant work.',
-                        <b
-
-```
-```jsx
             <Section 
                 title="2.3 Electrical Energy Basics" 
                 level={2}
@@ -372,8 +327,6 @@ return (
                     <p className="text-sm sm:text-base text-gray-700 leading-relaxed">Utilities encourage users to draw more power during off-peak hours and less during peak hours by offering lower tariffs during off-peak times.</p>
                 </Section>
             </Section>
-```
-```jsx
             <Section 
                 title="2.4 Thermal Energy Basics" 
                 level={2}
