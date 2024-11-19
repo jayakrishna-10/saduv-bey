@@ -180,7 +180,7 @@ return (
                         <b>Low-Grade Energy:</b>, 'Dissipated energy (e.g., heat) which is less capable of performing work.'
                     ]} />
                 </Section>
-
+            </Section>
             <Section 
                 title="2.3 Electrical Energy Basics" 
                 level={2}
