@@ -874,10 +874,10 @@ const EnergyChapter = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
               <InfoCard title="Key Challenges">
                 <ul className="space-y-1 sm:space-y-2 text-sm sm:text-base">
-                  <li>• High oil import dependence (>70%)</li>
+                  <li>• High oil import dependence (&gt;70%)</li>
                   <li>• Growing energy demand</li>
                   <li>• Infrastructure constraints</li>
                   <li>• Geopolitical uncertainties</li>
