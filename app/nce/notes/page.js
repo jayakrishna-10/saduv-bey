@@ -5,7 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Book, Clock, Search, Tag, ChevronDown, ChevronRight } from 'lucide-react';
-import { books } from './app/config/chapters';
+import { books } from '../app/config/chapters';
 
 export default function NotesPage() {
   const [selectedBook, setSelectedBook] = useState(null);
