@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Book, Clock, AlertCircle } from 'lucide-react';
-import { getBookBySlug, getChapterBySlug } from '@/nce/config/chapters';
+import { getBookBySlug, getChapterBySlug } from '@/nce/chapters';
 
 export function ChapterLoader({ bookSlug, chapterSlug }) {
   const [Component, setComponent] = useState(null);
