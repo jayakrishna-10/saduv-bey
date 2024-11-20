@@ -24,7 +24,7 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
 
         // Dynamic import based on chapter path
         const ChapterComponent = dynamic(
-          () => import(`../notes/chapters/${chapter.path}`),
+          () => import(`../nce/notes/chapters/${chapter.path}`),
           {
             loading: () => <ChapterLoadingIndicator />,
             ssr: false,
