@@ -1,4 +1,4 @@
-// app/nce/config/chapters.js
+// app/config/chapters.js
 
 export const books = [
   {
@@ -15,7 +15,8 @@ export const books = [
         path: "b1c1",
         description: "Overview of energy scenarios, global and Indian context",
         readingTime: "25 mins",
-        topics: ["Global Energy Scenario", "Indian Energy Scene", "Energy Security"]
+        topics: ["Global Energy Scenario", "Indian Energy Scene", "Energy Security"],
+        status: "available"
       },
       {
         id: "1.2",
@@ -24,7 +25,8 @@ export const books = [
         path: "b1c2",
         description: "Understanding different forms of energy and their fundamentals",
         readingTime: "30 mins",
-        topics: ["Energy Forms", "Electrical Energy", "Thermal Energy"]
+        topics: ["Energy Forms", "Electrical Energy", "Thermal Energy"],
+        status: "available"
       },
       {
         id: "1.3",
@@ -33,7 +35,8 @@ export const books = [
         path: "b1c3",
         description: "Principles and practices of energy management and auditing",
         readingTime: "35 mins",
-        topics: ["Energy Audit", "Management Systems", "Energy Performance"]
+        topics: ["Energy Audit", "Management Systems", "Energy Performance"],
+        status: "available"
       },
       {
         id: "1.4",
@@ -42,7 +45,8 @@ export const books = [
         path: "b1c4",
         description: "Understanding material and energy flow in systems",
         readingTime: "30 mins",
-        topics: ["Material Balance", "Energy Balance", "Flow Charts"]
+        topics: ["Material Balance", "Energy Balance", "Flow Charts"],
+        status: "available"
       },
       {
         id: "1.5",
@@ -51,7 +55,8 @@ export const books = [
         path: "b1c5",
         description: "Developing and implementing energy action plans",
         readingTime: "25 mins",
-        topics: ["Action Planning", "Implementation", "Monitoring"]
+        topics: ["Action Planning", "Implementation", "Monitoring"],
+        status: "coming-soon"
       },
       {
         id: "1.6",
@@ -60,7 +65,8 @@ export const books = [
         path: "b1c6",
         description: "Financial aspects of energy management projects",
         readingTime: "30 mins",
-        topics: ["Financial Analysis", "Investment Criteria", "Project Finance"]
+        topics: ["Financial Analysis", "Investment Criteria", "Project Finance"],
+        status: "available"
       },
       {
         id: "1.7",
@@ -69,7 +75,8 @@ export const books = [
         path: "b1c7",
         description: "Managing energy efficiency projects effectively",
         readingTime: "35 mins",
-        topics: ["Project Planning", "Implementation", "Monitoring"]
+        topics: ["Project Planning", "Implementation", "Monitoring"],
+        status: "available"
       },
       {
         id: "1.8",
@@ -78,7 +85,8 @@ export const books = [
         path: "b1c8",
         description: "Systems and methods for energy monitoring",
         readingTime: "30 mins",
-        topics: ["Monitoring Systems", "Targeting", "Performance Analysis"]
+        topics: ["Monitoring Systems", "Targeting", "Performance Analysis"],
+        status: "available"
       },
       {
         id: "1.9",
@@ -87,7 +95,8 @@ export const books = [
         path: "b1c9",
         description: "Environmental impact and sustainability considerations",
         readingTime: "25 mins",
-        topics: ["Climate Change", "Environmental Impact", "Sustainability"]
+        topics: ["Climate Change", "Environmental Impact", "Sustainability"],
+        status: "available"
       }
     ]
   },
@@ -105,7 +114,8 @@ export const books = [
         path: "b2c1",
         description: "Understanding fuel types and combustion processes",
         readingTime: "30 mins",
-        topics: ["Fuels", "Combustion", "Efficiency"]
+        topics: ["Fuels", "Combustion", "Efficiency"],
+        status: "available"
       },
       {
         id: "2.2",
@@ -114,7 +124,8 @@ export const books = [
         path: "b2c2",
         description: "Boiler systems and their optimization",
         readingTime: "35 mins",
-        topics: ["Boiler Types", "Efficiency", "Operations"]
+        topics: ["Boiler Types", "Efficiency", "Operations"],
+        status: "available"
       },
       {
         id: "2.3",
@@ -123,7 +134,8 @@ export const books = [
         path: "b2c3",
         description: "Steam generation and distribution systems",
         readingTime: "30 mins",
-        topics: ["Steam Generation", "Distribution", "Usage"]
+        topics: ["Steam Generation", "Distribution", "Usage"],
+        status: "available"
       },
       {
         id: "2.4",
@@ -132,7 +144,8 @@ export const books = [
         path: "b2c4",
         description: "Industrial furnaces and their efficiency",
         readingTime: "25 mins",
-        topics: ["Furnace Types", "Operations", "Optimization"]
+        topics: ["Furnace Types", "Operations", "Optimization"],
+        status: "available"
       },
       {
         id: "2.5",
@@ -141,7 +154,8 @@ export const books = [
         path: "b2c5",
         description: "Thermal insulation and refractory materials",
         readingTime: "30 mins",
-        topics: ["Insulation", "Refractories", "Heat Loss"]
+        topics: ["Insulation", "Refractories", "Heat Loss"],
+        status: "available"
       },
       {
         id: "2.6",
@@ -150,7 +164,8 @@ export const books = [
         path: "b2c6",
         description: "Fluidized bed combustion boilers",
         readingTime: "35 mins",
-        topics: ["FBC Technology", "Operations", "Benefits"]
+        topics: ["FBC Technology", "Operations", "Benefits"],
+        status: "available"
       },
       {
         id: "2.7",
@@ -159,7 +174,8 @@ export const books = [
         path: "b2c7",
         description: "Combined heat and power systems",
         readingTime: "30 mins",
-        topics: ["CHP Systems", "Applications", "Benefits"]
+        topics: ["CHP Systems", "Applications", "Benefits"],
+        status: "available"
       },
       {
         id: "2.8",
@@ -168,7 +184,8 @@ export const books = [
         path: "b2c8",
         description: "Systems and methods for heat recovery",
         readingTime: "25 mins",
-        topics: ["Heat Recovery", "Applications", "Economics"]
+        topics: ["Heat Recovery", "Applications", "Economics"],
+        status: "available"
       }
     ]
   },
@@ -186,7 +203,8 @@ export const books = [
         path: "b3c1",
         description: "Types, efficiency, and operation of electric motors",
         readingTime: "30 mins",
-        topics: ["Motor Types", "Efficiency", "Applications"]
+        topics: ["Motor Types", "Efficiency", "Applications"],
+        status: "available"
       },
       {
         id: "3.2",
@@ -195,7 +213,8 @@ export const books = [
         path: "b3c2",
         description: "Compressed air generation and distribution",
         readingTime: "35 mins",
-        topics: ["Generation", "Distribution", "Efficiency"]
+        topics: ["Generation", "Distribution", "Efficiency"],
+        status: "available"
       },
       {
         id: "3.3",
@@ -204,7 +223,8 @@ export const books = [
         path: "b3c3",
         description: "Heating, ventilation, and air conditioning",
         readingTime: "30 mins",
-        topics: ["HVAC Types", "Efficiency", "Control"]
+        topics: ["HVAC Types", "Efficiency", "Control"],
+        status: "available"
       },
       {
         id: "3.4",
@@ -213,7 +233,8 @@ export const books = [
         path: "b3c4",
         description: "Types and applications of fans and blowers",
         readingTime: "25 mins",
-        topics: ["Types", "Selection", "Efficiency"]
+        topics: ["Types", "Selection", "Efficiency"],
+        status: "available"
       },
       {
         id: "3.5",
@@ -222,7 +243,8 @@ export const books = [
         path: "b3c5",
         description: "Pump types and system optimization",
         readingTime: "30 mins",
-        topics: ["Pump Types", "Systems", "Efficiency"]
+        topics: ["Pump Types", "Systems", "Efficiency"],
+        status: "available"
       },
       {
         id: "3.6",
@@ -231,7 +253,8 @@ export const books = [
         path: "b3c6",
         description: "Types and operation of cooling towers",
         readingTime: "35 mins",
-        topics: ["Tower Types", "Operation", "Efficiency"]
+        topics: ["Tower Types", "Operation", "Efficiency"],
+        status: "available"
       },
       {
         id: "3.7",
@@ -240,7 +263,8 @@ export const books = [
         path: "b3c7",
         description: "Energy-efficient lighting solutions",
         readingTime: "30 mins",
-        topics: ["Light Sources", "Controls", "Efficiency"]
+        topics: ["Light Sources", "Controls", "Efficiency"],
+        status: "available"
       },
       {
         id: "3.8",
@@ -249,7 +273,8 @@ export const books = [
         path: "b3c8",
         description: "Diesel generator sets and their efficiency",
         readingTime: "25 mins",
-        topics: ["DG Types", "Operation", "Maintenance"]
+        topics: ["DG Types", "Operation", "Maintenance"],
+        status: "available"
       },
       {
         id: "3.9",
@@ -258,7 +283,18 @@ export const books = [
         path: "b3c9",
         description: "Understanding and improving power factor",
         readingTime: "30 mins",
-        topics: ["PF Basics", "Correction", "Benefits"]
+        topics: ["PF Basics", "Correction", "Benefits"],
+        status: "available"
+      },
+      {
+        id: "3.10",
+        title: "Maximum Demand Control",
+        slug: "maximum-demand-control",
+        path: "b3c10",
+        description: "Managing and controlling maximum power demand",
+        readingTime: "25 mins",
+        topics: ["Demand Management", "Control Strategies", "Cost Optimization"],
+        status: "available"
       }
     ]
   }
@@ -286,7 +322,6 @@ export function getPreviousChapter(bookSlug, currentChapterSlug) {
   return book?.chapters[currentIndex - 1];
 }
 
-// Get all available topics across all books
 export function getAllTopics() {
   const topicsSet = new Set();
   books.forEach(book => {
@@ -297,7 +332,6 @@ export function getAllTopics() {
   return Array.from(topicsSet).sort();
 }
 
-// Search chapters across all books
 export function searchChapters(query) {
   const normalizedQuery = query.toLowerCase();
   return books.flatMap(book =>
@@ -313,4 +347,9 @@ export function searchChapters(query) {
         bookSlug: book.slug
       }))
   );
+}
+
+export function getChapterStatus(bookSlug, chapterSlug) {
+  const chapter = getChapterBySlug(bookSlug, chapterSlug);
+  return chapter?.status || 'unavailable';
 }
