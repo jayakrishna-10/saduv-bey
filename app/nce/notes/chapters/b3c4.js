@@ -126,11 +126,11 @@ return (
         HVAC and refrigeration systems transfer heat.  Refrigeration moves heat from a low temperature source to a high temperature sink using a refrigerant. Key heat transfer loops in a refrigeration system:
         </p>
         <List items={[
-            <strong>Indoor air loop:</strong> Indoor air transfers heat to chilled water via a cooling coil.,
-            <strong>Chilled water loop:</strong>  Chilled water returns to the chiller's evaporator.,
-            <strong>Refrigerant loop:</strong> The compressor pumps heat from chilled water to condenser water using a refrigerant.,
-            <strong>Condenser water loop:</strong> Water absorbs heat and is sent to the cooling tower.,
-            <strong>Cooling tower loop:</strong> Heat is transferred from the condenser water to the outdoors via a fan.
+            <strong>Indoor air loop:</strong> + "Indoor air transfers heat to chilled water via a cooling coil.",
+            <strong>Chilled water loop:</strong>  + "Chilled water returns to the chiller's evaporator.",
+            <strong>Refrigerant loop:</strong> + "The compressor pumps heat from chilled water to condenser water using a refrigerant.",
+            <strong>Condenser water loop:</strong> + "Water absorbs heat and is sent to the cooling tower.",
+            <strong>Cooling tower loop:</strong> + "Heat is transferred from the condenser water to the outdoors via a fan."
         ]} />
         <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
         Air conditioning systems are categorized by application (comfort/machine) and include split systems, fan coil units, and air handling units.  Refrigeration systems are categorized by capacity (small, medium, large) and temperature range (comfort, chilled water, brine). Two main types: Vapor Compression Refrigeration (VCR) using mechanical energy, and Vapor Absorption Refrigeration (VAR) using thermal energy.
