@@ -1,8 +1,10 @@
-// File: next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  images: {
+    domains: ['vercel.com'],
+  },
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -11,22 +13,25 @@ const nextConfig = {
       canvas: false,
     };
     
-    // Remove any existing mermaid-related rules
-    config.module.rules = config.module.rules.filter(rule => {
-      if (rule.test?.toString().includes('mermaid')) {
-        return false;
-      }
-      return true;
-    });
-
     return config;
   },
-  // Enable better module support
+  transpilePackages: ['markmap-lib', 'markmap-view', 'markmap-common'],
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*'
+          }
+        ]
+      }
+    ];
+  },
   experimental: {
     esmExternals: 'loose',
-  },
-  // Ensure mermaid is transpiled
-  transpilePackages: ['mermaid']
-}
+  }
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

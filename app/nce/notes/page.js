@@ -1,90 +1,62 @@
-// File: app/nce/notes/page.js
-'use client'
+// app/nce/notes/page.js
+'use client';
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import Link from 'next/link'
-import { Book, X } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import Book1Chapter1 from './chapters/b1c1' // Updated import name
-
-// Book data with chapters
-const books = [
-  {
-    id: 1,
-    title: "General Aspects of Energy Management and Energy Audit",
-    color: "from-blue-500 to-indigo-600",
-    chapters: [
-      {
-        id: 1,
-        title: "Chapter 1: Energy Scenario",
-        content: null,
-        isReactComponent: true
-      },
-      ...Array.from({ length: 8 }, (_, i) => ({
-        id: i + 2,
-        title: `Chapter ${i + 2}`,
-        content: `# Chapter ${i + 2}\n\nDefault content for chapter ${i + 2}`,
-        isReactComponent: false
-      }))
-    ]
-  },
-  {
-    id: 2,
-    title: "Energy Efficiency in Thermal Utilities",
-    color: "from-orange-500 to-red-600",
-    chapters: Array.from({ length: 11 }, (_, i) => ({
-      id: i + 1,
-      title: `Chapter ${i + 1}`,
-      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`,
-      isReactComponent: false
-    }))
-  },
-  {
-    id: 3,
-    title: "Energy Efficiency in Electrical Utilities",
-    color: "from-emerald-500 to-cyan-600",
-    chapters: Array.from({ length: 10 }, (_, i) => ({
-      id: i + 1,
-      title: `Chapter ${i + 1}`,
-      content: `# Chapter ${i + 1}\n\nDefault content for chapter ${i + 1}`,
-      isReactComponent: false
-    }))
-  }
-]
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Book, 
+  Clock, 
+  Search, 
+  Tag, 
+  ChevronDown, 
+  ChevronRight,
+  AlertCircle,
+  CheckCircle,
+  Clock4
+} from 'lucide-react';
+import { books, getAllTopics, searchChapters } from '@/config/chapters';
 
 export default function NotesPage() {
-  const [selectedBook, setSelectedBook] = useState(null)
-  const [selectedChapter, setSelectedChapter] = useState(null)
-  const [isOpen, setIsOpen] = useState(false)
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState('all');
 
-  const handleBookSelect = (bookId) => {
-    setSelectedBook(bookId === selectedBook ? null : bookId)
-    setSelectedChapter(null)
-  }
+  // Get all unique topics
+  const allTopics = getAllTopics();
 
-  const getChapterContent = () => {
-    const book = books.find(b => b.id === selectedBook)
-    if (book) {
-      const chapter = book.chapters.find(c => c.id === selectedChapter)
-      if (chapter) {
-        if (chapter.isReactComponent) {
-          return <Book1Chapter1 /> // Updated component name
-        }
-        return chapter.content
+  // Effect for handling search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm) {
+        setIsSearching(true);
+        const results = searchChapters(searchTerm);
+        setSearchResults(results);
+        setIsSearching(false);
+      } else {
+        setSearchResults([]);
       }
-    }
-    return ''
-  }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
+  // Filter books and chapters based on selected topic
+  const filteredBooks = books.map(book => ({
+    ...book,
+    chapters: book.chapters.filter(chapter =>
+      selectedTopic === 'all' || chapter.topics.includes(selectedTopic)
+    )
+  })).filter(book => book.chapters.length > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f7ff] to-[#ffffff]">
       {/* Header */}
-      <header className="fixed top-0 z-50 w-full bg-transparent px-4">
+      <header className="fixed top-0 z-50 w-full bg-white/80 backdrop-blur-sm border-b">
         <div className="container mx-auto">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-16 items-center justify-between px-4">
             <Link href="/" className="flex items-center space-x-2">
               <span className="text-xl font-bold text-gray-800">saduvbey</span>
             </Link>
@@ -100,30 +72,121 @@ export default function NotesPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 pt-24 pb-8">
-        <h1 className="text-4xl font-bold mb-12 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
-          Chapter Summaries
-        </h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {books.map((book) => (
-            <div key={book.id} className="h-fit">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className={`bg-gradient-to-br ${book.color} rounded-lg shadow-lg overflow-hidden`}
+        <div className="max-w-4xl mx-auto">
+          {/* Title Section */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
+              Chapter Summaries
+            </h1>
+            <p className="text-gray-600">
+              Comprehensive study materials organized by topics and chapters
+            </p>
+          </div>
+
+          {/* Search and Filter Section */}
+          <div className="space-y-4 mb-8">
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search chapters, topics, or keywords..."
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Topic Filter */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <button
+                onClick={() => setSelectedTopic('all')}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap
+                  ${selectedTopic === 'all'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
-                <div className="p-6">
+                All Topics
+              </button>
+              {allTopics.map((topic) => (
+                <button
+                  key={topic}
+                  onClick={() => setSelectedTopic(topic)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap
+                    ${selectedTopic === topic
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                >
+                  {topic}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Results */}
+          {searchTerm && (
+            <div className="mb-8">
+              <h2 className="text-lg font-semibold mb-4">
+                Search Results {!isSearching && `(${searchResults.length})`}
+              </h2>
+              {isSearching ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                </div>
+              ) : searchResults.length > 0 ? (
+                <div className="space-y-4">
+                  {searchResults.map((chapter) => (
+                    <Link
+                      key={`${chapter.bookSlug}-${chapter.slug}`}
+                      href={`/nce/notes/${chapter.bookSlug}/${chapter.slug}`}
+                    >
+                      <div className="bg-white rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="text-sm text-blue-600 mb-1">{chapter.bookTitle}</div>
+                        <h3 className="font-medium mb-2">{chapter.title}</h3>
+                        <p className="text-sm text-gray-600">{chapter.description}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-600">
+                  No chapters found matching your search.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Books and Chapters */}
+          {!searchTerm && (
+            <div className="space-y-6">
+              {filteredBooks.map((book) => (
+                <motion.div
+                  key={book.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className={`bg-gradient-to-br ${book.color} rounded-xl shadow-lg overflow-hidden`}
+                >
                   <button
-                    onClick={() => handleBookSelect(book.id)}
-                    className="w-full text-left"
+                    onClick={() => setSelectedBook(selectedBook === book.id ? null : book.id)}
+                    className="w-full text-left p-6"
                   >
-                    <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                      <Book className="mr-2 h-5 w-5" />
-                      {book.title}
-                    </h2>
+                    <div className="flex items-center justify-between text-white">
+                      <div className="flex items-center gap-3">
+                        <Book className="h-6 w-6" />
+                        <h2 className="text-xl font-semibold">{book.title}</h2>
+                      </div>
+                      {selectedBook === book.id ? (
+                        <ChevronDown className="h-5 w-5" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5" />
+                      )}
+                    </div>
+                    <p className="text-white/80 mt-2">{book.description}</p>
                   </button>
-                  
+
                   <AnimatePresence>
                     {selectedBook === book.id && (
                       <motion.div
@@ -131,63 +194,94 @@ export default function NotesPage() {
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.3 }}
+                        className="border-t border-white/10"
                       >
-                        <div className="space-y-2">
+                        <div className="p-4 space-y-3">
                           {book.chapters.map((chapter) => (
-                            <motion.div
+                            <ChapterCard 
                               key={chapter.id}
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              <Dialog open={isOpen && selectedChapter === chapter.id} onOpenChange={(open) => {
-                                setIsOpen(open)
-                                if (!open) setSelectedChapter(null)
-                              }}>
-                                <DialogTrigger asChild>
-                                  <button
-                                    className="w-full text-left py-2 px-4 rounded bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors text-white"
-                                    onClick={() => setSelectedChapter(chapter.id)}
-                                  >
-                                    {chapter.title}
-                                  </button>
-                                </DialogTrigger>
-                                <DialogContent className="w-[95vw] max-w-7xl h-[90vh] p-0 overflow-hidden flex flex-col bg-white">
-                                  <DialogHeader className="px-6 py-4 border-b">
-                                    <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-500">
-                                      {book.title} - {chapter.title}
-                                    </DialogTitle>
-                                  </DialogHeader>
-                                  <ScrollArea className="flex-1 px-6">
-                                    <div className="py-6">
-                                      {chapter.isReactComponent ? (
-                                        getChapterContent()
-                                      ) : (
-                                        <ReactMarkdown>{getChapterContent()}</ReactMarkdown>
-                                      )}
-                                    </div>
-                                  </ScrollArea>
-                                  <button
-                                    className="absolute right-4 top-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                    onClick={() => setIsOpen(false)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                    <span className="sr-only">Close</span>
-                                  </button>
-                                </DialogContent>
-                              </Dialog>
-                            </motion.div>
+                              chapter={chapter}
+                              bookSlug={book.slug}
+                            />
                           ))}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
-              </motion.div>
+                </motion.div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
-  )
+  );
+}
+
+function ChapterCard({ chapter, bookSlug }) {
+  const statusIndicator = {
+    available: {
+      icon: CheckCircle,
+      className: 'text-green-500',
+      label: 'Available'
+    },
+    'coming-soon': {
+      icon: Clock4,
+      className: 'text-yellow-500',
+      label: 'Coming Soon'
+    },
+    unavailable: {
+      icon: AlertCircle,
+      className: 'text-red-500',
+      label: 'Unavailable'
+    }
+  };
+
+  const Status = statusIndicator[chapter.status || 'unavailable'].icon;
+  const statusClass = statusIndicator[chapter.status || 'unavailable'].className;
+  const statusLabel = statusIndicator[chapter.status || 'unavailable'].label;
+
+  const CardWrapper = chapter.status === 'available' 
+    ? Link 
+    : 'div';
+
+  const cardProps = chapter.status === 'available' 
+    ? { href: `/nce/notes/${bookSlug}/${chapter.slug}` }
+    : {};
+
+  return (
+    <CardWrapper {...cardProps}>
+      <div className={`bg-white/10 rounded-xl p-4 transition-colors
+        ${chapter.status === 'available' ? 'hover:bg-white/20 cursor-pointer' : 'cursor-default'}`}
+      >
+        <div className="flex items-center justify-between text-white mb-2">
+          <h3 className="font-medium">{chapter.title}</h3>
+          <div className="flex items-center gap-2">
+            <Status className={`h-4 w-4 ${statusClass}`} />
+            <span className="text-sm">{statusLabel}</span>
+          </div>
+        </div>
+        <p className="text-white/80 text-sm mb-3">
+          {chapter.description}
+        </p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-white/60">
+            <Clock className="h-4 w-4" />
+            <span className="text-sm">{chapter.readingTime}</span>
+          </div>
+          <div className="flex flex-wrap gap-2 justify-end">
+            {chapter.topics.map((topic, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full text-white text-xs"
+              >
+                <Tag className="h-3 w-3" />
+                {topic}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </CardWrapper>
+  );
 }

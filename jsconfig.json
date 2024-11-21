@@ -1,6 +1,7 @@
-// jsconfig.json (Create this file in your root directory)
+// jsconfig.json
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./app/*"]
     }
