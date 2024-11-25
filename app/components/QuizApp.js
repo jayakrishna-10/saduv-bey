@@ -678,6 +678,6 @@ const fetchQuestions = async () => {
         )}
       </div>
     </div>
+  </div>
   );
-}
 }
