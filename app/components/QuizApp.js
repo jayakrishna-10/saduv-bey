@@ -38,39 +38,9 @@ const normalizeOptionText = (text) => {
   if (!text) return '';
   let normalizedText = text.replace(/['"]/g, '').trim();
   return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
-  
-};
-
-const PaperSelector = ({ selectedPaper, onSelect }) => {
-  const papers = [
-    { id: 1, title: "Paper 1", table: "MCQ1" },
-    { id: 2, title: "Paper 2", table: "MCQ2" },
-    { id: 3, title: "Paper 3", table: "MCQ3" }
-  ];
-
-  return (
-    <div className="mb-8">
-      <div className="flex p-1 space-x-1 bg-gray-100 rounded-xl">
-        {papers.map((paper) => (
-          <button
-            key={paper.id}
-            onClick={() => onSelect(paper)}
-            className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-              selectedPaper.id === paper.id
-                ? 'bg-white text-gray-900 shadow'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {paper.title}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
 };
 
 export function QuizApp() {
-  const [selectedPaper, setSelectedPaper] = useState({ id: 1, title: "Paper 1", table: "MCQ1" });
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -93,14 +63,8 @@ export function QuizApp() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
   useEffect(() => {
-  fetchQuestions();
-  setCurrentQuestionIndex(0);
-  setSelectedOption(null);
-  setShowFeedback(false);
-  setExplanation('');
-  setAnsweredQuestions([]);
-  setCompletedQuestionIds(new Set());
-}, [selectedPaper]);
+    fetchQuestions();
+  }, []);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -174,27 +138,26 @@ export function QuizApp() {
     }
   };
 
-  // Find the fetchQuestions function and replace it with:
-const fetchQuestions = async () => {
-  try {
-    const { data, error } = await supabase.from(selectedPaper.table).select('*');
-    if (error) throw error;
-    
-    const normalizedData = data?.map(q => ({
-      ...q,
-      option_a: normalizeOptionText(q.option_a),
-      option_b: normalizeOptionText(q.option_b),
-      option_c: normalizeOptionText(q.option_c),
-      option_d: normalizeOptionText(q.option_d)
-    })) || [];
-    
-    setQuestions(normalizedData);
-    setIsLoading(false);
-  } catch (err) {
-    console.error(err);
-    setIsLoading(false);
-  }
-};
+  const fetchQuestions = async () => {
+    try {
+      const { data, error } = await supabase.from('MCQ1').select('*');
+      if (error) throw error;
+      
+      const normalizedData = data?.map(q => ({
+        ...q,
+        option_a: normalizeOptionText(q.option_a),
+        option_b: normalizeOptionText(q.option_b),
+        option_c: normalizeOptionText(q.option_c),
+        option_d: normalizeOptionText(q.option_d)
+      })) || [];
+      
+      setQuestions(normalizedData);
+      setIsLoading(false);
+    } catch (err) {
+      console.error(err);
+      setIsLoading(false);
+    }
+  };
 
   const fetchExplanation = async (questionId) => {
     setIsLoadingExplanation(true);
@@ -400,16 +363,6 @@ const fetchQuestions = async () => {
         </div>
       </header>
       <div className="max-w-2xl mx-auto px-4 py-8 pt-16">
-        // Add the PaperSelector right after it:
-      <div className="max-w-2xl mx-auto px-4 py-8 pt-16">
-        {/* Paper Selector */}
-        <PaperSelector 
-        selectedPaper={selectedPaper}
-        onSelect={(paper) => {
-          setSelectedPaper(paper);
-          resetFilters();
-        }}
-      />
         {/* Filters Section */}
         <div className="flex items-center gap-4 mb-8">
           {/* Topic Dropdown */}
@@ -678,6 +631,5 @@ const fetchQuestions = async () => {
         )}
       </div>
     </div>
-  </div>
   );
 }
