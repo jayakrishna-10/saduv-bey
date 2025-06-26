@@ -166,8 +166,17 @@ export function QuizApp() {
     try {
       setIsLoading(true);
       const currentPaper = PAPERS[selectedPaper];
+      console.log('Fetching questions from table:', currentPaper.table);
+      console.log('Using Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      
       const { data, error } = await supabase.from(currentPaper.table).select('*');
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Raw data sample:', data?.[0]);
+      console.log('Data length:', data?.length);
       
       const normalizedData = data?.map(q => ({
         ...q,
@@ -176,6 +185,8 @@ export function QuizApp() {
         option_c: normalizeOptionText(q.option_c),
         option_d: normalizeOptionText(q.option_d)
       })) || [];
+      
+      console.log('Normalized data sample:', normalizedData?.[0]);
       
       setQuestions(normalizedData);
       // Reset state when changing papers
@@ -189,7 +200,7 @@ export function QuizApp() {
       setSelectedYear('all');
       setIsLoading(false);
     } catch (err) {
-      console.error(err);
+      console.error('Fetch questions error:', err);
       setIsLoading(false);
     }
   };
@@ -197,6 +208,13 @@ export function QuizApp() {
   const fetchExplanation = async (questionId) => {
     setIsLoadingExplanation(true);
     try {
+      console.log('Fetching explanation for questionId:', questionId);
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      
+      if (!questionId) {
+        throw new Error('No question ID provided');
+      }
+      
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/nce-resources/${questionId}.md`
       );
@@ -212,6 +230,10 @@ export function QuizApp() {
 
   const handleGetAnswer = () => {
     const questionId = currentQuestion.main_id || currentQuestion.id;
+    console.log('Current question:', currentQuestion);
+    console.log('Question ID being used:', questionId);
+    console.log('Available keys:', Object.keys(currentQuestion));
+    
     setShowAnswer(true);
     setShowFeedback(true);
     fetchExplanation(questionId);
