@@ -1,42 +1,25 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import Link from 'next/link';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  {
-    auth: {
-      persistSession: false
-    },
-    realtime: {
-      enabled: false
-    }
-  }
-);
 
 // Paper configuration
 const PAPERS = {
   paper1: {
     id: 'paper1',
     name: 'Paper 1',
-    table: 'mcqs_p1',
     description: 'General Aspects of Energy Management and Energy Audit'
   },
   paper2: {
     id: 'paper2',
     name: 'Paper 2', 
-    table: 'mcqs_p2',
     description: 'Energy Efficiency in Thermal Utilities'
   },
   paper3: {
     id: 'paper3',
     name: 'Paper 3',
-    table: 'mcqs_p3', 
     description: 'Energy Efficiency in Electrical Utilities'
   }
 };
@@ -165,20 +148,24 @@ export function QuizApp() {
   const fetchQuestions = async () => {
     try {
       setIsLoading(true);
-      const currentPaper = PAPERS[selectedPaper];
-      console.log('Fetching questions from table:', currentPaper.table);
-      console.log('Using Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log('Fetching questions from API for paper:', selectedPaper);
       
-      const { data, error } = await supabase.from(currentPaper.table).select('*');
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      // Use our secure API route instead of direct Supabase access
+      const params = new URLSearchParams({
+        paper: selectedPaper,
+        limit: '1000' // Adjust based on your needs
+      });
+
+      const response = await fetch(`/api/quiz?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      console.log('Raw data sample:', data?.[0]);
-      console.log('Data length:', data?.length);
+      const result = await response.json();
+      console.log('API response:', result);
       
-      const normalizedData = data?.map(q => ({
+      const normalizedData = result.questions?.map(q => ({
         ...q,
         option_a: normalizeOptionText(q.option_a),
         option_b: normalizeOptionText(q.option_b),
@@ -209,7 +196,6 @@ export function QuizApp() {
     setIsLoadingExplanation(true);
     try {
       console.log('Fetching explanation for questionId:', questionId);
-      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
       
       if (!questionId) {
         throw new Error('No question ID provided');
@@ -232,7 +218,6 @@ export function QuizApp() {
     const questionId = currentQuestion.main_id || currentQuestion.id;
     console.log('Current question:', currentQuestion);
     console.log('Question ID being used:', questionId);
-    console.log('Available keys:', Object.keys(currentQuestion));
     
     setShowAnswer(true);
     setShowFeedback(true);
@@ -446,6 +431,7 @@ export function QuizApp() {
           </div>
         </div>
 
+        {/* Rest of the component remains the same... */}
         {/* Filters Section */}
         <div className="flex items-center gap-4 mb-8">
           {/* Topic Dropdown */}
