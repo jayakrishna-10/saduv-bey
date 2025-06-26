@@ -19,6 +19,28 @@ const supabase = createClient(
   }
 );
 
+// Paper configuration
+const PAPERS = {
+  paper1: {
+    id: 'paper1',
+    name: 'Paper 1',
+    table: 'mcqs_p1',
+    description: 'General Aspects of Energy Management and Energy Audit'
+  },
+  paper2: {
+    id: 'paper2',
+    name: 'Paper 2', 
+    table: 'mcqs_p2',
+    description: 'Energy Efficiency in Thermal Utilities'
+  },
+  paper3: {
+    id: 'paper3',
+    name: 'Paper 3',
+    table: 'mcqs_p3', 
+    description: 'Energy Efficiency in Electrical Utilities'
+  }
+};
+
 const normalizeChapterName = (chapter) => {
   if (!chapter) return '';
   return chapter
@@ -41,6 +63,7 @@ const normalizeOptionText = (text) => {
 };
 
 export function QuizApp() {
+  const [selectedPaper, setSelectedPaper] = useState('paper1');
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -62,9 +85,10 @@ export function QuizApp() {
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
+
   useEffect(() => {
     fetchQuestions();
-  }, []);
+  }, [selectedPaper]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -87,7 +111,7 @@ export function QuizApp() {
   const resetRemainingIndices = () => {
     const availableIndices = filteredQuestions
       .map((_, index) => index)
-      .filter(index => !completedQuestionIds.has(filteredQuestions[index].id));
+      .filter(index => !completedQuestionIds.has(filteredQuestions[index].main_id || filteredQuestions[index].id));
     setRemainingIndices(availableIndices);
   };
 
@@ -114,13 +138,13 @@ export function QuizApp() {
     }));
 
     const totalQuestions = filtered.length;
-    const attemptedQuestions = filtered.filter(q => completedQuestionIds.has(q.id)).length;
+    const attemptedQuestions = filtered.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
     setQuestionProgress({
       total: totalQuestions,
       attempted: attemptedQuestions
     });
 
-    const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.id));
+    const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.main_id || q.id));
     
     setFilteredQuestions(availableQuestions);
     
@@ -140,7 +164,9 @@ export function QuizApp() {
 
   const fetchQuestions = async () => {
     try {
-      const { data, error } = await supabase.from('MCQ1').select('*');
+      setIsLoading(true);
+      const currentPaper = PAPERS[selectedPaper];
+      const { data, error } = await supabase.from(currentPaper.table).select('*');
       if (error) throw error;
       
       const normalizedData = data?.map(q => ({
@@ -152,6 +178,15 @@ export function QuizApp() {
       })) || [];
       
       setQuestions(normalizedData);
+      // Reset state when changing papers
+      setCompletedQuestionIds(new Set());
+      setAnsweredQuestions([]);
+      setCurrentQuestionIndex(0);
+      setSelectedOption(null);
+      setShowFeedback(false);
+      setShowAnswer(false);
+      setSelectedTopic('all');
+      setSelectedYear('all');
       setIsLoading(false);
     } catch (err) {
       console.error(err);
@@ -176,12 +211,13 @@ export function QuizApp() {
   };
 
   const handleGetAnswer = () => {
+    const questionId = currentQuestion.main_id || currentQuestion.id;
     setShowAnswer(true);
     setShowFeedback(true);
-    fetchExplanation(currentQuestion.id);
-    setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
+    fetchExplanation(questionId);
+    setCompletedQuestionIds(prev => new Set([...prev, questionId]));
     setAnsweredQuestions(prev => [...prev, {
-      questionId: currentQuestion.id,
+      questionId: questionId,
       question: currentQuestion.question_text,
       selectedOption: null,
       correctOption: currentQuestion.correct_answer,
@@ -195,13 +231,15 @@ export function QuizApp() {
       attempted: prev.attempted + 1
     }));
   };
+
   const handleOptionSelect = async (option) => {
     if (selectedOption) return;
     
+    const questionId = currentQuestion.main_id || currentQuestion.id;
     const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     
     setAnsweredQuestions(prev => [...prev, {
-      questionId: currentQuestion.id,
+      questionId: questionId,
       question: currentQuestion.question_text,
       selectedOption: option,
       correctOption: currentQuestion.correct_answer,
@@ -210,7 +248,7 @@ export function QuizApp() {
       timestamp: new Date()
     }]);
 
-    setCompletedQuestionIds(prev => new Set([...prev, currentQuestion.id]));
+    setCompletedQuestionIds(prev => new Set([...prev, questionId]));
     setQuestionProgress(prev => ({
       ...prev,
       attempted: prev.attempted + 1
@@ -218,12 +256,12 @@ export function QuizApp() {
 
     setSelectedOption(option);
     setShowFeedback(true);
-    await fetchExplanation(currentQuestion.id);
+    await fetchExplanation(questionId);
   };
 
   const getNextRandomIndex = () => {
     const availableIndices = remainingIndices.filter(index => 
-      !completedQuestionIds.has(filteredQuestions[index]?.id)
+      !completedQuestionIds.has(filteredQuestions[index]?.main_id || filteredQuestions[index]?.id)
     );
 
     if (availableIndices.length === 0) {
@@ -257,7 +295,7 @@ export function QuizApp() {
       let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
       let loopCount = 0;
       
-      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.id) && 
+      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
              loopCount < availableQuestionsCount) {
         nextIndex = (nextIndex + 1) % availableQuestionsCount;
         loopCount++;
@@ -344,9 +382,10 @@ export function QuizApp() {
   const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
   if (isLoading) return <div>Loading...</div>;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e6f7ff] to-[#ffffff]">
-      {/* New consistent header */}
+      {/* Header */}
       <header className="fixed top-0 z-50 w-full bg-transparent px-4">
         <div className="container mx-auto">
           <div className="flex h-16 items-center justify-between">
@@ -362,7 +401,29 @@ export function QuizApp() {
           </div>
         </div>
       </header>
+      
       <div className="max-w-2xl mx-auto px-4 py-8 pt-16">
+        {/* Paper Selection */}
+        <div className="mb-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-3">Select Paper</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {Object.values(PAPERS).map((paper) => (
+              <button
+                key={paper.id}
+                onClick={() => setSelectedPaper(paper.id)}
+                className={`p-3 rounded-lg text-left transition-colors ${
+                  selectedPaper === paper.id
+                    ? 'bg-blue-100 border-blue-300 text-blue-700'
+                    : 'bg-white border-gray-200 hover:bg-gray-50'
+                } border`}
+              >
+                <div className="font-medium">{paper.name}</div>
+                <div className="text-xs text-gray-600">{paper.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Filters Section */}
         <div className="flex items-center gap-4 mb-8">
           {/* Topic Dropdown */}
@@ -517,9 +578,13 @@ export function QuizApp() {
           </div>
         )}
 
-        {/* Footer Section - Modified */}
+        {/* Footer Section */}
         <div className="border-t pt-4">
           <div className="flex gap-8">
+            <div className="flex gap-2">
+              <div className="text-gray-600 text-sm">Paper:</div>
+              <div className="text-sm">{PAPERS[selectedPaper].name}</div>
+            </div>
             <div className="flex gap-2">
               <div className="text-gray-600 text-sm">Chapter:</div>
               <div className="text-sm">{normalizeChapterName(currentQuestion.tag)}</div>
