@@ -74,11 +74,11 @@ export function QuizApp() {
 
   // Generate floating particles for background
   useEffect(() => {
-    const newParticles = Array.from({ length: 25 }, (_, i) => ({
+    const newParticles = Array.from({ length: 15 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
-      size: Math.random() * 120 + 60,
+      size: Math.random() * 80 + 40,
       duration: Math.random() * 25 + 20
     }));
     setParticles(newParticles);
@@ -86,11 +86,9 @@ export function QuizApp() {
 
   useEffect(() => {
     fetchQuestions();
-    // Fetch topics and years for dropdowns (this could be optimized with a separate API call)
     fetchTopicsAndYears();
   }, [selectedPaper]);
 
-  // FIXED: Only update progress when questions or completedQuestionIds change, don't auto-advance
   useEffect(() => {
     if (questions.length > 0) {
       updateProgress();
@@ -99,7 +97,6 @@ export function QuizApp() {
 
   const fetchTopicsAndYears = async () => {
     try {
-      // Fetch a sample of questions to get available topics and years
       const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=1000`);
       if (response.ok) {
         const result = await response.json();
@@ -122,16 +119,7 @@ export function QuizApp() {
     }
   }, [questions]);
 
-  const resetRemainingIndices = () => {
-    const availableIndices = filteredQuestions
-      .map((_, index) => index)
-      .filter(index => !completedQuestionIds.has(filteredQuestions[index].main_id || filteredQuestions[index].id));
-    setRemainingIndices(availableIndices);
-  };
-
-  // FIXED: New function that only updates progress, doesn't change current question
   const updateProgress = () => {
-    // Calculate progress based on total questions vs attempted
     const totalQuestions = questions.length;
     const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
     setQuestionProgress({
@@ -139,21 +127,14 @@ export function QuizApp() {
       attempted: attemptedQuestions
     });
 
-    // Check if all questions are completed
     if (attemptedQuestions === totalQuestions && totalQuestions > 0) {
       setShowCompletionModal(true);
     }
   };
 
-  // FIXED: Simplified function that only sets up initial questions, doesn't auto-advance
   const filterQuestions = () => {
-    // Set up all questions as available initially (they're already shuffled from API)
     setFilteredQuestions(questions);
-    
-    // Reset to first question when loading new set
     setCurrentQuestionIndex(0);
-    
-    // Reset question-specific state when new questions are loaded
     setSelectedOption(null);
     setShowFeedback(false);
     setShowAnswer(false);
@@ -171,7 +152,6 @@ export function QuizApp() {
         limit: '1000'
       });
 
-      // Add filters to API call for more targeted fetching
       if (selectedTopic !== 'all') {
         params.append('topic', selectedTopic);
       }
@@ -196,14 +176,12 @@ export function QuizApp() {
         option_d: normalizeOptionText(q.option_d)
       })) || [];
       
-      // Shuffle questions since random is always enabled
       const shuffledQuestions = [...normalizedData].sort(() => Math.random() - 0.5);
       
       setQuestions(shuffledQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
       
-      // Set up filtered questions without auto-advancing
       setFilteredQuestions(shuffledQuestions);
       setCurrentQuestionIndex(0);
       setSelectedOption(null);
@@ -261,17 +239,14 @@ export function QuizApp() {
   };
 
   const handleOptionSelect = async (option) => {
-    // Prevent selection if already selected, transitioning, or showing answer
     if (selectedOption || isTransitioning || showAnswer || showFeedback) return;
     
     const questionId = currentQuestion.main_id || currentQuestion.id;
     const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     
-    // Immediately set the selected option to prevent double-clicking
     setSelectedOption(option);
     setShowFeedback(true);
     
-    // Add to answered questions
     setAnsweredQuestions(prev => [...prev, {
       questionId: questionId,
       question: currentQuestion.question_text,
@@ -284,34 +259,28 @@ export function QuizApp() {
 
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
 
-    // Fetch explanation
     await fetchExplanation(questionId);
   };
 
   const handleModifyQuiz = () => {
     setShowModifyQuiz(false);
-    // Reset completed questions when modifying quiz to allow fresh start
     setCompletedQuestionIds(new Set());
     setAnsweredQuestions([]);
     setSelectedOption(null);
     setShowFeedback(false);
     setShowAnswer(false);
     setExplanation('');
-    // Trigger a new fetch with updated filters
     fetchQuestions();
   };
 
   const handleNextQuestion = () => {
-    // Start transition and reset question-specific state
     setIsTransitioning(true);
     setSelectedOption(null);
     setShowFeedback(false);
     setShowAnswer(false);
     setExplanation('');
     
-    // Small delay to ensure clean state transition
     setTimeout(() => {
-      // Get truly available questions (not attempted)
       const availableQuestions = filteredQuestions.filter(q => 
         !completedQuestionIds.has(q.main_id || q.id)
       );
@@ -322,11 +291,9 @@ export function QuizApp() {
         return;
       }
 
-      // Find next available question
       let nextQuestion = null;
       let nextIndex = -1;
       
-      // Start from the question after current one and find first non-attempted
       for (let i = 1; i <= filteredQuestions.length; i++) {
         const checkIndex = (currentQuestionIndex + i) % filteredQuestions.length;
         const question = filteredQuestions[checkIndex];
@@ -352,7 +319,6 @@ export function QuizApp() {
     setSelectedTopic('all');
     setSelectedYear('all');
     setShowCompletionModal(false);
-    // Fetch fresh questions with reset filters
     fetchQuestions();
   };
 
@@ -423,15 +389,15 @@ export function QuizApp() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20"
+          className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20"
         >
           <div className="text-center">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full mx-auto mb-4"
+              className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-3"
             />
-            <p className="text-white text-lg">Loading quiz questions...</p>
+            <p className="text-white text-sm">Loading quiz questions...</p>
           </div>
         </motion.div>
       </div>
@@ -441,15 +407,15 @@ export function QuizApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 overflow-hidden relative">
       {/* Header */}
-      <header className="fixed top-0 z-50 w-full bg-transparent px-4">
+      <header className="fixed top-0 z-50 w-full bg-transparent px-2 sm:px-4">
         <div className="container mx-auto">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-12 sm:h-14 items-center justify-between">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-white">saduvbey</span>
+              <span className="text-lg sm:text-xl font-bold text-white">saduvbey</span>
             </Link>
             <Link
               href="/nce"
-              className="px-4 py-2 text-sm font-medium text-white/80 hover:text-white backdrop-blur-sm bg-white/10 rounded-lg border border-white/20"
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-white/80 hover:text-white backdrop-blur-sm bg-white/10 rounded-lg border border-white/20"
             >
               NCE Home
             </Link>
@@ -480,17 +446,17 @@ export function QuizApp() {
         />
       ))}
 
-      <div className="relative z-10 pt-20 px-4">
-        <div className="max-w-4xl mx-auto">
+      <div className="relative z-10 pt-16 px-2 sm:px-4">
+        <div className="max-w-3xl mx-auto">
           {/* Modify Quiz Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6"
+            className="mb-3"
           >
             <div className="flex justify-between items-center">
               <div className="text-white/80">
-                <span className="text-sm">
+                <span className="text-xs sm:text-sm">
                   {PAPERS[selectedPaper].name}
                   {selectedTopic !== 'all' && ` • ${selectedTopic}`}
                   {selectedYear !== 'all' && ` • ${selectedYear}`}
@@ -500,9 +466,9 @@ export function QuizApp() {
                 onClick={() => setShowModifyQuiz(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white font-medium rounded-xl hover:bg-white/15 transition-all duration-300"
+                className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium rounded-lg hover:bg-white/15 transition-all duration-300"
               >
-                ⚙️ Modify Quiz
+                ⚙️ Settings
               </motion.button>
             </div>
           </motion.div>
@@ -512,14 +478,14 @@ export function QuizApp() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="mb-8"
+            className="mb-4"
           >
-            <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 border border-white/20">
-              <div className="flex justify-between text-white/80 text-sm mb-3">
-                <span>Progress: {questionProgress.attempted} of {questionProgress.total} questions attempted</span>
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-3 sm:p-4 border border-white/20">
+              <div className="flex justify-between text-white/80 text-xs sm:text-sm mb-2">
+                <span>Progress: {questionProgress.attempted}/{questionProgress.total}</span>
                 <span>Remaining: {questionProgress.total - questionProgress.attempted}</span>
               </div>
-              <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500"
                   initial={{ width: 0 }}
@@ -538,44 +504,44 @@ export function QuizApp() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
               transition={{ duration: 0.3 }}
-              className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl mb-8"
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-2xl mb-4"
             >
               {/* Question */}
               {isTransitioning ? (
-                <div className="text-center py-12">
+                <div className="text-center py-8">
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-4"
+                    className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full mx-auto mb-3"
                   />
-                  <p className="text-white/70">Loading next question...</p>
+                  <p className="text-white/70 text-sm">Loading next question...</p>
                 </div>
               ) : (
                 <>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-relaxed">
+                  <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 leading-relaxed">
                     {currentQuestion.question_text}
                   </h2>
 
                   {/* Options */}
-                  <div className="space-y-4 mb-8">
+                  <div className="space-y-3 mb-4 sm:mb-6">
                     {['a', 'b', 'c', 'd'].map((option) => (
                       <motion.button
                         key={option}
                         onClick={() => handleOptionSelect(option)}
                         disabled={showAnswer || isTransitioning}
-                        whileHover={{ scale: (selectedOption || isTransitioning) ? 1 : 1.02 }}
-                        whileTap={{ scale: (selectedOption || isTransitioning) ? 1 : 0.98 }}
-                        className={`w-full p-6 rounded-2xl backdrop-blur-md border transition-all duration-300 text-left group ${getOptionClass(option)} ${(isTransitioning) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        whileHover={{ scale: (selectedOption || isTransitioning) ? 1 : 1.01 }}
+                        whileTap={{ scale: (selectedOption || isTransitioning) ? 1 : 0.99 }}
+                        className={`w-full p-3 sm:p-4 rounded-xl backdrop-blur-md border transition-all duration-300 text-left group ${getOptionClass(option)} ${(isTransitioning) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base transition-all duration-300 ${
                             selectedOption === option 
                               ? (isCorrectAnswer(option, currentQuestion.correct_answer) ? 'bg-green-500 text-white' : 'bg-red-500 text-white')
                               : 'bg-white/20 text-white group-hover:bg-white/30'
                           }`}>
                             {option.toUpperCase()}
                           </div>
-                          <span className="text-white text-lg flex-1">{currentQuestion[`option_${option}`]}</span>
+                          <span className="text-white text-sm sm:text-base flex-1">{currentQuestion[`option_${option}`]}</span>
                         </div>
                       </motion.button>
                     ))}
@@ -590,20 +556,20 @@ export function QuizApp() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mb-8"
+                    className="mb-4 sm:mb-6"
                   >
-                    <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
+                    <div className="p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
                       {isLoadingExplanation ? (
-                        <div className="flex items-center justify-center py-4">
+                        <div className="flex items-center justify-center py-3">
                           <motion.div
                             animate={{ rotate: 360 }}
                             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                            className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full"
+                            className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
                           />
-                          <span className="text-white/90 ml-3">Loading explanation...</span>
+                          <span className="text-white/90 ml-2 text-sm">Loading explanation...</span>
                         </div>
                       ) : (
-                        <div className="explanation-content text-white/90 leading-relaxed">
+                        <div className="explanation-content text-white/90 leading-relaxed text-sm">
                           <ReactMarkdown
                             remarkPlugins={[remarkMath]}
                             rehypePlugins={[rehypeKatex]}
@@ -618,31 +584,31 @@ export function QuizApp() {
               </AnimatePresence>
 
               {/* Action Buttons */}
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                 {answeredQuestions.length > 0 && (
                   <motion.button
                     onClick={() => setShowSummary(true)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-full hover:shadow-lg transition-all duration-200"
+                    className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold rounded-full hover:shadow-lg transition-all duration-200"
                   >
-                    📊 View Summary
+                    📊 Summary
                   </motion.button>
                 )}
                 
-                <div className="flex gap-3 ml-auto">
+                <div className="flex gap-2 w-full sm:w-auto">
                   <motion.button
                     onClick={handleGetAnswer}
                     disabled={showFeedback || showAnswer || isTransitioning}
                     whileHover={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 1.05 }}
                     whileTap={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 0.95 }}
-                    className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
                       (showFeedback || showAnswer || isTransitioning)
                         ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
                         : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg'
                     }`}
                   >
-                    💡 Get Answer
+                    💡 Answer
                   </motion.button>
                   
                   <motion.button
@@ -650,20 +616,20 @@ export function QuizApp() {
                     disabled={isTransitioning}
                     whileHover={{ scale: isTransitioning ? 1 : 1.05 }}
                     whileTap={{ scale: isTransitioning ? 1 : 0.95 }}
-                    className={`px-6 py-3 font-semibold rounded-full transition-all duration-200 ${
+                    className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
                       isTransitioning 
                         ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
                         : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
                     }`}
                   >
-                    {isTransitioning ? 'Loading...' : 'Next Question →'}
+                    {isTransitioning ? 'Loading...' : 'Next →'}
                   </motion.button>
                 </div>
               </div>
 
               {/* Question Info */}
-              <div className="mt-8 pt-6 border-t border-white/20">
-                <div className="flex flex-wrap gap-6 text-sm text-white/70">
+              <div className="mt-4 pt-3 border-t border-white/20">
+                <div className="flex flex-wrap gap-4 text-xs text-white/70">
                   <div>
                     <span className="text-white/50">Paper:</span> {PAPERS[selectedPaper].name}
                   </div>
@@ -687,49 +653,49 @@ export function QuizApp() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 max-w-2xl w-full border border-white/20"
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/20"
             >
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-white mb-2">Modify Quiz Settings</h2>
-                <p className="text-white/70">Change your quiz parameters and get fresh questions</p>
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-white mb-1">Quiz Settings</h2>
+                <p className="text-white/70 text-sm">Change parameters and get fresh questions</p>
               </div>
 
               {/* Paper Selection */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Select Paper</h3>
-                <div className="grid grid-cols-1 gap-3">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Select Paper</h3>
+                <div className="grid grid-cols-1 gap-2">
                   {Object.values(PAPERS).map((paper) => (
                     <motion.button
                       key={paper.id}
                       onClick={() => setSelectedPaper(paper.id)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`p-4 rounded-xl text-left transition-all duration-300 backdrop-blur-md border ${
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`p-3 rounded-lg text-left transition-all duration-300 backdrop-blur-md border ${
                         selectedPaper === paper.id
                           ? 'bg-white/20 border-white/40 text-white'
                           : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
                       }`}
                     >
-                      <div className="font-semibold">{paper.name}</div>
-                      <div className="text-sm text-white/70 mt-1">{paper.description}</div>
+                      <div className="font-semibold text-sm">{paper.name}</div>
+                      <div className="text-xs text-white/70 mt-1">{paper.description}</div>
                     </motion.button>
                   ))}
                 </div>
               </div>
 
               {/* Topic Selection */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Filter by Topic</h3>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Filter by Topic</h3>
                 <select
                   value={selectedTopic}
                   onChange={(e) => setSelectedTopic(e.target.value)}
-                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
                 >
                   <option value="all" className="bg-gray-800 text-white">All Topics</option>
                   {topics.map(topic => (
@@ -739,12 +705,12 @@ export function QuizApp() {
               </div>
 
               {/* Year Selection */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold text-white mb-3">Filter by Year</h3>
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Filter by Year</h3>
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
                 >
                   <option value="all" className="bg-gray-800 text-white">All Years</option>
                   {years.map(year => (
@@ -754,12 +720,12 @@ export function QuizApp() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <motion.button
                   onClick={() => setShowModifyQuiz(false)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 transition-all duration-200"
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg border border-white/20 transition-all duration-200"
                 >
                   Cancel
                 </motion.button>
@@ -767,7 +733,7 @@ export function QuizApp() {
                   onClick={handleModifyQuiz}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all duration-200"
                 >
                   Apply Changes
                 </motion.button>
@@ -784,26 +750,26 @@ export function QuizApp() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 max-w-md w-full border border-white/20"
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 max-w-sm w-full border border-white/20"
             >
               <div className="text-center">
-                <div className="text-6xl mb-4">🎉</div>
-                <h2 className="text-2xl font-bold text-white mb-4">All Questions Completed! 🎉</h2>
-                <p className="text-white/80 mb-8">
-                  You have attempted all available questions for the current selection. You can modify your quiz settings to get fresh questions from other topics or years.
+                <div className="text-4xl mb-3">🎉</div>
+                <h2 className="text-xl font-bold text-white mb-3">All Questions Completed!</h2>
+                <p className="text-white/80 text-sm mb-6">
+                  You have attempted all available questions. Try different topics or years for fresh questions.
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <motion.button
                     onClick={resetFilters}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg transition-all duration-200"
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold rounded-full hover:shadow-lg transition-all duration-200"
                   >
                     Try Other Topics/Years
                   </motion.button>
@@ -814,7 +780,7 @@ export function QuizApp() {
                     }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="w-full px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-full border border-white/20 transition-all duration-200"
+                    className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-full border border-white/20 transition-all duration-200"
                   >
                     View Summary
                   </motion.button>
@@ -832,30 +798,30 @@ export function QuizApp() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/20"
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/20"
             >
               {(() => {
                 const summary = generateSummary();
                 return (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     <div className="text-center">
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.2, type: "spring" }}
-                        className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center"
+                        className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center"
                       >
-                        <span className="text-4xl font-bold text-white">{summary.score}%</span>
+                        <span className="text-2xl font-bold text-white">{summary.score}%</span>
                       </motion.div>
                       
-                      <h2 className="text-3xl font-bold text-white mb-4">Quiz Complete! 🎉</h2>
-                      <p className="text-xl text-white/80 mb-8">
+                      <h2 className="text-2xl font-bold text-white mb-2">Quiz Complete! 🎉</h2>
+                      <p className="text-lg text-white/80 mb-6">
                         You scored {summary.correctAnswers} out of {summary.totalAnswered} questions
                       </p>
                     </div>
@@ -865,17 +831,17 @@ export function QuizApp() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20"
+                      className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20"
                     >
-                      <h3 className="font-semibold text-white mb-4 text-lg">📊 Performance Overview</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <h3 className="font-semibold text-white mb-3 text-base">📊 Performance Overview</h3>
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="text-center">
-                          <p className="text-white/70 text-sm">Score</p>
-                          <p className="text-3xl font-bold text-white">{summary.score}%</p>
+                          <p className="text-white/70 text-xs">Score</p>
+                          <p className="text-2xl font-bold text-white">{summary.score}%</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-white/70 text-sm">Time Taken</p>
-                          <p className="text-3xl font-bold text-white">{formatTime(summary.timeTaken)}</p>
+                          <p className="text-white/70 text-xs">Time Taken</p>
+                          <p className="text-2xl font-bold text-white">{formatTime(summary.timeTaken)}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -885,17 +851,17 @@ export function QuizApp() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
-                      className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20"
+                      className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20"
                     >
-                      <h3 className="font-semibold text-white mb-4 text-lg">📝 Question Breakdown</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <h3 className="font-semibold text-white mb-3 text-base">📝 Question Breakdown</h3>
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="text-center">
-                          <p className="text-green-400 text-sm">Correct</p>
-                          <p className="text-3xl font-bold text-green-400">{summary.correctAnswers}</p>
+                          <p className="text-green-400 text-xs">Correct</p>
+                          <p className="text-2xl font-bold text-green-400">{summary.correctAnswers}</p>
                         </div>
                         <div className="text-center">
-                          <p className="text-red-400 text-sm">Incorrect</p>
-                          <p className="text-3xl font-bold text-red-400">{summary.incorrectAnswers}</p>
+                          <p className="text-red-400 text-xs">Incorrect</p>
+                          <p className="text-2xl font-bold text-red-400">{summary.incorrectAnswers}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -906,22 +872,22 @@ export function QuizApp() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
-                        className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20"
+                        className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20"
                       >
-                        <h3 className="font-semibold text-white mb-4 text-lg">📚 Chapter Performance</h3>
-                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                        <h3 className="font-semibold text-white mb-3 text-base">📚 Chapter Performance</h3>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
                           {Object.entries(summary.chapterPerformance).map(([chapter, stats], idx) => (
                             <motion.div
                               key={chapter}
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 0.6 + idx * 0.1 }}
-                              className="flex justify-between items-center p-3 bg-white/5 rounded-xl"
+                              className="flex justify-between items-center p-2 bg-white/5 rounded-lg"
                             >
-                              <span className="text-white/80 text-sm">{chapter}</span>
-                              <span className="font-semibold text-white">
+                              <span className="text-white/80 text-xs truncate flex-1 mr-2">{chapter}</span>
+                              <span className="font-semibold text-white text-sm">
                                 {Math.round((stats.correct / stats.total) * 100)}% 
-                                <span className="text-white/60 ml-1">({stats.correct}/{stats.total})</span>
+                                <span className="text-white/60 ml-1 text-xs">({stats.correct}/{stats.total})</span>
                               </span>
                             </motion.div>
                           ))}
@@ -934,7 +900,7 @@ export function QuizApp() {
                       onClick={() => setShowSummary(false)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="w-full px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg transition-all duration-200"
+                      className="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg transition-all duration-200"
                     >
                       Continue Learning 🚀
                     </motion.button>
