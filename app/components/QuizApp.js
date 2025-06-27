@@ -96,6 +96,29 @@ export function QuizApp() {
     }
   }, [questions, completedQuestionIds]);
 
+  // Check if current question has been attempted and skip to next available
+  useEffect(() => {
+    const currentQuestion = filteredQuestions[currentQuestionIndex];
+    if (currentQuestion && completedQuestionIds.has(currentQuestion.main_id || currentQuestion.id) && !isTransitioning) {
+      // Current question has been attempted, find next available
+      const availableQuestions = filteredQuestions.filter(q => 
+        !completedQuestionIds.has(q.main_id || q.id)
+      );
+      
+      if (availableQuestions.length > 0) {
+        // Find the index of the first available question
+        for (let i = 0; i < filteredQuestions.length; i++) {
+          if (!completedQuestionIds.has(filteredQuestions[i].main_id || filteredQuestions[i].id)) {
+            setCurrentQuestionIndex(i);
+            break;
+          }
+        }
+      } else {
+        setShowCompletionModal(true);
+      }
+    }
+  }, [currentQuestionIndex, filteredQuestions, completedQuestionIds, isTransitioning]);
+
   const fetchTopicsAndYears = async () => {
     try {
       // Fetch a sample of questions to get available topics and years
@@ -117,7 +140,6 @@ export function QuizApp() {
 
   useEffect(() => {
     if (questions.length > 0) {
-      resetRemainingIndices();
       setStartTime(new Date());
     }
   }, [questions]);
@@ -130,35 +152,37 @@ export function QuizApp() {
   };
 
   const filterQuestions = () => {
-    // Since we're now fetching filtered data from API, 
-    // we just need to set up the available questions
+    // Set up all questions as available initially (they're already shuffled from API)
+    setFilteredQuestions(questions);
+    
+    // Calculate progress based on total questions vs attempted
     const totalQuestions = questions.length;
     const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
     setQuestionProgress({
       total: totalQuestions,
       attempted: attemptedQuestions
     });
-
-    const availableQuestions = questions.filter(q => !completedQuestionIds.has(q.main_id || q.id));
     
-    setFilteredQuestions(availableQuestions);
-    
-    if (availableQuestions.length > 0) {
-      setCurrentQuestionIndex(0);
-      // Reset question-specific state when new questions are loaded
-      setSelectedOption(null);
-      setShowFeedback(false);
-      setShowAnswer(false);
-      setExplanation('');
-      setIsTransitioning(false);
+    // Find first non-attempted question for current index
+    let startIndex = 0;
+    for (let i = 0; i < questions.length; i++) {
+      if (!completedQuestionIds.has(questions[i].main_id || questions[i].id)) {
+        startIndex = i;
+        break;
+      }
     }
+    
+    setCurrentQuestionIndex(startIndex);
+    
+    // Reset question-specific state when new questions are loaded
+    setSelectedOption(null);
+    setShowFeedback(false);
+    setShowAnswer(false);
+    setExplanation('');
+    setIsTransitioning(false);
 
-    const newRemainingIndices = Array.from({ length: availableQuestions.length }, (_, i) => i);
-    setRemainingIndices(newRemainingIndices);
-
-    if (availableQuestions.length === 0 && 
-        questions.length > 0 && 
-        completedQuestionIds.size > 0) {
+    // Check if all questions are completed
+    if (attemptedQuestions === totalQuestions && totalQuestions > 0) {
       setShowCompletionModal(true);
     }
   };
@@ -238,6 +262,8 @@ export function QuizApp() {
   };
 
   const handleGetAnswer = () => {
+    if (showAnswer || showFeedback || isTransitioning) return;
+    
     const questionId = currentQuestion.main_id || currentQuestion.id;
     console.log('Current question:', currentQuestion);
     console.log('Question ID being used:', questionId);
@@ -296,12 +322,19 @@ export function QuizApp() {
 
   const handleModifyQuiz = () => {
     setShowModifyQuiz(false);
+    // Reset completed questions when modifying quiz to allow fresh start
+    setCompletedQuestionIds(new Set());
+    setAnsweredQuestions([]);
+    setSelectedOption(null);
+    setShowFeedback(false);
+    setShowAnswer(false);
+    setExplanation('');
     // Trigger a new fetch with updated filters
     fetchQuestions();
   };
 
   const handleNextQuestion = () => {
-    // Start transition and immediately reset all question-specific state
+    // Start transition and reset question-specific state
     setIsTransitioning(true);
     setSelectedOption(null);
     setShowFeedback(false);
@@ -310,33 +343,41 @@ export function QuizApp() {
     
     // Small delay to ensure clean state transition
     setTimeout(() => {
-      const availableQuestionsCount = filteredQuestions.length;
-
-      if (availableQuestionsCount === 0 && completedQuestionIds.size > 0) {
-        setShowCompletionModal(true);
-        setIsTransitioning(false);
-        return;
-      }
-
-      // Since questions are already shuffled, just go to next available question
-      let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
-      let loopCount = 0;
+      // Get truly available questions (not attempted)
+      const availableQuestions = filteredQuestions.filter(q => 
+        !completedQuestionIds.has(q.main_id || q.id)
+      );
       
-      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
-             loopCount < availableQuestionsCount) {
-        nextIndex = (nextIndex + 1) % availableQuestionsCount;
-        loopCount++;
-      }
-
-      if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
+      if (availableQuestions.length === 0) {
         setShowCompletionModal(true);
         setIsTransitioning(false);
         return;
       }
 
-      setCurrentQuestionIndex(nextIndex);
+      // Find next available question
+      let nextQuestion = null;
+      let nextIndex = -1;
+      
+      // Start from the question after current one and find first non-attempted
+      for (let i = 1; i <= filteredQuestions.length; i++) {
+        const checkIndex = (currentQuestionIndex + i) % filteredQuestions.length;
+        const question = filteredQuestions[checkIndex];
+        
+        if (!completedQuestionIds.has(question.main_id || question.id)) {
+          nextQuestion = question;
+          nextIndex = checkIndex;
+          break;
+        }
+      }
+      
+      if (nextQuestion) {
+        setCurrentQuestionIndex(nextIndex);
+      } else {
+        setShowCompletionModal(true);
+      }
+      
       setIsTransitioning(false);
-    }, 100); // Small delay to ensure state cleanup
+    }, 100);
   };
 
   const resetFilters = () => {
@@ -507,8 +548,8 @@ export function QuizApp() {
           >
             <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 border border-white/20">
               <div className="flex justify-between text-white/80 text-sm mb-3">
-                <span>Progress: {questionProgress.attempted} of {questionProgress.total} questions</span>
-                <span>{Math.round(((questionProgress.attempted) / questionProgress.total) * 100)}%</span>
+                <span>Progress: {questionProgress.attempted} of {questionProgress.total} questions attempted</span>
+                <span>Remaining: {questionProgress.total - questionProgress.attempted}</span>
               </div>
               <div className="h-3 bg-white/20 rounded-full overflow-hidden">
                 <motion.div
@@ -654,15 +695,20 @@ export function QuizApp() {
 
               {/* Question Info */}
               <div className="mt-8 pt-6 border-t border-white/20">
-                <div className="flex flex-wrap gap-6 text-sm text-white/70">
-                  <div>
-                    <span className="text-white/50">Paper:</span> {PAPERS[selectedPaper].name}
+                <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-white/70">
+                  <div className="flex flex-wrap gap-6">
+                    <div>
+                      <span className="text-white/50">Paper:</span> {PAPERS[selectedPaper].name}
+                    </div>
+                    <div>
+                      <span className="text-white/50">Chapter:</span> {normalizeChapterName(currentQuestion.tag)}
+                    </div>
+                    <div>
+                      <span className="text-white/50">Year:</span> {currentQuestion.year}
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-white/50">Chapter:</span> {normalizeChapterName(currentQuestion.tag)}
-                  </div>
-                  <div>
-                    <span className="text-white/50">Year:</span> {currentQuestion.year}
+                  <div className="text-xs">
+                    <span className="text-purple-300">🔄 No question repeats in this session</span>
                   </div>
                 </div>
               </div>
@@ -785,9 +831,9 @@ export function QuizApp() {
             >
               <div className="text-center">
                 <div className="text-6xl mb-4">🎉</div>
-                <h2 className="text-2xl font-bold text-white mb-4">Section Complete!</h2>
+                <h2 className="text-2xl font-bold text-white mb-4">All Questions Completed! 🎉</h2>
                 <p className="text-white/80 mb-8">
-                  You have completed all available questions for the selected filters.
+                  You have attempted all available questions for the current selection. You can modify your quiz settings to get fresh questions from other topics or years.
                 </p>
                 <div className="space-y-3">
                   <motion.button
