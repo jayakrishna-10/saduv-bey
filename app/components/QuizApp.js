@@ -90,9 +90,10 @@ export function QuizApp() {
     fetchTopicsAndYears();
   }, [selectedPaper]);
 
+  // FIXED: Only update progress when questions or completedQuestionIds change, don't auto-advance
   useEffect(() => {
     if (questions.length > 0) {
-      filterQuestions();
+      updateProgress();
     }
   }, [questions, completedQuestionIds]);
 
@@ -128,10 +129,8 @@ export function QuizApp() {
     setRemainingIndices(availableIndices);
   };
 
-  const filterQuestions = () => {
-    // Set up all questions as available initially (they're already shuffled from API)
-    setFilteredQuestions(questions);
-    
+  // FIXED: New function that only updates progress, doesn't change current question
+  const updateProgress = () => {
     // Calculate progress based on total questions vs attempted
     const totalQuestions = questions.length;
     const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
@@ -139,17 +138,20 @@ export function QuizApp() {
       total: totalQuestions,
       attempted: attemptedQuestions
     });
-    
-    // Find first non-attempted question for current index
-    let startIndex = 0;
-    for (let i = 0; i < questions.length; i++) {
-      if (!completedQuestionIds.has(questions[i].main_id || questions[i].id)) {
-        startIndex = i;
-        break;
-      }
+
+    // Check if all questions are completed
+    if (attemptedQuestions === totalQuestions && totalQuestions > 0) {
+      setShowCompletionModal(true);
     }
+  };
+
+  // FIXED: Simplified function that only sets up initial questions, doesn't auto-advance
+  const filterQuestions = () => {
+    // Set up all questions as available initially (they're already shuffled from API)
+    setFilteredQuestions(questions);
     
-    setCurrentQuestionIndex(startIndex);
+    // Reset to first question when loading new set
+    setCurrentQuestionIndex(0);
     
     // Reset question-specific state when new questions are loaded
     setSelectedOption(null);
@@ -157,11 +159,6 @@ export function QuizApp() {
     setShowAnswer(false);
     setExplanation('');
     setIsTransitioning(false);
-
-    // Check if all questions are completed
-    if (attemptedQuestions === totalQuestions && totalQuestions > 0) {
-      setShowCompletionModal(true);
-    }
   };
 
   const fetchQuestions = async () => {
@@ -205,6 +202,9 @@ export function QuizApp() {
       setQuestions(shuffledQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
+      
+      // Set up filtered questions without auto-advancing
+      setFilteredQuestions(shuffledQuestions);
       setCurrentQuestionIndex(0);
       setSelectedOption(null);
       setShowFeedback(false);
@@ -258,11 +258,6 @@ export function QuizApp() {
       chapter: normalizeChapterName(currentQuestion.tag),
       timestamp: new Date()
     }]);
-
-    setQuestionProgress(prev => ({
-      ...prev,
-      attempted: prev.attempted + 1
-    }));
   };
 
   const handleOptionSelect = async (option) => {
@@ -288,10 +283,6 @@ export function QuizApp() {
     }]);
 
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
-    setQuestionProgress(prev => ({
-      ...prev,
-      attempted: prev.attempted + 1
-    }));
 
     // Fetch explanation
     await fetchExplanation(questionId);
