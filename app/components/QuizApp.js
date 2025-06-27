@@ -46,7 +46,7 @@ const normalizeOptionText = (text) => {
   return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
 };
 
-export function GlassmorphicQuizApp() {
+export function QuizApp() {
   const [selectedPaper, setSelectedPaper] = useState('paper1');
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
