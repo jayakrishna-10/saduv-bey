@@ -1,6 +1,9 @@
+// app/components/TestApp.js
+'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Grid3x3, CheckCircle, Circle, Flag, AlertTriangle, Info, Play, Settings, BarChart3, FileText, ArrowLeft, ArrowRight, Home } from 'lucide-react';
+import Link from 'next/link';
 
 // Test Configuration
 const TEST_MODES = {
@@ -61,7 +64,7 @@ const TEST_TYPES = {
   },
   PAPER3: {
     id: 'paper3',
-    name: 'Paper 3', 
+    name: 'Paper 3',
     description: 'Energy Efficiency in Electrical Utilities',
     questionCount: 50,
     fixed: true,
@@ -85,37 +88,30 @@ const TEST_TYPES = {
   }
 };
 
-// Sample questions data (replace with API call)
-const SAMPLE_QUESTIONS = [
-  {
-    id: 1,
-    question_text: "What is the primary purpose of energy auditing?",
-    option_a: "To increase energy consumption",
-    option_b: "To identify energy saving opportunities",
-    option_c: "To reduce equipment life",
-    option_d: "To increase operational costs",
-    correct_answer: "b",
-    tag: "Energy Audit",
-    year: 2023,
-    paper: "paper1"
-  },
-  {
-    id: 2,
-    question_text: "Which of the following is NOT a renewable energy source?",
-    option_a: "Solar energy",
-    option_b: "Wind energy", 
-    option_c: "Coal",
-    option_d: "Hydroelectric power",
-    correct_answer: "c",
-    tag: "Energy Sources",
-    year: 2023,
-    paper: "paper1"
-  },
-  // Add more sample questions as needed
-];
+// Normalize functions from QuizApp
+const normalizeChapterName = (chapter) => {
+  if (!chapter) return '';
+  return chapter
+    .replace(/['"]/g, '')
+    .trim()
+    .replace(/Act,?\s+(\d{4})/g, 'Act $1')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+and\s+/g, ' and ')
+    .replace(/^Chapter\s+/i, '')
+    .replace(/^chapter_/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const normalizeOptionText = (text) => {
+  if (!text) return '';
+  let normalizedText = text.replace(/['"]/g, '').trim();
+  return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
+};
 
 // Main Test App Component
-export default function TestApp() {
+export function TestApp() {
   const [currentView, setCurrentView] = useState('config'); // config, test, results, review
   const [testConfig, setTestConfig] = useState({
     mode: 'mock',
@@ -136,13 +132,75 @@ export default function TestApp() {
     timeRemaining: 0
   });
   const [showPalette, setShowPalette] = useState(false);
+  const [topics, setTopics] = useState([]);
+  const [years, setYears] = useState([]);
 
-  const startTest = () => {
-    // Initialize test data
-    const questions = [...SAMPLE_QUESTIONS].slice(0, testConfig.questionCount);
-    if (TEST_MODES[testConfig.mode].shuffleQuestions) {
-      questions.sort(() => Math.random() - 0.5);
+  // Fetch topics and years for configuration
+  useEffect(() => {
+    fetchTopicsAndYears();
+  }, []);
+
+  const fetchTopicsAndYears = async () => {
+    try {
+      const response = await fetch(`/api/quiz?paper=paper1&limit=1000`);
+      if (response.ok) {
+        const result = await response.json();
+        const sampleQuestions = result.questions || [];
+        
+        const uniqueTopics = [...new Set(sampleQuestions.map(q => normalizeChapterName(q.tag)))].filter(Boolean).sort();
+        const uniqueYears = [...new Set(sampleQuestions.map(q => Number(q.year)))].filter(year => !isNaN(year)).sort((a, b) => a - b);
+        
+        setTopics(uniqueTopics);
+        setYears(uniqueYears);
+      }
+    } catch (error) {
+      console.error('Error fetching topics and years:', error);
     }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      console.log('Fetching questions for test:', testConfig);
+      
+      const params = new URLSearchParams({
+        paper: TEST_TYPES[testConfig.type].paper || testConfig.type,
+        limit: testConfig.questionCount.toString()
+      });
+
+      const response = await fetch(`/api/quiz?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('API response:', result);
+      
+      const normalizedData = result.questions?.map(q => ({
+        ...q,
+        option_a: normalizeOptionText(q.option_a),
+        option_b: normalizeOptionText(q.option_b),
+        option_c: normalizeOptionText(q.option_c),
+        option_d: normalizeOptionText(q.option_d)
+      })) || [];
+      
+      let shuffledQuestions = [...normalizedData];
+      if (TEST_MODES[testConfig.mode].shuffleQuestions) {
+        shuffledQuestions = shuffledQuestions.sort(() => Math.random() - 0.5);
+      }
+      
+      // Take only the required number of questions
+      const finalQuestions = shuffledQuestions.slice(0, testConfig.questionCount);
+      
+      return finalQuestions;
+    } catch (err) {
+      console.error('Fetch questions error:', err);
+      return [];
+    }
+  };
+
+  const startTest = async () => {
+    const questions = await fetchQuestions();
     
     setTestData({
       questions,
@@ -174,6 +232,8 @@ export default function TestApp() {
             config={testConfig}
             setConfig={setTestConfig}
             onStart={startTest}
+            topics={topics}
+            years={years}
           />
         )}
         {currentView === 'test' && (
@@ -210,7 +270,7 @@ export default function TestApp() {
 }
 
 // Test Configuration Component
-function TestConfig({ config, setConfig, onStart }) {
+function TestConfig({ config, setConfig, onStart, topics, years }) {
   const [showInfo, setShowInfo] = useState({});
 
   const InfoTooltip = ({ id, children, content }) => (
@@ -243,7 +303,17 @@ function TestConfig({ config, setConfig, onStart }) {
       className="container mx-auto px-4 py-8"
     >
       <div className="max-w-2xl mx-auto">
+        {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <Link
+              href="/nce"
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg border border-white/20 transition-colors"
+            >
+              <Home className="h-4 w-4" />
+              NCE Home
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold text-white mb-2">Create Test</h1>
           <p className="text-white/70">Configure your test parameters</p>
         </div>
@@ -444,13 +514,6 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
     });
   };
 
-  const getQuestionStatus = (index) => {
-    if (testData.answers[index]) return 'answered';
-    if (testData.flagged.has(index)) return 'flagged';
-    if (testData.visited.has(index)) return 'visited';
-    return 'unvisited';
-  };
-
   const answeredCount = Object.keys(testData.answers).length;
   const progressPercentage = (answeredCount / testData.questions.length) * 100;
 
@@ -468,7 +531,7 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
             <h1 className="text-xl font-bold text-white">
               {TEST_TYPES[config.type].name} - {TEST_MODES[config.mode].name}
             </h1>
-            {isTimerEnabled && <TestTimer timeRemaining={testData.timeRemaining} />}
+            {isTimerEnabled && <TestTimer timeRemaining={testData.timeRemaining} totalTime={config.timeLimit * 60} />}
           </div>
           
           <div className="flex items-center gap-3">
@@ -535,7 +598,7 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                     Q{testData.currentIndex + 1}
                   </span>
                   <span className="text-white/70 text-sm">
-                    {currentQuestion?.tag} • {currentQuestion?.year}
+                    {normalizeChapterName(currentQuestion?.tag)} • {currentQuestion?.year}
                   </span>
                 </div>
                 <button
@@ -624,18 +687,11 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
 }
 
 // Non-distracting Timer Component
-function TestTimer({ timeRemaining }) {
+function TestTimer({ timeRemaining, totalTime }) {
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
-  const percentage = timeRemaining / (90 * 60) * 100; // Assuming 90 min total
+  const percentage = (timeRemaining / totalTime) * 100;
   
-  const getTimerColor = () => {
-    if (timeRemaining < 300) return 'from-red-500 to-red-600'; // Last 5 minutes
-    if (timeRemaining < 600) return 'from-yellow-500 to-orange-500'; // Last 10 minutes
-    if (timeRemaining < 1800) return 'from-yellow-400 to-yellow-500'; // Last 30 minutes
-    return 'from-green-400 to-blue-500';
-  };
-
   return (
     <div className="flex items-center gap-3">
       {/* Circular Progress */}
@@ -649,7 +705,11 @@ function TestTimer({ timeRemaining }) {
             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
           />
           <path
-            className={`text-white transition-all duration-1000`}
+            className={`transition-all duration-1000 ${
+              timeRemaining < 300 ? 'text-red-400' : 
+              timeRemaining < 600 ? 'text-yellow-400' : 
+              timeRemaining < 1800 ? 'text-orange-400' : 'text-green-400'
+            }`}
             stroke="currentColor"
             strokeWidth="3"
             strokeDasharray={`${percentage}, 100`}
@@ -676,13 +736,6 @@ function TestTimer({ timeRemaining }) {
 
 // Question Palette Component
 function QuestionPalette({ questions, currentIndex, answers, flagged, visited, onNavigate, onClose }) {
-  const getStatusIcon = (index) => {
-    if (answers[index]) return <CheckCircle className="h-4 w-4 text-green-400" />;
-    if (flagged.has(index)) return <Flag className="h-4 w-4 text-yellow-400" />;
-    if (visited.has(index)) return <Circle className="h-4 w-4 text-blue-400" />;
-    return <Circle className="h-4 w-4 text-white/40" />;
-  };
-
   const getStatusColor = (index) => {
     if (index === currentIndex) return 'bg-purple-500 border-purple-400';
     if (answers[index]) return 'bg-green-500/20 border-green-400/50';
