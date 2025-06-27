@@ -52,7 +52,7 @@ export function QuizApp() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRandom, setIsRandom] = useState(false);
+  const [showModifyQuiz, setShowModifyQuiz] = useState(false);
   const [remainingIndices, setRemainingIndices] = useState([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -85,25 +85,41 @@ export function QuizApp() {
 
   useEffect(() => {
     fetchQuestions();
+    // Fetch topics and years for dropdowns (this could be optimized with a separate API call)
+    fetchTopicsAndYears();
   }, [selectedPaper]);
 
   useEffect(() => {
     if (questions.length > 0) {
-      const uniqueTopics = [...new Set(questions.map(q => normalizeChapterName(q.tag)))].sort();
-      const uniqueYears = [...new Set(questions.map(q => Number(q.year)))].sort((a, b) => a - b);
-      
-      setTopics(uniqueTopics);
-      setYears(uniqueYears);
       filterQuestions();
     }
-  }, [questions, selectedTopic, selectedYear]);
+  }, [questions, completedQuestionIds]);
+
+  const fetchTopicsAndYears = async () => {
+    try {
+      // Fetch a sample of questions to get available topics and years
+      const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=1000`);
+      if (response.ok) {
+        const result = await response.json();
+        const sampleQuestions = result.questions || [];
+        
+        const uniqueTopics = [...new Set(sampleQuestions.map(q => normalizeChapterName(q.tag)))].filter(Boolean).sort();
+        const uniqueYears = [...new Set(sampleQuestions.map(q => Number(q.year)))].filter(year => !isNaN(year)).sort((a, b) => a - b);
+        
+        setTopics(uniqueTopics);
+        setYears(uniqueYears);
+      }
+    } catch (error) {
+      console.error('Error fetching topics and years:', error);
+    }
+  };
 
   useEffect(() => {
     if (questions.length > 0) {
       resetRemainingIndices();
       setStartTime(new Date());
     }
-  }, [questions, isRandom]);
+  }, [questions]);
 
   const resetRemainingIndices = () => {
     const availableIndices = filteredQuestions
@@ -113,35 +129,16 @@ export function QuizApp() {
   };
 
   const filterQuestions = () => {
-    let filtered = [...questions];
-    
-    if (selectedTopic !== 'all') {
-      filtered = filtered.filter(q => 
-        normalizeChapterName(q.tag) === selectedTopic
-      );
-    }
-    
-    if (selectedYear !== 'all') {
-      const yearNumber = Number(selectedYear);
-      filtered = filtered.filter(q => Number(q.year) === yearNumber);
-    }
-
-    filtered = filtered.map(q => ({
-      ...q,
-      option_a: normalizeOptionText(q.option_a),
-      option_b: normalizeOptionText(q.option_b),
-      option_c: normalizeOptionText(q.option_c),
-      option_d: normalizeOptionText(q.option_d)
-    }));
-
-    const totalQuestions = filtered.length;
-    const attemptedQuestions = filtered.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
+    // Since we're now fetching filtered data from API, 
+    // we just need to set up the available questions
+    const totalQuestions = questions.length;
+    const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
     setQuestionProgress({
       total: totalQuestions,
       attempted: attemptedQuestions
     });
 
-    const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.main_id || q.id));
+    const availableQuestions = questions.filter(q => !completedQuestionIds.has(q.main_id || q.id));
     
     setFilteredQuestions(availableQuestions);
     
@@ -153,7 +150,7 @@ export function QuizApp() {
     setRemainingIndices(newRemainingIndices);
 
     if (availableQuestions.length === 0 && 
-        filtered.length > 0 && 
+        questions.length > 0 && 
         completedQuestionIds.size > 0) {
       setShowCompletionModal(true);
     }
@@ -168,6 +165,14 @@ export function QuizApp() {
         paper: selectedPaper,
         limit: '1000'
       });
+
+      // Add filters to API call for more targeted fetching
+      if (selectedTopic !== 'all') {
+        params.append('topic', selectedTopic);
+      }
+      if (selectedYear !== 'all') {
+        params.append('year', selectedYear);
+      }
 
       const response = await fetch(`/api/quiz?${params}`);
       
@@ -186,15 +191,16 @@ export function QuizApp() {
         option_d: normalizeOptionText(q.option_d)
       })) || [];
       
-      setQuestions(normalizedData);
+      // Shuffle questions since random is always enabled
+      const shuffledQuestions = [...normalizedData].sort(() => Math.random() - 0.5);
+      
+      setQuestions(shuffledQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
       setCurrentQuestionIndex(0);
       setSelectedOption(null);
       setShowFeedback(false);
       setShowAnswer(false);
-      setSelectedTopic('all');
-      setSelectedYear('all');
       setIsLoading(false);
     } catch (err) {
       console.error('Fetch questions error:', err);
@@ -276,19 +282,10 @@ export function QuizApp() {
     await fetchExplanation(questionId);
   };
 
-  const getNextRandomIndex = () => {
-    const availableIndices = remainingIndices.filter(index => 
-      !completedQuestionIds.has(filteredQuestions[index]?.main_id || filteredQuestions[index]?.id)
-    );
-
-    if (availableIndices.length === 0) {
-      return currentQuestionIndex;
-    }
-
-    const randomPosition = Math.floor(Math.random() * availableIndices.length);
-    const nextIndex = availableIndices[randomPosition];
-    setRemainingIndices(availableIndices.filter((_, index) => index !== randomPosition));
-    return nextIndex;
+  const handleModifyQuiz = () => {
+    setShowModifyQuiz(false);
+    // Trigger a new fetch with updated filters
+    fetchQuestions();
   };
 
   const handleNextQuestion = () => {
@@ -301,31 +298,22 @@ export function QuizApp() {
       return;
     }
 
-    if (isRandom) {
-      const nextIndex = getNextRandomIndex();
-      if (nextIndex === currentQuestionIndex && completedQuestionIds.size > 0) {
-        setShowCompletionModal(true);
-        return;
-      }
-      setCurrentQuestionIndex(nextIndex);
-    } else {
-      let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
-      let loopCount = 0;
-      
-      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
-             loopCount < availableQuestionsCount) {
-        nextIndex = (nextIndex + 1) % availableQuestionsCount;
-        loopCount++;
-      }
-
-      if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
-        setShowCompletionModal(true);
-        return;
-      }
-
-      setCurrentQuestionIndex(nextIndex);
-    }
+    // Since questions are already shuffled, just go to next available question
+    let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
+    let loopCount = 0;
     
+    while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
+           loopCount < availableQuestionsCount) {
+      nextIndex = (nextIndex + 1) % availableQuestionsCount;
+      loopCount++;
+    }
+
+    if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
+      setShowCompletionModal(true);
+      return;
+    }
+
+    setCurrentQuestionIndex(nextIndex);
     setSelectedOption(null);
     setShowFeedback(false);
     setExplanation('');
@@ -335,6 +323,8 @@ export function QuizApp() {
     setSelectedTopic('all');
     setSelectedYear('all');
     setShowCompletionModal(false);
+    // Fetch fresh questions with reset filters
+    fetchQuestions();
   };
 
   const isCorrectAnswer = (option, correctAnswer) => {
@@ -463,84 +453,28 @@ export function QuizApp() {
 
       <div className="relative z-10 pt-20 px-4">
         <div className="max-w-4xl mx-auto">
-          {/* Paper Selection */}
+          {/* Modify Quiz Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-6"
           >
-            <h2 className="text-xl font-semibold text-white mb-4">Select Paper</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Object.values(PAPERS).map((paper) => (
-                <motion.button
-                  key={paper.id}
-                  onClick={() => setSelectedPaper(paper.id)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`p-4 rounded-2xl text-left transition-all duration-300 backdrop-blur-md border ${
-                    selectedPaper === paper.id
-                      ? 'bg-white/20 border-white/40 text-white'
-                      : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
-                  }`}
-                >
-                  <div className="font-semibold text-lg">{paper.name}</div>
-                  <div className="text-sm text-white/70 mt-1">{paper.description}</div>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Filters Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
-          >
-            <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 border border-white/20">
-              <div className="flex flex-wrap items-center gap-4">
-                {/* Topic Dropdown */}
-                <div className="flex-1 min-w-48">
-                  <select
-                    value={selectedTopic}
-                    onChange={(e) => setSelectedTopic(e.target.value)}
-                    className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  >
-                    <option value="all" className="bg-gray-800 text-white">All Topics</option>
-                    {topics.map(topic => (
-                      <option key={topic} value={topic} className="bg-gray-800 text-white">{topic}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Year Dropdown */}
-                <div className="flex-1 min-w-32">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  >
-                    <option value="all" className="bg-gray-800 text-white">All Years</option>
-                    {years.map(year => (
-                      <option key={year} value={year} className="bg-gray-800 text-white">{year}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Random Toggle */}
-                <motion.button
-                  onClick={() => setIsRandom(!isRandom)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 backdrop-blur-md border whitespace-nowrap ${
-                    isRandom 
-                      ? 'bg-purple-500/30 border-purple-400 text-white' 
-                      : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
-                  }`}
-                >
-                  🎲 Random {isRandom ? 'On' : 'Off'}
-                </motion.button>
+            <div className="flex justify-between items-center">
+              <div className="text-white/80">
+                <span className="text-sm">
+                  {PAPERS[selectedPaper].name}
+                  {selectedTopic !== 'all' && ` • ${selectedTopic}`}
+                  {selectedYear !== 'all' && ` • ${selectedYear}`}
+                </span>
               </div>
+              <motion.button
+                onClick={() => setShowModifyQuiz(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 text-white font-medium rounded-xl hover:bg-white/15 transition-all duration-300"
+              >
+                ⚙️ Modify Quiz
+              </motion.button>
             </div>
           </motion.div>
 
@@ -548,7 +482,7 @@ export function QuizApp() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.1 }}
             className="mb-8"
           >
             <div className="backdrop-blur-xl bg-white/10 rounded-3xl p-6 border border-white/20">
@@ -699,6 +633,103 @@ export function QuizApp() {
         </div>
       </div>
 
+      {/* Modify Quiz Modal */}
+      <AnimatePresence>
+        {showModifyQuiz && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 max-w-2xl w-full border border-white/20"
+            >
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-white mb-2">Modify Quiz Settings</h2>
+                <p className="text-white/70">Change your quiz parameters and get fresh questions</p>
+              </div>
+
+              {/* Paper Selection */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-3">Select Paper</h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {Object.values(PAPERS).map((paper) => (
+                    <motion.button
+                      key={paper.id}
+                      onClick={() => setSelectedPaper(paper.id)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-4 rounded-xl text-left transition-all duration-300 backdrop-blur-md border ${
+                        selectedPaper === paper.id
+                          ? 'bg-white/20 border-white/40 text-white'
+                          : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
+                      }`}
+                    >
+                      <div className="font-semibold">{paper.name}</div>
+                      <div className="text-sm text-white/70 mt-1">{paper.description}</div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Topic Selection */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-3">Filter by Topic</h3>
+                <select
+                  value={selectedTopic}
+                  onChange={(e) => setSelectedTopic(e.target.value)}
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  <option value="all" className="bg-gray-800 text-white">All Topics</option>
+                  {topics.map(topic => (
+                    <option key={topic} value={topic} className="bg-gray-800 text-white">{topic}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Year Selection */}
+              <div className="mb-8">
+                <h3 className="text-lg font-semibold text-white mb-3">Filter by Year</h3>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  <option value="all" className="bg-gray-800 text-white">All Years</option>
+                  {years.map(year => (
+                    <option key={year} value={year} className="bg-gray-800 text-white">{year}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <motion.button
+                  onClick={() => setShowModifyQuiz(false)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 transition-all duration-200"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={handleModifyQuiz}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200"
+                >
+                  Apply Changes
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Completion Modal */}
       <AnimatePresence>
         {showCompletionModal && (
@@ -786,7 +817,7 @@ export function QuizApp() {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
+                      transition={{ delay: 0.2 }}
                       className="bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20"
                     >
                       <h3 className="font-semibold text-white mb-4 text-lg">📊 Performance Overview</h3>
