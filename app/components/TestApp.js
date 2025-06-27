@@ -110,6 +110,16 @@ const normalizeOptionText = (text) => {
   return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
 };
 
+// Helper function to safely get test mode
+const getTestMode = (modeId) => {
+  return TEST_MODES[modeId?.toUpperCase()] || TEST_MODES.MOCK_EXAM;
+};
+
+// Helper function to safely get test type
+const getTestType = (typeId) => {
+  return TEST_TYPES[typeId?.toUpperCase()] || TEST_TYPES.PAPER1;
+};
+
 // Main Test App Component
 export function TestApp() {
   const [currentView, setCurrentView] = useState('config'); // config, test, results, review
@@ -134,10 +144,12 @@ export function TestApp() {
   const [showPalette, setShowPalette] = useState(false);
   const [topics, setTopics] = useState([]);
   const [years, setYears] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch topics and years for configuration
+  // Initialize component
   useEffect(() => {
     fetchTopicsAndYears();
+    setIsLoading(false);
   }, []);
 
   const fetchTopicsAndYears = async () => {
@@ -162,8 +174,9 @@ export function TestApp() {
     try {
       console.log('Fetching questions for test:', testConfig);
       
+      const testType = getTestType(testConfig.type);
       const params = new URLSearchParams({
-        paper: TEST_TYPES[testConfig.type].paper || testConfig.type,
+        paper: testType.paper || testConfig.type,
         limit: testConfig.questionCount.toString()
       });
 
@@ -185,7 +198,8 @@ export function TestApp() {
       })) || [];
       
       let shuffledQuestions = [...normalizedData];
-      if (TEST_MODES[testConfig.mode].shuffleQuestions) {
+      const testMode = getTestMode(testConfig.mode);
+      if (testMode.shuffleQuestions) {
         shuffledQuestions = shuffledQuestions.sort(() => Math.random() - 0.5);
       }
       
@@ -222,6 +236,19 @@ export function TestApp() {
     }));
     setCurrentView('results');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-3 animate-spin" />
+            <p className="text-white text-sm">Initializing test interface...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -392,7 +419,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
           </div>
 
           {/* Question Count (if configurable) */}
-          {!TEST_TYPES[config.type]?.fixed && (
+          {!getTestType(config.type)?.fixed && (
             <div>
               <div className="flex items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">Number of Questions</h3>
@@ -419,7 +446,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
           )}
 
           {/* Timer Settings */}
-          {TEST_MODES[config.mode].timer && (
+          {getTestMode(config.mode)?.timer && (
             <div>
               <div className="flex items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">Time Limit</h3>
@@ -467,7 +494,9 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
 // Test Interface Component
 function TestInterface({ config, testData, setTestData, onSubmit, showPalette, setShowPalette }) {
   const currentQuestion = testData.questions[testData.currentIndex];
-  const isTimerEnabled = TEST_MODES[config.mode].timer;
+  const testMode = getTestMode(config.mode);
+  const testType = getTestType(config.type);
+  const isTimerEnabled = testMode?.timer || false;
 
   // Timer effect
   useEffect(() => {
@@ -517,6 +546,16 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
   const answeredCount = Object.keys(testData.answers).length;
   const progressPercentage = (answeredCount / testData.questions.length) * 100;
 
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-white">
+          <p>Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -529,7 +568,7 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-white">
-              {TEST_TYPES[config.type].name} - {TEST_MODES[config.mode].name}
+              {testType?.name} - {testMode?.name}
             </h1>
             {isTimerEnabled && <TestTimer timeRemaining={testData.timeRemaining} totalTime={config.timeLimit * 60} />}
           </div>
@@ -952,6 +991,16 @@ function TestReview({ config, testData, onBack }) {
     if (!userAnswer) return <AlertTriangle className="h-6 w-6 text-yellow-500" />;
     return isCorrect ? <CheckCircle className="h-6 w-6 text-green-500" /> : <Circle className="h-6 w-6 text-red-500" />;
   };
+
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center text-white">
+          <p>Loading review...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
