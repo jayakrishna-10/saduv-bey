@@ -52,6 +52,7 @@ export function QuizApp() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [showModifyQuiz, setShowModifyQuiz] = useState(false);
   const [remainingIndices, setRemainingIndices] = useState([]);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -144,6 +145,12 @@ export function QuizApp() {
     
     if (availableQuestions.length > 0) {
       setCurrentQuestionIndex(0);
+      // Reset question-specific state when new questions are loaded
+      setSelectedOption(null);
+      setShowFeedback(false);
+      setShowAnswer(false);
+      setExplanation('');
+      setIsTransitioning(false);
     }
 
     const newRemainingIndices = Array.from({ length: availableQuestions.length }, (_, i) => i);
@@ -256,11 +263,17 @@ export function QuizApp() {
   };
 
   const handleOptionSelect = async (option) => {
-    if (selectedOption) return;
+    // Prevent selection if already selected, transitioning, or showing answer
+    if (selectedOption || isTransitioning || showAnswer || showFeedback) return;
     
     const questionId = currentQuestion.main_id || currentQuestion.id;
     const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     
+    // Immediately set the selected option to prevent double-clicking
+    setSelectedOption(option);
+    setShowFeedback(true);
+    
+    // Add to answered questions
     setAnsweredQuestions(prev => [...prev, {
       questionId: questionId,
       question: currentQuestion.question_text,
@@ -277,8 +290,7 @@ export function QuizApp() {
       attempted: prev.attempted + 1
     }));
 
-    setSelectedOption(option);
-    setShowFeedback(true);
+    // Fetch explanation
     await fetchExplanation(questionId);
   };
 
@@ -289,34 +301,42 @@ export function QuizApp() {
   };
 
   const handleNextQuestion = () => {
-    setShowAnswer(false);
-    
-    const availableQuestionsCount = filteredQuestions.length;
-
-    if (availableQuestionsCount === 0 && completedQuestionIds.size > 0) {
-      setShowCompletionModal(true);
-      return;
-    }
-
-    // Since questions are already shuffled, just go to next available question
-    let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
-    let loopCount = 0;
-    
-    while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
-           loopCount < availableQuestionsCount) {
-      nextIndex = (nextIndex + 1) % availableQuestionsCount;
-      loopCount++;
-    }
-
-    if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
-      setShowCompletionModal(true);
-      return;
-    }
-
-    setCurrentQuestionIndex(nextIndex);
+    // Start transition and immediately reset all question-specific state
+    setIsTransitioning(true);
     setSelectedOption(null);
     setShowFeedback(false);
+    setShowAnswer(false);
     setExplanation('');
+    
+    // Small delay to ensure clean state transition
+    setTimeout(() => {
+      const availableQuestionsCount = filteredQuestions.length;
+
+      if (availableQuestionsCount === 0 && completedQuestionIds.size > 0) {
+        setShowCompletionModal(true);
+        setIsTransitioning(false);
+        return;
+      }
+
+      // Since questions are already shuffled, just go to next available question
+      let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
+      let loopCount = 0;
+      
+      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
+             loopCount < availableQuestionsCount) {
+        nextIndex = (nextIndex + 1) % availableQuestionsCount;
+        loopCount++;
+      }
+
+      if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
+        setShowCompletionModal(true);
+        setIsTransitioning(false);
+        return;
+      }
+
+      setCurrentQuestionIndex(nextIndex);
+      setIsTransitioning(false);
+    }, 100); // Small delay to ensure state cleanup
   };
 
   const resetFilters = () => {
@@ -504,7 +524,7 @@ export function QuizApp() {
           {/* Question Section */}
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentQuestionIndex}
+              key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`}
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
@@ -512,34 +532,47 @@ export function QuizApp() {
               className="backdrop-blur-xl bg-white/10 rounded-3xl p-8 md:p-12 border border-white/20 shadow-2xl mb-8"
             >
               {/* Question */}
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-relaxed">
-                {currentQuestion.question_text}
-              </h2>
+              {isTransitioning ? (
+                <div className="text-center py-12">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-4"
+                  />
+                  <p className="text-white/70">Loading next question...</p>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 leading-relaxed">
+                    {currentQuestion.question_text}
+                  </h2>
 
-              {/* Options */}
-              <div className="space-y-4 mb-8">
-                {['a', 'b', 'c', 'd'].map((option) => (
-                  <motion.button
-                    key={option}
-                    onClick={() => handleOptionSelect(option)}
-                    disabled={showAnswer}
-                    whileHover={{ scale: selectedOption ? 1 : 1.02 }}
-                    whileTap={{ scale: selectedOption ? 1 : 0.98 }}
-                    className={`w-full p-6 rounded-2xl backdrop-blur-md border transition-all duration-300 text-left group ${getOptionClass(option)}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
-                        selectedOption === option 
-                          ? (isCorrectAnswer(option, currentQuestion.correct_answer) ? 'bg-green-500 text-white' : 'bg-red-500 text-white')
-                          : 'bg-white/20 text-white group-hover:bg-white/30'
-                      }`}>
-                        {option.toUpperCase()}
-                      </div>
-                      <span className="text-white text-lg flex-1">{currentQuestion[`option_${option}`]}</span>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
+                  {/* Options */}
+                  <div className="space-y-4 mb-8">
+                    {['a', 'b', 'c', 'd'].map((option) => (
+                      <motion.button
+                        key={option}
+                        onClick={() => handleOptionSelect(option)}
+                        disabled={showAnswer || isTransitioning}
+                        whileHover={{ scale: (selectedOption || isTransitioning) ? 1 : 1.02 }}
+                        whileTap={{ scale: (selectedOption || isTransitioning) ? 1 : 0.98 }}
+                        className={`w-full p-6 rounded-2xl backdrop-blur-md border transition-all duration-300 text-left group ${getOptionClass(option)} ${(isTransitioning) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300 ${
+                            selectedOption === option 
+                              ? (isCorrectAnswer(option, currentQuestion.correct_answer) ? 'bg-green-500 text-white' : 'bg-red-500 text-white')
+                              : 'bg-white/20 text-white group-hover:bg-white/30'
+                          }`}>
+                            {option.toUpperCase()}
+                          </div>
+                          <span className="text-white text-lg flex-1">{currentQuestion[`option_${option}`]}</span>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Explanation */}
               <AnimatePresence>
@@ -591,11 +624,11 @@ export function QuizApp() {
                 <div className="flex gap-3 ml-auto">
                   <motion.button
                     onClick={handleGetAnswer}
-                    disabled={showFeedback || showAnswer}
-                    whileHover={{ scale: showFeedback || showAnswer ? 1 : 1.05 }}
-                    whileTap={{ scale: showFeedback || showAnswer ? 1 : 0.95 }}
+                    disabled={showFeedback || showAnswer || isTransitioning}
+                    whileHover={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 1.05 }}
+                    whileTap={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 0.95 }}
                     className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
-                      showFeedback || showAnswer
+                      (showFeedback || showAnswer || isTransitioning)
                         ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
                         : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg'
                     }`}
@@ -605,11 +638,16 @@ export function QuizApp() {
                   
                   <motion.button
                     onClick={handleNextQuestion}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg transition-all duration-200"
+                    disabled={isTransitioning}
+                    whileHover={{ scale: isTransitioning ? 1 : 1.05 }}
+                    whileTap={{ scale: isTransitioning ? 1 : 0.95 }}
+                    className={`px-6 py-3 font-semibold rounded-full transition-all duration-200 ${
+                      isTransitioning 
+                        ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
+                        : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
+                    }`}
                   >
-                    Next Question →
+                    {isTransitioning ? 'Loading...' : 'Next Question →'}
                   </motion.button>
                 </div>
               </div>
