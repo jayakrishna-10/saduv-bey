@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -51,7 +52,8 @@ export function QuizApp() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRandom, setIsRandom] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showModifyQuiz, setShowModifyQuiz] = useState(false);
   const [remainingIndices, setRemainingIndices] = useState([]);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
@@ -68,81 +70,76 @@ export function QuizApp() {
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
+  const [particles, setParticles] = useState([]);
+
+  // Generate floating particles for background
+  useEffect(() => {
+    const newParticles = Array.from({ length: 15 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: Math.random() * 80 + 40,
+      duration: Math.random() * 25 + 20
+    }));
+    setParticles(newParticles);
+  }, []);
 
   useEffect(() => {
     fetchQuestions();
+    fetchTopicsAndYears();
   }, [selectedPaper]);
 
   useEffect(() => {
     if (questions.length > 0) {
-      const uniqueTopics = [...new Set(questions.map(q => normalizeChapterName(q.tag)))].sort();
-      const uniqueYears = [...new Set(questions.map(q => Number(q.year)))].sort((a, b) => a - b);
-      
-      setTopics(uniqueTopics);
-      setYears(uniqueYears);
-      filterQuestions();
+      updateProgress();
     }
-  }, [questions, selectedTopic, selectedYear]);
+  }, [questions, completedQuestionIds]);
+
+  const fetchTopicsAndYears = async () => {
+    try {
+      const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=1000`);
+      if (response.ok) {
+        const result = await response.json();
+        const sampleQuestions = result.questions || [];
+        
+        const uniqueTopics = [...new Set(sampleQuestions.map(q => normalizeChapterName(q.tag)))].filter(Boolean).sort();
+        const uniqueYears = [...new Set(sampleQuestions.map(q => Number(q.year)))].filter(year => !isNaN(year)).sort((a, b) => a - b);
+        
+        setTopics(uniqueTopics);
+        setYears(uniqueYears);
+      }
+    } catch (error) {
+      console.error('Error fetching topics and years:', error);
+    }
+  };
 
   useEffect(() => {
     if (questions.length > 0) {
-      resetRemainingIndices();
       setStartTime(new Date());
     }
-  }, [questions, isRandom]);
+  }, [questions]);
 
-  const resetRemainingIndices = () => {
-    const availableIndices = filteredQuestions
-      .map((_, index) => index)
-      .filter(index => !completedQuestionIds.has(filteredQuestions[index].main_id || filteredQuestions[index].id));
-    setRemainingIndices(availableIndices);
-  };
-
-  const filterQuestions = () => {
-    let filtered = [...questions];
-    
-    if (selectedTopic !== 'all') {
-      filtered = filtered.filter(q => 
-        normalizeChapterName(q.tag) === selectedTopic
-      );
-    }
-    
-    if (selectedYear !== 'all') {
-      const yearNumber = Number(selectedYear);
-      filtered = filtered.filter(q => Number(q.year) === yearNumber);
-    }
-
-    filtered = filtered.map(q => ({
-      ...q,
-      option_a: normalizeOptionText(q.option_a),
-      option_b: normalizeOptionText(q.option_b),
-      option_c: normalizeOptionText(q.option_c),
-      option_d: normalizeOptionText(q.option_d)
-    }));
-
-    const totalQuestions = filtered.length;
-    const attemptedQuestions = filtered.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
+  const updateProgress = () => {
+    const totalQuestions = questions.length;
+    const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
     setQuestionProgress({
       total: totalQuestions,
       attempted: attemptedQuestions
     });
 
-    const availableQuestions = filtered.filter(q => !completedQuestionIds.has(q.main_id || q.id));
-    
-    setFilteredQuestions(availableQuestions);
-    
-    if (availableQuestions.length > 0) {
-      setCurrentQuestionIndex(0);
-    }
-
-    const newRemainingIndices = Array.from({ length: availableQuestions.length }, (_, i) => i);
-    setRemainingIndices(newRemainingIndices);
-
-    if (availableQuestions.length === 0 && 
-        filtered.length > 0 && 
-        completedQuestionIds.size > 0) {
+    if (attemptedQuestions === totalQuestions && totalQuestions > 0) {
       setShowCompletionModal(true);
     }
+  };
+
+  const filterQuestions = () => {
+    setFilteredQuestions(questions);
+    setCurrentQuestionIndex(0);
+    setSelectedOption(null);
+    setShowFeedback(false);
+    setShowAnswer(false);
+    setExplanation('');
+    setIsTransitioning(false);
   };
 
   const fetchQuestions = async () => {
@@ -150,11 +147,17 @@ export function QuizApp() {
       setIsLoading(true);
       console.log('Fetching questions from API for paper:', selectedPaper);
       
-      // Use our secure API route instead of direct Supabase access
       const params = new URLSearchParams({
         paper: selectedPaper,
-        limit: '1000' // Adjust based on your needs
+        limit: '1000'
       });
+
+      if (selectedTopic !== 'all') {
+        params.append('topic', selectedTopic);
+      }
+      if (selectedYear !== 'all') {
+        params.append('year', selectedYear);
+      }
 
       const response = await fetch(`/api/quiz?${params}`);
       
@@ -173,18 +176,17 @@ export function QuizApp() {
         option_d: normalizeOptionText(q.option_d)
       })) || [];
       
-      console.log('Normalized data sample:', normalizedData?.[0]);
+      const shuffledQuestions = [...normalizedData].sort(() => Math.random() - 0.5);
       
-      setQuestions(normalizedData);
-      // Reset state when changing papers
+      setQuestions(shuffledQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
+      
+      setFilteredQuestions(shuffledQuestions);
       setCurrentQuestionIndex(0);
       setSelectedOption(null);
       setShowFeedback(false);
       setShowAnswer(false);
-      setSelectedTopic('all');
-      setSelectedYear('all');
       setIsLoading(false);
     } catch (err) {
       console.error('Fetch questions error:', err);
@@ -215,6 +217,8 @@ export function QuizApp() {
   };
 
   const handleGetAnswer = () => {
+    if (showAnswer || showFeedback || isTransitioning) return;
+    
     const questionId = currentQuestion.main_id || currentQuestion.id;
     console.log('Current question:', currentQuestion);
     console.log('Question ID being used:', questionId);
@@ -232,18 +236,16 @@ export function QuizApp() {
       chapter: normalizeChapterName(currentQuestion.tag),
       timestamp: new Date()
     }]);
-
-    setQuestionProgress(prev => ({
-      ...prev,
-      attempted: prev.attempted + 1
-    }));
   };
 
   const handleOptionSelect = async (option) => {
-    if (selectedOption) return;
+    if (selectedOption || isTransitioning || showAnswer || showFeedback) return;
     
     const questionId = currentQuestion.main_id || currentQuestion.id;
     const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
+    
+    setSelectedOption(option);
+    setShowFeedback(true);
     
     setAnsweredQuestions(prev => [...prev, {
       questionId: questionId,
@@ -256,75 +258,68 @@ export function QuizApp() {
     }]);
 
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
-    setQuestionProgress(prev => ({
-      ...prev,
-      attempted: prev.attempted + 1
-    }));
 
-    setSelectedOption(option);
-    setShowFeedback(true);
     await fetchExplanation(questionId);
   };
 
-  const getNextRandomIndex = () => {
-    const availableIndices = remainingIndices.filter(index => 
-      !completedQuestionIds.has(filteredQuestions[index]?.main_id || filteredQuestions[index]?.id)
-    );
-
-    if (availableIndices.length === 0) {
-      return currentQuestionIndex;
-    }
-
-    const randomPosition = Math.floor(Math.random() * availableIndices.length);
-    const nextIndex = availableIndices[randomPosition];
-    setRemainingIndices(availableIndices.filter((_, index) => index !== randomPosition));
-    return nextIndex;
+  const handleModifyQuiz = () => {
+    setShowModifyQuiz(false);
+    setCompletedQuestionIds(new Set());
+    setAnsweredQuestions([]);
+    setSelectedOption(null);
+    setShowFeedback(false);
+    setShowAnswer(false);
+    setExplanation('');
+    fetchQuestions();
   };
 
   const handleNextQuestion = () => {
-    setShowAnswer(false);
-    
-    const availableQuestionsCount = filteredQuestions.length;
-
-    if (availableQuestionsCount === 0 && completedQuestionIds.size > 0) {
-      setShowCompletionModal(true);
-      return;
-    }
-
-    if (isRandom) {
-      const nextIndex = getNextRandomIndex();
-      if (nextIndex === currentQuestionIndex && completedQuestionIds.size > 0) {
-        setShowCompletionModal(true);
-        return;
-      }
-      setCurrentQuestionIndex(nextIndex);
-    } else {
-      let nextIndex = (currentQuestionIndex + 1) % availableQuestionsCount;
-      let loopCount = 0;
-      
-      while (completedQuestionIds.has(filteredQuestions[nextIndex]?.main_id || filteredQuestions[nextIndex]?.id) && 
-             loopCount < availableQuestionsCount) {
-        nextIndex = (nextIndex + 1) % availableQuestionsCount;
-        loopCount++;
-      }
-
-      if (loopCount === availableQuestionsCount && completedQuestionIds.size > 0) {
-        setShowCompletionModal(true);
-        return;
-      }
-
-      setCurrentQuestionIndex(nextIndex);
-    }
-    
+    setIsTransitioning(true);
     setSelectedOption(null);
     setShowFeedback(false);
+    setShowAnswer(false);
     setExplanation('');
+    
+    setTimeout(() => {
+      const availableQuestions = filteredQuestions.filter(q => 
+        !completedQuestionIds.has(q.main_id || q.id)
+      );
+      
+      if (availableQuestions.length === 0) {
+        setShowCompletionModal(true);
+        setIsTransitioning(false);
+        return;
+      }
+
+      let nextQuestion = null;
+      let nextIndex = -1;
+      
+      for (let i = 1; i <= filteredQuestions.length; i++) {
+        const checkIndex = (currentQuestionIndex + i) % filteredQuestions.length;
+        const question = filteredQuestions[checkIndex];
+        
+        if (!completedQuestionIds.has(question.main_id || question.id)) {
+          nextQuestion = question;
+          nextIndex = checkIndex;
+          break;
+        }
+      }
+      
+      if (nextQuestion) {
+        setCurrentQuestionIndex(nextIndex);
+      } else {
+        setShowCompletionModal(true);
+      }
+      
+      setIsTransitioning(false);
+    }, 100);
   };
 
   const resetFilters = () => {
     setSelectedTopic('all');
     setSelectedYear('all');
     setShowCompletionModal(false);
+    fetchQuestions();
   };
 
   const isCorrectAnswer = (option, correctAnswer) => {
@@ -333,21 +328,21 @@ export function QuizApp() {
            option.toUpperCase() === correctAnswer;
   };
 
-  const getOptionStyle = (option) => {
+  const getOptionClass = (option) => {
     if (!showFeedback && !showAnswer) {
-      return "border-gray-200 hover:border-gray-300";
+      return "bg-white/10 hover:bg-white/20 border-white/20";
     }
 
     const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     const isSelected = selectedOption === option;
 
     if (isCorrect) {
-      return "border-green-500 bg-green-50";
+      return "bg-green-500/30 border-green-400";
     }
     if (isSelected && !isCorrect) {
-      return "border-red-500 bg-red-50";
+      return "bg-red-500/30 border-red-400";
     }
-    return "border-gray-200";
+    return "bg-white/5 border-white/10";
   };
 
   const generateSummary = () => {
@@ -388,321 +383,534 @@ export function QuizApp() {
 
   const currentQuestion = filteredQuestions[currentQuestionIndex] || {};
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20"
+        >
+          <div className="text-center">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-3"
+            />
+            <p className="text-white text-sm">Loading quiz questions...</p>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e6f7ff] to-[#ffffff]">
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 overflow-hidden relative">
       {/* Header */}
-      <header className="fixed top-0 z-50 w-full bg-transparent px-4">
+      <header className="fixed top-0 z-50 w-full bg-transparent px-2 sm:px-4">
         <div className="container mx-auto">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-12 sm:h-14 items-center justify-between">
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-800">saduvbey</span>
+              <span className="text-lg sm:text-xl font-bold text-white">saduvbey</span>
             </Link>
             <Link
-              href="/"
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+              href="/nce"
+              className="px-3 py-1.5 text-xs sm:text-sm font-medium text-white/80 hover:text-white backdrop-blur-sm bg-white/10 rounded-lg border border-white/20"
             >
-              Home
+              NCE Home
             </Link>
           </div>
         </div>
       </header>
-      
-      <div className="max-w-2xl mx-auto px-4 py-8 pt-16">
-        {/* Paper Selection */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-3">Select Paper</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {Object.values(PAPERS).map((paper) => (
-              <button
-                key={paper.id}
-                onClick={() => setSelectedPaper(paper.id)}
-                className={`p-3 rounded-lg text-left transition-colors ${
-                  selectedPaper === paper.id
-                    ? 'bg-blue-100 border-blue-300 text-blue-700'
-                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                } border`}
-              >
-                <div className="font-medium">{paper.name}</div>
-                <div className="text-xs text-gray-600">{paper.description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Rest of the component remains the same... */}
-        {/* Filters Section */}
-        <div className="flex items-center gap-4 mb-8">
-          {/* Topic Dropdown */}
-          <div className="relative flex-1">
-            <select
-              value={selectedTopic}
-              onChange={(e) => setSelectedTopic(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Topics</option>
-              {topics.map(topic => (
-                <option key={topic} value={topic}>{topic}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-              </svg>
-            </div>
-          </div>
+      {/* Animated background particles */}
+      {particles.map(particle => (
+        <motion.div
+          key={particle.id}
+          className="absolute rounded-full bg-gradient-to-br from-purple-400/20 to-pink-400/20 blur-3xl"
+          style={{
+            width: particle.size,
+            height: particle.size,
+            left: `${particle.x}%`,
+            top: `${particle.y}%`,
+          }}
+          animate={{
+            x: [0, 30, -30, 0],
+            y: [0, -30, 30, 0],
+          }}
+          transition={{
+            duration: particle.duration,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+        />
+      ))}
 
-          {/* Year Dropdown */}
-          <div className="relative flex-1">
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              className="w-full appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Years</option>
-              {years.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Random Toggle */}
-          <button
-            onClick={() => setIsRandom(!isRandom)}
-            className={`flex items-center gap-1 px-4 py-2 text-sm border rounded-lg transition-colors whitespace-nowrap ${
-              isRandom 
-                ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200' 
-                : 'bg-gray-100 border-gray-200 hover:bg-gray-200'
-            }`}
+      <div className="relative z-10 pt-16 px-2 sm:px-4">
+        <div className="max-w-3xl mx-auto">
+          {/* Modify Quiz Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-3"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-            </svg>
-            Random {isRandom ? 'On' : 'Off'}
-          </button>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="mb-6">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Progress: {questionProgress.attempted} of {questionProgress.total} questions</span>
-            <span>Remaining: {questionProgress.total - questionProgress.attempted}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{ 
-                width: `${(questionProgress.attempted / questionProgress.total) * 100}%` 
-              }}
-            ></div>
-          </div>
-        </div>
-
-        {/* Question Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-medium text-gray-900 mb-8">
-            {currentQuestion.question_text}
-          </h2>
-        </div>
-
-        {/* Options Section */}
-        <div className="flex flex-col gap-3 mb-8">
-          {['a', 'b', 'c', 'd'].map((option) => (
-            <label 
-              key={option}
-              className={`flex items-center gap-4 rounded-lg border border-solid p-4 cursor-pointer transition-colors hover:bg-gray-50 ${getOptionStyle(option)}`}
-            >
-              <input
-                type="radio"
-                name="quiz-option"
-                checked={selectedOption === option}
-                onChange={() => handleOptionSelect(option)}
-                disabled={showAnswer}
-                className="h-4 w-4 border-2 border-gray-300 bg-transparent text-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              />
-              <div className="flex grow flex-col">
-                <p className={`text-sm font-medium leading-normal ${
-                  (showFeedback || showAnswer) && isCorrectAnswer(option, currentQuestion.correct_answer)
-                    ? 'text-green-700'
-                    : showFeedback && selectedOption === option && !isCorrectAnswer(option, currentQuestion.correct_answer)
-                      ? 'text-red-700'
-                      : 'text-gray-900'
-                }`}>
-                  {currentQuestion[`option_${option}`]}
-                </p>
+            <div className="flex justify-between items-center">
+              <div className="text-white/80">
+                <span className="text-xs sm:text-sm">
+                  {PAPERS[selectedPaper].name}
+                  {selectedTopic !== 'all' && ` • ${selectedTopic}`}
+                  {selectedYear !== 'all' && ` • ${selectedYear}`}
+                </span>
               </div>
-            </label>
-          ))}
-        </div>
+              <motion.button
+                onClick={() => setShowModifyQuiz(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-3 sm:px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium rounded-lg hover:bg-white/15 transition-all duration-300"
+              >
+                ⚙️ Settings
+              </motion.button>
+            </div>
+          </motion.div>
 
-        {/* Buttons Section */}
-        <div className="flex justify-between items-center mb-4">
-          {answeredQuestions.length > 0 && (
-            <button 
-              onClick={() => setShowSummary(true)}
-              className="px-4 py-2 border rounded-lg bg-blue-500 text-white hover:bg-blue-600 text-sm font-medium"
-            >
-              Finish Quiz
-            </button>
-          )}
-          <div className="flex gap-2 ml-auto">
-            <button 
-              onClick={handleGetAnswer}
-              disabled={showFeedback || showAnswer}
-              className="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Get Answer
-            </button>
-            <button 
-              onClick={handleNextQuestion}
-              className="px-4 py-2 border rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium"
-            >
-              Next Question
-            </button>
-          </div>
-        </div>
+          {/* Progress Bar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-4"
+          >
+            <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-3 sm:p-4 border border-white/20">
+              <div className="flex justify-between text-white/80 text-xs sm:text-sm mb-2">
+                <span>Progress: {questionProgress.attempted}/{questionProgress.total}</span>
+                <span>Remaining: {questionProgress.total - questionProgress.attempted}</span>
+              </div>
+              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-purple-400 via-pink-400 to-purple-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((questionProgress.attempted) / questionProgress.total) * 100}%` }}
+                  transition={{ duration: 0.5 }}
+                />
+              </div>
+            </div>
+          </motion.div>
 
-        {/* Explanation Section */}
-        {(showFeedback || showAnswer) && (
-          <div className="mb-4">
-            {isLoadingExplanation ? (
-              <div>Loading explanation...</div>
-            ) : (
-              <div className="explanation-content">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
+          {/* Question Section */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.3 }}
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 border border-white/20 shadow-2xl mb-4"
+            >
+              {/* Question */}
+              {isTransitioning ? (
+                <div className="text-center py-8">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full mx-auto mb-3"
+                  />
+                  <p className="text-white/70 text-sm">Loading next question...</p>
+                </div>
+              ) : (
+                <>
+                  <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6 leading-relaxed">
+                    {currentQuestion.question_text}
+                  </h2>
+
+                  {/* Options */}
+                  <div className="space-y-3 mb-4 sm:mb-6">
+                    {['a', 'b', 'c', 'd'].map((option) => (
+                      <motion.button
+                        key={option}
+                        onClick={() => handleOptionSelect(option)}
+                        disabled={showAnswer || isTransitioning}
+                        whileHover={{ scale: (selectedOption || isTransitioning) ? 1 : 1.01 }}
+                        whileTap={{ scale: (selectedOption || isTransitioning) ? 1 : 0.99 }}
+                        className={`w-full p-3 sm:p-4 rounded-xl backdrop-blur-md border transition-all duration-300 text-left group ${getOptionClass(option)} ${(isTransitioning) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base transition-all duration-300 ${
+                            selectedOption === option 
+                              ? (isCorrectAnswer(option, currentQuestion.correct_answer) ? 'bg-green-500 text-white' : 'bg-red-500 text-white')
+                              : 'bg-white/20 text-white group-hover:bg-white/30'
+                          }`}>
+                            {option.toUpperCase()}
+                          </div>
+                          <span className="text-white text-sm sm:text-base flex-1">{currentQuestion[`option_${option}`]}</span>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Explanation */}
+              <AnimatePresence>
+                {(showFeedback || showAnswer) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-4 sm:mb-6"
+                  >
+                    <div className="p-3 sm:p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
+                      {isLoadingExplanation ? (
+                        <div className="flex items-center justify-center py-3">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                            className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
+                          />
+                          <span className="text-white/90 ml-2 text-sm">Loading explanation...</span>
+                        </div>
+                      ) : (
+                        <div className="explanation-content text-white/90 leading-relaxed text-sm">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {explanation}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                {answeredQuestions.length > 0 && (
+                  <motion.button
+                    onClick={() => setShowSummary(true)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold rounded-full hover:shadow-lg transition-all duration-200"
+                  >
+                    📊 Summary
+                  </motion.button>
+                )}
+                
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <motion.button
+                    onClick={handleGetAnswer}
+                    disabled={showFeedback || showAnswer || isTransitioning}
+                    whileHover={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 1.05 }}
+                    whileTap={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 0.95 }}
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 ${
+                      (showFeedback || showAnswer || isTransitioning)
+                        ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
+                        : 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-lg'
+                    }`}
+                  >
+                    💡 Answer
+                  </motion.button>
+                  
+                  <motion.button
+                    onClick={handleNextQuestion}
+                    disabled={isTransitioning}
+                    whileHover={{ scale: isTransitioning ? 1 : 1.05 }}
+                    whileTap={{ scale: isTransitioning ? 1 : 0.95 }}
+                    className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                      isTransitioning 
+                        ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
+                        : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
+                    }`}
+                  >
+                    {isTransitioning ? 'Loading...' : 'Next →'}
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Question Info */}
+              <div className="mt-4 pt-3 border-t border-white/20">
+                <div className="flex flex-wrap gap-4 text-xs text-white/70">
+                  <div>
+                    <span className="text-white/50">Paper:</span> {PAPERS[selectedPaper].name}
+                  </div>
+                  <div>
+                    <span className="text-white/50">Chapter:</span> {normalizeChapterName(currentQuestion.tag)}
+                  </div>
+                  <div>
+                    <span className="text-white/50">Year:</span> {currentQuestion.year}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Modify Quiz Modal */}
+      <AnimatePresence>
+        {showModifyQuiz && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/20"
+            >
+              <div className="mb-4">
+                <h2 className="text-xl font-bold text-white mb-1">Quiz Settings</h2>
+                <p className="text-white/70 text-sm">Change parameters and get fresh questions</p>
+              </div>
+
+              {/* Paper Selection */}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Select Paper</h3>
+                <div className="grid grid-cols-1 gap-2">
+                  {Object.values(PAPERS).map((paper) => (
+                    <motion.button
+                      key={paper.id}
+                      onClick={() => setSelectedPaper(paper.id)}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`p-3 rounded-lg text-left transition-all duration-300 backdrop-blur-md border ${
+                        selectedPaper === paper.id
+                          ? 'bg-white/20 border-white/40 text-white'
+                          : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
+                      }`}
+                    >
+                      <div className="font-semibold text-sm">{paper.name}</div>
+                      <div className="text-xs text-white/70 mt-1">{paper.description}</div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Topic Selection */}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Filter by Topic</h3>
+                <select
+                  value={selectedTopic}
+                  onChange={(e) => setSelectedTopic(e.target.value)}
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
                 >
-                  {explanation}
-                </ReactMarkdown>
+                  <option value="all" className="bg-gray-800 text-white">All Topics</option>
+                  {topics.map(topic => (
+                    <option key={topic} value={topic} className="bg-gray-800 text-white">{topic}</option>
+                  ))}
+                </select>
               </div>
-            )}
-          </div>
+
+              {/* Year Selection */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Filter by Year</h3>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  <option value="all" className="bg-gray-800 text-white">All Years</option>
+                  {years.map(year => (
+                    <option key={year} value={year} className="bg-gray-800 text-white">{year}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <motion.button
+                  onClick={() => setShowModifyQuiz(false)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg border border-white/20 transition-all duration-200"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  onClick={handleModifyQuiz}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold rounded-lg hover:shadow-lg transition-all duration-200"
+                >
+                  Apply Changes
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Footer Section */}
-        <div className="border-t pt-4">
-          <div className="flex gap-8">
-            <div className="flex gap-2">
-              <div className="text-gray-600 text-sm">Paper:</div>
-              <div className="text-sm">{PAPERS[selectedPaper].name}</div>
-            </div>
-            <div className="flex gap-2">
-              <div className="text-gray-600 text-sm">Chapter:</div>
-              <div className="text-sm">{normalizeChapterName(currentQuestion.tag)}</div>
-            </div>
-            <div className="flex gap-2">
-              <div className="text-gray-600 text-sm">Year:</div>
-              <div className="text-sm">{currentQuestion.year}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Completion Modal */}
+      {/* Completion Modal */}
+      <AnimatePresence>
         {showCompletionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold mb-4">Section Complete!</h2>
-              <p className="text-gray-600 mb-6">
-                You have completed all available questions for the selected filters. Would you like to:
-              </p>
-              <div className="space-y-3">
-                <button
-                  onClick={resetFilters}
-                  className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                >
-                  Try Questions from Other Topics/Years
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCompletionModal(false);
-                    setShowSummary(true);
-                  }}
-                  className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg"
-                >
-                  View Summary
-                </button>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 max-w-sm w-full border border-white/20"
+            >
+              <div className="text-center">
+                <div className="text-4xl mb-3">🎉</div>
+                <h2 className="text-xl font-bold text-white mb-3">All Questions Completed!</h2>
+                <p className="text-white/80 text-sm mb-6">
+                  You have attempted all available questions. Try different topics or years for fresh questions.
+                </p>
+                <div className="space-y-2">
+                  <motion.button
+                    onClick={resetFilters}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold rounded-full hover:shadow-lg transition-all duration-200"
+                  >
+                    Try Other Topics/Years
+                  </motion.button>
+                  <motion.button
+                    onClick={() => {
+                      setShowCompletionModal(false);
+                      setShowSummary(true);
+                    }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-full border border-white/20 transition-all duration-200"
+                  >
+                    View Summary
+                  </motion.button>
+                </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Results Summary Modal */}
+      {/* Results Summary Modal */}
+      <AnimatePresence>
         {showSummary && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-4">Quiz Summary</h2>
-              
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 sm:p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-white/20"
+            >
               {(() => {
                 const summary = generateSummary();
                 return (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2, type: "spring" }}
+                        className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center"
+                      >
+                        <span className="text-2xl font-bold text-white">{summary.score}%</span>
+                      </motion.div>
+                      
+                      <h2 className="text-2xl font-bold text-white mb-2">Quiz Complete! 🎉</h2>
+                      <p className="text-lg text-white/80 mb-6">
+                        You scored {summary.correctAnswers} out of {summary.totalAnswered} questions
+                      </p>
+                    </div>
+
                     {/* Overall Performance */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-3">Overall Performance</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-gray-600">Score</p>
-                          <p className="text-2xl font-bold">{summary.score}%</p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20"
+                    >
+                      <h3 className="font-semibold text-white mb-3 text-base">📊 Performance Overview</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center">
+                          <p className="text-white/70 text-xs">Score</p>
+                          <p className="text-2xl font-bold text-white">{summary.score}%</p>
                         </div>
-                        <div>
-                          <p className="text-gray-600">Time Taken</p>
-                          <p className="text-2xl font-bold">{formatTime(summary.timeTaken)}</p>
+                        <div className="text-center">
+                          <p className="text-white/70 text-xs">Time Taken</p>
+                          <p className="text-2xl font-bold text-white">{formatTime(summary.timeTaken)}</p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Questions Stats */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-3">Questions</h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-gray-600">Correct</p>
-                          <p className="text-2xl font-bold text-green-600">{summary.correctAnswers}</p>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20"
+                    >
+                      <h3 className="font-semibold text-white mb-3 text-base">📝 Question Breakdown</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center">
+                          <p className="text-green-400 text-xs">Correct</p>
+                          <p className="text-2xl font-bold text-green-400">{summary.correctAnswers}</p>
                         </div>
-                        <div>
-                          <p className="text-gray-600">Incorrect</p>
-                          <p className="text-2xl font-bold text-red-600">{summary.incorrectAnswers}</p>
+                        <div className="text-center">
+                          <p className="text-red-400 text-xs">Incorrect</p>
+                          <p className="text-2xl font-bold text-red-400">{summary.incorrectAnswers}</p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Chapter Performance */}
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h3 className="font-semibold mb-3">Chapter Performance</h3>
-                      <div className="space-y-3">
-                        {Object.entries(summary.chapterPerformance).map(([chapter, stats]) => (
-                          <div key={chapter} className="flex justify-between items-center">
-                            <span className="text-gray-600">{chapter}</span>
-                            <span className="font-medium">
-                              {Math.round((stats.correct / stats.total) * 100)}% 
-                              ({stats.correct}/{stats.total})
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    {Object.keys(summary.chapterPerformance).length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/20"
+                      >
+                        <h3 className="font-semibold text-white mb-3 text-base">📚 Chapter Performance</h3>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {Object.entries(summary.chapterPerformance).map(([chapter, stats], idx) => (
+                            <motion.div
+                              key={chapter}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.6 + idx * 0.1 }}
+                              className="flex justify-between items-center p-2 bg-white/5 rounded-lg"
+                            >
+                              <span className="text-white/80 text-xs truncate flex-1 mr-2">{chapter}</span>
+                              <span className="font-semibold text-white text-sm">
+                                {Math.round((stats.correct / stats.total) * 100)}% 
+                                <span className="text-white/60 ml-1 text-xs">({stats.correct}/{stats.total})</span>
+                              </span>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
 
                     {/* Close Button */}
-                    <button
+                    <motion.button
                       onClick={() => setShowSummary(false)}
-                      className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full hover:shadow-lg transition-all duration-200"
                     >
-                      Close Summary
-                    </button>
+                      Continue Learning 🚀
+                    </motion.button>
                   </div>
                 );
               })()}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
