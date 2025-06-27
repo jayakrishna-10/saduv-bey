@@ -110,6 +110,14 @@ const normalizeOptionText = (text) => {
   return normalizedText.charAt(0).toUpperCase() + normalizedText.slice(1);
 };
 
+// Robust answer comparison function
+const isCorrectAnswer = (option, correctAnswer) => {
+  if (!option || !correctAnswer) return false;
+  return option === correctAnswer || 
+         option.toLowerCase() === correctAnswer.toLowerCase() || 
+         option.toUpperCase() === correctAnswer.toUpperCase();
+};
+
 // Helper function to safely get test mode
 const getTestMode = (modeId) => {
   return TEST_MODES[modeId?.toUpperCase()] || TEST_MODES.MOCK_EXAM;
@@ -1000,7 +1008,7 @@ function TestResults({ config, testData, onReview, onRestart }) {
     
     let correct = 0;
     Object.entries(testData.answers).forEach(([index, answer]) => {
-      if (testData.questions[index].correct_answer === answer) {
+      if (isCorrectAnswer(answer, testData.questions[index].correct_answer)) {
         correct++;
       }
     });
@@ -1126,16 +1134,16 @@ function TestReview({ config, testData, onBack }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentQuestion = testData.questions[currentIndex];
   const userAnswer = testData.answers[currentIndex];
-  const isCorrect = userAnswer === currentQuestion?.correct_answer;
+  const isCorrect = isCorrectAnswer(userAnswer, currentQuestion?.correct_answer);
 
   const getOptionClass = (option) => {
     const isUserAnswer = userAnswer === option;
-    const isCorrectAnswer = currentQuestion?.correct_answer === option;
+    const isOptionCorrect = isCorrectAnswer(option, currentQuestion?.correct_answer);
 
-    if (isCorrectAnswer) {
+    if (isOptionCorrect) {
       return "bg-green-500/30 border-green-400 text-white";
     }
-    if (isUserAnswer && !isCorrectAnswer) {
+    if (isUserAnswer && !isOptionCorrect) {
       return "bg-red-500/30 border-red-400 text-white";
     }
     return "bg-white/10 border-white/20 text-white/80";
@@ -1221,7 +1229,7 @@ function TestReview({ config, testData, onBack }) {
                   </div>
                   <span className="flex-1">{currentQuestion?.[`option_${option}`]}</span>
                   {userAnswer === option && <span className="text-xs bg-white/20 px-2 py-1 rounded">Your Answer</span>}
-                  {currentQuestion?.correct_answer === option && <span className="text-xs bg-green-500 px-2 py-1 rounded text-white">Correct</span>}
+                  {isCorrectAnswer(option, currentQuestion?.correct_answer) && <span className="text-xs bg-green-500 px-2 py-1 rounded text-white">Correct</span>}
                 </div>
               </div>
             ))}
