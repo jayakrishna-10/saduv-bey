@@ -1,3 +1,4 @@
+// app/components/NavBar.js
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -5,6 +6,14 @@ import { usePathname } from 'next/navigation';
 export default function NavBar() {
   const pathname = usePathname();
   const isNCESection = pathname.startsWith('/nce');
+
+  const getNCEPageName = () => {
+    if (pathname === '/nce') return 'Home';
+    if (pathname.includes('/quiz')) return 'Quiz';
+    if (pathname.includes('/test')) return 'Test';
+    if (pathname.includes('/notes')) return 'Notes';
+    return 'NCE';
+  };
 
   return (
     <nav className="border-b bg-white">
@@ -17,19 +26,31 @@ export default function NavBar() {
             {isNCESection && (
               <>
                 <div className="h-6 w-px bg-gray-200"></div>
-                <span className="text-sm font-medium text-gray-600">NCE</span>
+                <span className="text-sm font-medium text-gray-600">
+                  NCE • {getNCEPageName()}
+                </span>
               </>
             )}
           </div>
           
           <div className="flex space-x-4">
             {isNCESection ? (
-              <Link
-                href="/"
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
-              >
-                Home
-              </Link>
+              <div className="flex items-center gap-3">
+                {pathname !== '/nce' && (
+                  <Link
+                    href="/nce"
+                    className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    NCE Home
+                  </Link>
+                )}
+                <Link
+                  href="/"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+                >
+                  Home
+                </Link>
+              </div>
             ) : (
               <Link
                 href="/nce"
