@@ -154,17 +154,25 @@ export function TestApp() {
 
   const fetchTopicsAndYears = async () => {
     try {
-      const response = await fetch(`/api/quiz?paper=paper1&limit=1000`);
-      if (response.ok) {
-        const result = await response.json();
-        const sampleQuestions = result.questions || [];
-        
-        const uniqueTopics = [...new Set(sampleQuestions.map(q => normalizeChapterName(q.tag)))].filter(Boolean).sort();
-        const uniqueYears = [...new Set(sampleQuestions.map(q => Number(q.year)))].filter(year => !isNaN(year)).sort((a, b) => a - b);
-        
-        setTopics(uniqueTopics);
-        setYears(uniqueYears);
+      const papers = ['paper1', 'paper2', 'paper3'];
+      let allQuestions = [];
+      
+      // Fetch questions from all papers to get comprehensive topic list
+      for (const paper of papers) {
+        const response = await fetch(`/api/quiz?paper=${paper}&limit=1000`);
+        if (response.ok) {
+          const result = await response.json();
+          if (result.questions) {
+            allQuestions.push(...result.questions);
+          }
+        }
       }
+      
+      const uniqueTopics = [...new Set(allQuestions.map(q => normalizeChapterName(q.tag)))].filter(Boolean).sort();
+      const uniqueYears = [...new Set(allQuestions.map(q => Number(q.year)))].filter(year => !isNaN(year)).sort((a, b) => a - b);
+      
+      setTopics(uniqueTopics);
+      setYears(uniqueYears);
     } catch (error) {
       console.error('Error fetching topics and years:', error);
     }
@@ -175,28 +183,71 @@ export function TestApp() {
       console.log('Fetching questions for test:', testConfig);
       
       const testType = getTestType(testConfig.type);
-      const params = new URLSearchParams({
-        paper: testType.paper || testConfig.type,
-        limit: testConfig.questionCount.toString()
-      });
-
-      const response = await fetch(`/api/quiz?${params}`);
+      let allQuestions = [];
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // For topic-wise or custom tests, we need to fetch from multiple papers and filter
+      if (testConfig.type === 'topic' || testConfig.type === 'custom') {
+        // Fetch from all papers and then filter by selected topics
+        const papers = ['paper1', 'paper2', 'paper3'];
+        
+        for (const paper of papers) {
+          const params = new URLSearchParams({
+            paper: paper,
+            limit: '1000' // Get more questions to have a good pool for filtering
+          });
+
+          const response = await fetch(`/api/quiz?${params}`);
+          if (response.ok) {
+            const result = await response.json();
+            if (result.questions) {
+              allQuestions.push(...result.questions);
+            }
+          }
+        }
+        
+        // Filter by selected topics
+        if (testConfig.selectedTopics.length > 0) {
+          allQuestions = allQuestions.filter(q => 
+            testConfig.selectedTopics.some(topic => 
+              normalizeChapterName(q.tag) === topic
+            )
+          );
+        }
+        
+        // Filter by selected years (for custom tests)
+        if (testConfig.type === 'custom' && testConfig.selectedYears.length > 0) {
+          allQuestions = allQuestions.filter(q => 
+            testConfig.selectedYears.includes(Number(q.year))
+          );
+        }
+        
+      } else {
+        // For paper-based tests, fetch from specific paper
+        const params = new URLSearchParams({
+          paper: testType.paper || testConfig.type,
+          limit: (testConfig.questionCount * 2).toString() // Get more questions for better shuffling
+        });
+
+        const response = await fetch(`/api/quiz?${params}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        allQuestions = result.questions || [];
       }
       
-      const result = await response.json();
-      console.log('API response:', result);
-      
-      const normalizedData = result.questions?.map(q => ({
+      // Normalize the data
+      const normalizedData = allQuestions.map(q => ({
         ...q,
         option_a: normalizeOptionText(q.option_a),
         option_b: normalizeOptionText(q.option_b),
         option_c: normalizeOptionText(q.option_c),
         option_d: normalizeOptionText(q.option_d)
-      })) || [];
+      }));
       
+      // Shuffle if required
       let shuffledQuestions = [...normalizedData];
       const testMode = getTestMode(testConfig.mode);
       if (testMode.shuffleQuestions) {
@@ -206,6 +257,7 @@ export function TestApp() {
       // Take only the required number of questions
       const finalQuestions = shuffledQuestions.slice(0, testConfig.questionCount);
       
+      console.log(`Fetched ${finalQuestions.length} questions for test`);
       return finalQuestions;
     } catch (err) {
       console.error('Fetch questions error:', err);
@@ -418,6 +470,88 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
             </div>
           </div>
 
+          {/* Topic Selection (for topic-wise and custom tests) */}
+          {(config.type === 'topic' || config.type === 'custom') && (
+            <div>
+              <div className="flex items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Select Topics</h3>
+                <InfoTooltip 
+                  id="topics"
+                  content="Choose specific topics to focus on. You must select at least one topic for topic-wise tests."
+                />
+              </div>
+              <div className="max-h-40 overflow-y-auto space-y-2 p-3 bg-white/5 rounded-lg border border-white/20">
+                {topics.length > 0 ? (
+                  topics.map(topic => (
+                    <label key={topic} className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.selectedTopics.includes(topic)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setConfig({...config, selectedTopics: [...config.selectedTopics, topic]});
+                          } else {
+                            setConfig({...config, selectedTopics: config.selectedTopics.filter(t => t !== topic)});
+                          }
+                        }}
+                        className="rounded bg-white/20 border-white/40 text-purple-500 focus:ring-purple-400"
+                      />
+                      <span className="text-white/90 text-sm">{topic}</span>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-white/60 text-sm text-center py-2">Loading topics...</div>
+                )}
+              </div>
+              {config.selectedTopics.length > 0 && (
+                <div className="mt-2 text-white/70 text-sm">
+                  {config.selectedTopics.length} topic{config.selectedTopics.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Year Selection (for custom tests) */}
+          {config.type === 'custom' && (
+            <div>
+              <div className="flex items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">Filter by Years (Optional)</h3>
+                <InfoTooltip 
+                  id="years"
+                  content="Optionally filter questions by specific exam years. Leave empty to include all years."
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {years.length > 0 ? (
+                  years.map(year => (
+                    <label key={year} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={config.selectedYears.includes(year)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setConfig({...config, selectedYears: [...config.selectedYears, year]});
+                          } else {
+                            setConfig({...config, selectedYears: config.selectedYears.filter(y => y !== year)});
+                          }
+                        }}
+                        className="rounded bg-white/20 border-white/40 text-purple-500 focus:ring-purple-400"
+                      />
+                      <span className="text-white/90 text-sm bg-white/10 px-2 py-1 rounded">{year}</span>
+                    </label>
+                  ))
+                ) : (
+                  <div className="text-white/60 text-sm">Loading years...</div>
+                )}
+              </div>
+              {config.selectedYears.length > 0 && (
+                <div className="mt-2 text-white/70 text-sm">
+                  {config.selectedYears.length} year{config.selectedYears.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Question Count (if configurable) */}
           {!getTestType(config.type)?.fixed && (
             <div>
@@ -478,13 +612,33 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
           {/* Start Test Button */}
           <motion.button
             onClick={onStart}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+            disabled={config.type === 'topic' && config.selectedTopics.length === 0}
+            whileHover={{ scale: (config.type === 'topic' && config.selectedTopics.length === 0) ? 1 : 1.05 }}
+            whileTap={{ scale: (config.type === 'topic' && config.selectedTopics.length === 0) ? 1 : 0.95 }}
+            className={`w-full py-4 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 ${
+              config.type === 'topic' && config.selectedTopics.length === 0
+                ? 'bg-white/10 text-white/50 cursor-not-allowed border border-white/20'
+                : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg'
+            }`}
           >
             <Play className="h-5 w-5" />
-            Start Test
+            {config.type === 'topic' && config.selectedTopics.length === 0 
+              ? 'Select Topics to Start Test'
+              : 'Start Test'
+            }
           </motion.button>
+          
+          {/* Validation Message */}
+          {config.type === 'topic' && config.selectedTopics.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 p-3 bg-yellow-500/20 border border-yellow-400/50 rounded-lg flex items-center gap-2"
+            >
+              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+              <span className="text-yellow-200 text-sm">Please select at least one topic for topic-wise test</span>
+            </motion.div>
+          )}
         </div>
       </div>
     </motion.div>
