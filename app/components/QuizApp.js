@@ -96,29 +96,6 @@ export function QuizApp() {
     }
   }, [questions, completedQuestionIds]);
 
-  // Check if current question has been attempted and skip to next available
-  useEffect(() => {
-    const currentQuestion = filteredQuestions[currentQuestionIndex];
-    if (currentQuestion && completedQuestionIds.has(currentQuestion.main_id || currentQuestion.id) && !isTransitioning) {
-      // Current question has been attempted, find next available
-      const availableQuestions = filteredQuestions.filter(q => 
-        !completedQuestionIds.has(q.main_id || q.id)
-      );
-      
-      if (availableQuestions.length > 0) {
-        // Find the index of the first available question
-        for (let i = 0; i < filteredQuestions.length; i++) {
-          if (!completedQuestionIds.has(filteredQuestions[i].main_id || filteredQuestions[i].id)) {
-            setCurrentQuestionIndex(i);
-            break;
-          }
-        }
-      } else {
-        setShowCompletionModal(true);
-      }
-    }
-  }, [currentQuestionIndex, filteredQuestions, completedQuestionIds, isTransitioning]);
-
   const fetchTopicsAndYears = async () => {
     try {
       // Fetch a sample of questions to get available topics and years
@@ -695,20 +672,15 @@ export function QuizApp() {
 
               {/* Question Info */}
               <div className="mt-8 pt-6 border-t border-white/20">
-                <div className="flex flex-wrap justify-between items-center gap-4 text-sm text-white/70">
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <span className="text-white/50">Paper:</span> {PAPERS[selectedPaper].name}
-                    </div>
-                    <div>
-                      <span className="text-white/50">Chapter:</span> {normalizeChapterName(currentQuestion.tag)}
-                    </div>
-                    <div>
-                      <span className="text-white/50">Year:</span> {currentQuestion.year}
-                    </div>
+                <div className="flex flex-wrap gap-6 text-sm text-white/70">
+                  <div>
+                    <span className="text-white/50">Paper:</span> {PAPERS[selectedPaper].name}
                   </div>
-                  <div className="text-xs">
-                    <span className="text-purple-300">🔄 No question repeats in this session</span>
+                  <div>
+                    <span className="text-white/50">Chapter:</span> {normalizeChapterName(currentQuestion.tag)}
+                  </div>
+                  <div>
+                    <span className="text-white/50">Year:</span> {currentQuestion.year}
                   </div>
                 </div>
               </div>
