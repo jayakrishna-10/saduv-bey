@@ -1,9 +1,11 @@
 // app/nce/quiz/page.js
-'use client';
-import { QuizApp } from '../../components/QuizApp';
-// or with alias
-// import { QuizApp } from '@/components/QuizApp';
+import { QuizApp } from '@/components/QuizApp';
 
-export default function QuizPage() {
+export const metadata = {
+  title: 'NCE Practice Quiz',
+  description: 'Interactive quiz with instant feedback and explanations for NCE preparation',
+};
+
+export default function NCEQuizPage() {
   return <QuizApp />;
 }
