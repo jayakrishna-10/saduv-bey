@@ -31,8 +31,11 @@ export async function POST(request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
     
+    console.log('🔵 AskAI API called from IP:', ip);
+    
     // Rate limiting
     if (isRateLimited(ip)) {
+      console.log('🔴 Rate limit exceeded for IP:', ip);
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait before asking again.' }, 
         { status: 429 }
@@ -40,19 +43,26 @@ export async function POST(request) {
     }
 
     const { message, context } = await request.json();
+    console.log('📝 Received message:', message);
+    console.log('📍 Context:', context);
     
     if (!message || message.trim().length === 0) {
+      console.log('❌ Empty message received');
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
     if (message.length > 500) {
+      console.log('❌ Message too long:', message.length);
       return NextResponse.json({ error: 'Message too long. Please keep it under 500 characters.' }, { status: 400 });
     }
 
     if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured');
+      console.error('❌ GEMINI_API_KEY not configured');
       return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
     }
+
+    console.log('✅ GEMINI_API_KEY exists:', !!GEMINI_API_KEY);
+    console.log('🌐 Gemini URL:', url.replace(GEMINI_API_KEY, '[REDACTED]'));
 
     // Build context-aware prompt
     let systemPrompt = `You are AskAI, a helpful assistant for NCE (National Certification Examination for Energy Managers and Energy Auditors) preparation. 
@@ -89,6 +99,8 @@ Guidelines:
 
 Provide a helpful, concise response focused on NCE preparation.`;
 
+    console.log('📋 System prompt length:', systemPrompt.length);
+
     const payload = {
       contents: [
         {
@@ -104,7 +116,7 @@ Provide a helpful, concise response focused on NCE preparation.`;
         temperature: 0.3,
         topK: 20,
         topP: 0.8,
-        maxOutputTokens: 512,
+        maxOutputTokens: 1024,
         responseMimeType: 'text/plain',
       },
       safetySettings: [
@@ -127,6 +139,8 @@ Provide a helpful, concise response focused on NCE preparation.`;
       ]
     };
 
+    console.log('📦 Payload to Gemini:', JSON.stringify(payload, null, 2));
+
     const options = {
       method: 'POST',
       headers: {
@@ -136,11 +150,16 @@ Provide a helpful, concise response focused on NCE preparation.`;
       signal: AbortSignal.timeout(25000), // 25 second timeout
     };
 
+    console.log('🚀 Sending request to Gemini...');
+
     const response = await fetch(url, options);
+    
+    console.log('📡 Gemini response status:', response.status);
+    console.log('📡 Gemini response headers:', Object.fromEntries(response.headers.entries()));
     
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Gemini API error:', response.status, errorData);
+      console.error('❌ Gemini API error:', response.status, errorData);
       
       // Return helpful fallback responses for common scenarios
       if (response.status === 429) {
@@ -151,30 +170,81 @@ Provide a helpful, concise response focused on NCE preparation.`;
         return NextResponse.json({ error: 'AI service temporarily unavailable. Please try again later.' }, { status: 503 });
       }
       
-      return NextResponse.json({ error: 'AI service error. Please try rephrasing your question.' }, { status: 500 });
+      return NextResponse.json({ error: `Gemini API error ${response.status}: ${errorData}` }, { status: 500 });
     }
 
     const data = await response.json();
     
-    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
-      console.error('Unexpected Gemini response format:', data);
-      
-      // Provide a helpful fallback response
+    console.log('📋 Raw Gemini response:', JSON.stringify(data, null, 2));
+    
+    // Check if response was blocked by safety filters
+    if (data.candidates && data.candidates[0] && data.candidates[0].finishReason) {
+      console.log('🛡️ Finish reason:', data.candidates[0].finishReason);
+      if (data.candidates[0].finishReason === 'SAFETY') {
+        console.log('🚫 Response blocked by safety filters');
+        return NextResponse.json({
+          response: "I apologize, but I couldn't generate a response for that question due to content filters. Please try rephrasing your question about NCE topics.",
+          timestamp: new Date().toISOString()
+        });
+      }
+      if (data.candidates[0].finishReason === 'MAX_TOKENS') {
+        console.log('⚠️ Response was truncated due to token limit');
+      }
+    }
+    
+    // Check for content existence with better error handling
+    if (!data.candidates || !data.candidates[0]) {
+      console.error('❌ No candidates in response');
       return NextResponse.json({
-        response: "I'm having trouble generating a response right now. For NCE preparation, I recommend reviewing the key topics: Energy Management principles, Thermal Utilities (boilers, steam systems), and Electrical Utilities (motors, lighting, power factor). Try asking a more specific question about these topics.",
+        response: `🔧 DEBUG: No candidates found. Full response: ${JSON.stringify(data)}`,
         timestamp: new Date().toISOString()
       });
     }
 
-    const aiResponse = data.candidates[0].content.parts[0].text;
+    const candidate = data.candidates[0];
+    if (!candidate.content) {
+      console.error('❌ No content in candidate');
+      return NextResponse.json({
+        response: `🔧 DEBUG: No content in candidate. Candidate: ${JSON.stringify(candidate)}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (!candidate.content.parts || !candidate.content.parts[0]) {
+      console.error('❌ No parts in content');
+      return NextResponse.json({
+        response: `🔧 DEBUG: No parts in content. Content: ${JSON.stringify(candidate.content)}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const aiResponse = candidate.content.parts[0].text;
+    
+    if (!aiResponse) {
+      console.error('❌ No text in parts[0]');
+      return NextResponse.json({
+        response: `🔧 DEBUG: No text in parts[0]. Parts[0]: ${JSON.stringify(candidate.content.parts[0])}`,
+        timestamp: new Date().toISOString()
+      });
+    }
+    console.log('✅ AI response generated successfully, length:', aiResponse.length);
+
+    // Add note if response was truncated
+    let finalResponse = aiResponse;
+    if (data.candidates[0].finishReason === 'MAX_TOKENS') {
+      finalResponse += '\n\n[Note: Response was truncated due to length. Ask for specific parts if you need more details.]';
+    }
 
     return NextResponse.json({
-      response: aiResponse,
+      response: finalResponse,
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('AskAI API error:', error);
+    console.error('❌ AskAI API error:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
     
     // Handle different types of errors with appropriate JSON responses
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
@@ -192,7 +262,7 @@ Provide a helpful, concise response focused on NCE preparation.`;
     }
     
     return NextResponse.json(
-      { error: 'Something went wrong. Please try again in a moment.' }, 
+      { error: `Unexpected error: ${error.name} - ${error.message}` }, 
       { status: 500 }
     );
   }
