@@ -1,4 +1,4 @@
-// app/components/NCEHomepage.js
+// app/components/NCEHomepage.js - Fixed without redundant header
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -44,31 +44,8 @@ const stats = [
 export default function NCEHomepage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      {/* Header */}
-      <header className="border-b border-white/20 bg-white/5 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SB</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">saduvbey</h1>
-                <p className="text-white/60 text-xs">NCE Preparation Platform</p>
-              </div>
-            </Link>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg border border-white/20 transition-colors"
-            >
-              ← Home
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 pt-24">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
