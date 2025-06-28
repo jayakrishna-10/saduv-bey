@@ -1,8 +1,8 @@
-// app/components/NCEHomepage.js - Fixed without redundant header
+// app/components/NCEHomepage.js - Cleaned up version
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Brain, FileText, BookOpen, Clock, Trophy, Target, Zap, BarChart3 } from 'lucide-react';
+import { Brain, FileText, BookOpen } from 'lucide-react';
 
 const features = [
   {
@@ -34,13 +34,6 @@ const features = [
   }
 ];
 
-const stats = [
-  { label: 'Practice Questions', value: '2000+', icon: Target },
-  { label: 'Study Hours Saved', value: '100+', icon: Clock },
-  { label: 'Success Rate', value: '95%', icon: Trophy },
-  { label: 'Topics Covered', value: '50+', icon: Zap }
-];
-
 export default function NCEHomepage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -62,23 +55,6 @@ export default function NCEHomepage() {
             <p className="text-xl text-white/80 mb-8 max-w-3xl mx-auto">
               Comprehensive preparation platform for National Certification Examination for Energy Managers and Energy Auditors
             </p>
-            
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="backdrop-blur-xl bg-white/10 rounded-xl p-4 border border-white/20"
-                >
-                  <stat.icon className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-                  <div className="text-white/70 text-sm">{stat.label}</div>
-                </motion.div>
-              ))}
-            </div>
           </motion.div>
         </div>
       </section>
@@ -159,19 +135,16 @@ export default function NCEHomepage() {
               {
                 paper: 'Paper 1',
                 title: 'General Aspects of Energy Management and Energy Audit',
-                topics: ['Energy Scenario', 'Energy Management', 'Financial Management', 'Environmental Concerns'],
                 color: 'from-blue-500 to-indigo-600'
               },
               {
                 paper: 'Paper 2', 
                 title: 'Energy Efficiency in Thermal Utilities',
-                topics: ['Fuels & Combustion', 'Boilers', 'Steam Systems', 'Waste Heat Recovery'],
                 color: 'from-orange-500 to-red-600'
               },
               {
                 paper: 'Paper 3',
                 title: 'Energy Efficiency in Electrical Utilities', 
-                topics: ['Electric Motors', 'HVAC Systems', 'Lighting', 'Power Factor'],
                 color: 'from-emerald-500 to-cyan-600'
               }
             ].map((paper, index) => (
@@ -186,14 +159,6 @@ export default function NCEHomepage() {
                   {paper.paper}
                 </div>
                 <h3 className="text-lg font-bold text-white mb-3">{paper.title}</h3>
-                <ul className="space-y-2">
-                  {paper.topics.map((topic, idx) => (
-                    <li key={idx} className="flex items-center text-white/70 text-sm">
-                      <BarChart3 className="h-3 w-3 text-purple-400 mr-2" />
-                      {topic}
-                    </li>
-                  ))}
-                </ul>
               </motion.div>
             ))}
           </div>
