@@ -38,21 +38,21 @@ export default function NCEHomepage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
       {/* Hero Section */}
-      <section className="py-16 px-4 pt-24">
+      <section className="py-20 px-4 pt-24">
         <div className="max-w-6xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-12"
+            className="mb-16"
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-8">
               Master Your{' '}
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 NCE
               </span>{' '}
               Preparation
             </h1>
-            <p className="text-xl text-white/80 mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-white/80 mb-12 max-w-3xl mx-auto">
               Comprehensive preparation platform for National Certification Examination for Energy Managers and Energy Auditors
             </p>
           </motion.div>
@@ -60,12 +60,12 @@ export default function NCEHomepage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4">
+      <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Choose Your Learning Path
@@ -91,8 +91,8 @@ export default function NCEHomepage() {
                       <feature.icon className="h-8 w-8 text-white" />
                     </div>
                     
-                    <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>
-                    <p className="text-white/70 mb-6 leading-relaxed">{feature.description}</p>
+                    <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
+                    <p className="text-white/70 mb-8 leading-relaxed">{feature.description}</p>
                     
                     <ul className="space-y-2">
                       {feature.features.map((item, idx) => (
@@ -115,12 +115,12 @@ export default function NCEHomepage() {
       </section>
 
       {/* Paper Information Section */}
-      <section className="py-16 px-4">
+      <section className="py-20 px-4">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Examination Structure
@@ -130,7 +130,7 @@ export default function NCEHomepage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
                 paper: 'Paper 1',
@@ -158,7 +158,7 @@ export default function NCEHomepage() {
                 <div className={`inline-block px-3 py-1 rounded-full bg-gradient-to-r ${paper.color} text-white text-sm font-semibold mb-4`}>
                   {paper.paper}
                 </div>
-                <h3 className="text-lg font-bold text-white mb-3">{paper.title}</h3>
+                <h3 className="text-lg font-bold text-white mb-4">{paper.title}</h3>
               </motion.div>
             ))}
           </div>
@@ -166,20 +166,20 @@ export default function NCEHomepage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4">
+      <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="backdrop-blur-xl bg-white/10 rounded-2xl p-8 border border-white/20"
+            className="backdrop-blur-xl bg-white/10 rounded-2xl p-12 border border-white/20"
           >
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-6">
               Ready to Start Your Preparation?
             </h2>
-            <p className="text-white/70 mb-8 text-lg">
+            <p className="text-white/70 mb-10 text-lg">
               Join thousands of successful candidates who prepared with our platform
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link
                 href="/nce/quiz"
                 className="px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2"
@@ -200,7 +200,7 @@ export default function NCEHomepage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/20 bg-white/5 backdrop-blur-xl py-8 px-4">
+      <footer className="border-t border-white/20 bg-white/5 backdrop-blur-xl py-12 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-white/60 text-sm">
             © 2025 saduvbey. Comprehensive NCE preparation platform.
