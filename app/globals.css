@@ -44,3 +44,113 @@ body {
 .explanation-content li {
   margin-bottom: 0.5rem;
 }
+
+/* Add to app/globals.css - Test Interface Styles */
+
+/* Ensure test interface works with fixed navigation */
+.test-interface {
+  padding-top: 64px; /* Account for fixed navbar */
+}
+
+/* Improve visibility of test controls on all screen sizes */
+.test-header {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  position: sticky;
+  top: 64px;
+  z-index: 40;
+}
+
+/* Ensure submit button is always visible */
+.submit-button {
+  min-width: fit-content;
+  white-space: nowrap;
+  background: linear-gradient(45deg, #10b981, #059669);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.submit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+  .test-interface {
+    padding-top: 56px;
+  }
+  
+  .test-header {
+    top: 56px;
+    padding: 12px 16px;
+  }
+  
+  .submit-button {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Question palette improvements */
+.question-palette {
+  position: fixed;
+  top: 120px;
+  left: 0;
+  height: calc(100vh - 120px);
+  z-index: 30;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Progress bar container */
+.progress-container {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: linear-gradient(45deg, #a855f7, #ec4899);
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+/* Timer component improvements */
+.timer-component {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Flag button states */
+.flag-button {
+  transition: all 0.2s ease;
+}
+
+.flag-button.flagged {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(234, 179, 8, 0.5);
+}
+
+.flag-button:not(.flagged) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.flag-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
