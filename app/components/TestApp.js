@@ -723,10 +723,10 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col pt-16"
     >
       {/* Header */}
-      <div className="backdrop-blur-xl bg-white/10 border-b border-white/20 p-4">
+      <div className="sticky top-16 z-40 backdrop-blur-xl bg-white/10 border-b border-white/20 p-4 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-white">
