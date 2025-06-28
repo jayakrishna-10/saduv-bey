@@ -1,4 +1,4 @@
-// app/components/TestApp.js
+// app/components/TestApp.js - Complete updated file
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -653,7 +653,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
   );
 }
 
-// Test Interface Component
+// Fixed Test Interface Component
 function TestInterface({ config, testData, setTestData, onSubmit, showPalette, setShowPalette }) {
   const currentQuestion = testData.questions[testData.currentIndex];
   const testMode = getTestMode(config.mode);
@@ -725,37 +725,55 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
       exit={{ opacity: 0 }}
       className="min-h-screen flex flex-col pt-16"
     >
-      {/* Header */}
-      <div className="sticky top-16 z-40 backdrop-blur-xl bg-white/10 border-b border-white/20 p-4 shadow-lg">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-white">
-              {testType?.name} - {testMode?.name}
-            </h1>
-            {isTimerEnabled && <TestTimer timeRemaining={testData.timeRemaining} totalTime={config.timeLimit * 60} />}
+      {/* Fixed Test Header - Always visible */}
+      <div className="sticky top-16 z-40 backdrop-blur-xl bg-white/10 border-b border-white/20 p-3 md:p-4 shadow-lg">
+        <div className="max-w-6xl mx-auto">
+          {/* Main header row */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 md:gap-4">
+              <h1 className="text-lg md:text-xl font-bold text-white">
+                {testType?.name} - {testMode?.name}
+              </h1>
+              {isTimerEnabled && (
+                <div className="hidden sm:block">
+                  <TestTimer timeRemaining={testData.timeRemaining} totalTime={config.timeLimit * 60} />
+                </div>
+              )}
+            </div>
+            
+            {/* Action buttons - Always visible */}
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="text-white/70 text-xs md:text-sm whitespace-nowrap">
+                {answeredCount}/{testData.questions.length} answered
+              </div>
+              
+              {/* Question palette button */}
+              <button
+                onClick={() => setShowPalette(!showPalette)}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                title="Question Palette"
+              >
+                <Grid3x3 className="h-4 w-4 md:h-5 md:w-5 text-white" />
+              </button>
+              
+              {/* Submit button - Make it more prominent */}
+              <button
+                onClick={onSubmit}
+                className="px-3 py-2 md:px-4 md:py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200 text-sm md:text-base"
+              >
+                Submit Test
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <div className="text-white/70 text-sm">
-              {answeredCount}/{testData.questions.length} answered
+          {/* Timer row for mobile */}
+          {isTimerEnabled && (
+            <div className="flex justify-center sm:hidden mb-2">
+              <TestTimer timeRemaining={testData.timeRemaining} totalTime={config.timeLimit * 60} />
             </div>
-            <button
-              onClick={() => setShowPalette(!showPalette)}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <Grid3x3 className="h-5 w-5 text-white" />
-            </button>
-            <button
-              onClick={onSubmit}
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-200"
-            >
-              Submit Test
-            </button>
-          </div>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="max-w-6xl mx-auto mt-3">
+          )}
+          
+          {/* Progress Bar */}
           <div className="h-2 bg-white/20 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-purple-400 to-pink-400"
@@ -763,6 +781,56 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
               animate={{ width: `${progressPercentage}%` }}
               transition={{ duration: 0.5 }}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Bar */}
+      <div className="sticky top-32 z-30 backdrop-blur-md bg-white/5 border-b border-white/10 p-2">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-white/60 text-sm">Quick Actions:</span>
+            <button
+              onClick={toggleFlag}
+              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                testData.flagged.has(testData.currentIndex)
+                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/50'
+                  : 'bg-white/10 text-white/70 hover:bg-white/20'
+              }`}
+            >
+              <Flag className="h-4 w-4 inline mr-1" />
+              {testData.flagged.has(testData.currentIndex) ? 'Flagged' : 'Flag'}
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigateToQuestion(Math.max(0, testData.currentIndex - 1))}
+              disabled={testData.currentIndex === 0}
+              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                testData.currentIndex === 0
+                  ? 'bg-white/10 text-white/50 cursor-not-allowed'
+                  : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+            >
+              ← Prev
+            </button>
+            
+            <span className="text-white/70 text-sm px-2">
+              {testData.currentIndex + 1} / {testData.questions.length}
+            </span>
+            
+            <button
+              onClick={() => navigateToQuestion(Math.min(testData.questions.length - 1, testData.currentIndex + 1))}
+              disabled={testData.currentIndex === testData.questions.length - 1}
+              className={`px-3 py-1 rounded-lg text-sm transition-colors ${
+                testData.currentIndex === testData.questions.length - 1
+                  ? 'bg-white/10 text-white/50 cursor-not-allowed'
+                  : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+            >
+              Next →
+            </button>
           </div>
         </div>
       </div>
@@ -784,13 +852,13 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
         </AnimatePresence>
 
         {/* Main Content */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
           <div className="max-w-4xl mx-auto">
             <motion.div
               key={testData.currentIndex}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20"
+              className="backdrop-blur-xl bg-white/10 rounded-2xl p-4 md:p-6 border border-white/20"
             >
               {/* Question Header */}
               <div className="flex items-center justify-between mb-6">
@@ -802,20 +870,10 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                     {normalizeChapterName(currentQuestion?.tag)} • {currentQuestion?.year}
                   </span>
                 </div>
-                <button
-                  onClick={toggleFlag}
-                  className={`p-2 rounded-lg transition-colors ${
-                    testData.flagged.has(testData.currentIndex)
-                      ? 'bg-yellow-500/20 text-yellow-400'
-                      : 'bg-white/10 text-white/70 hover:bg-white/20'
-                  }`}
-                >
-                  <Flag className="h-5 w-5" />
-                </button>
               </div>
 
               {/* Question */}
-              <h2 className="text-xl font-bold text-white mb-6 leading-relaxed">
+              <h2 className="text-lg md:text-xl font-bold text-white mb-6 leading-relaxed">
                 {currentQuestion?.question_text}
               </h2>
 
@@ -827,28 +885,28 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                     onClick={() => selectAnswer(option)}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
-                    className={`w-full p-4 rounded-xl backdrop-blur-md border transition-all duration-300 text-left ${
+                    className={`w-full p-3 md:p-4 rounded-xl backdrop-blur-md border transition-all duration-300 text-left ${
                       testData.answers[testData.currentIndex] === option
                         ? 'bg-white/20 border-white/40 text-white'
                         : 'bg-white/10 border-white/20 text-white/80 hover:bg-white/15'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
+                      <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold transition-all duration-300 ${
                         testData.answers[testData.currentIndex] === option
                           ? 'bg-purple-500 text-white'
                           : 'bg-white/20 text-white'
                       }`}>
                         {option.toUpperCase()}
                       </div>
-                      <span className="text-white flex-1">{currentQuestion?.[`option_${option}`]}</span>
+                      <span className="text-white flex-1 text-sm md:text-base">{currentQuestion?.[`option_${option}`]}</span>
                     </div>
                   </motion.button>
                 ))}
               </div>
 
-              {/* Navigation */}
-              <div className="flex justify-between items-center">
+              {/* Mobile Navigation - Only show on mobile */}
+              <div className="flex justify-between items-center md:hidden">
                 <button
                   onClick={() => navigateToQuestion(Math.max(0, testData.currentIndex - 1))}
                   disabled={testData.currentIndex === 0}
@@ -887,7 +945,7 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
   );
 }
 
-// Non-distracting Timer Component
+// Timer Component
 function TestTimer({ timeRemaining, totalTime }) {
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
@@ -950,7 +1008,7 @@ function QuestionPalette({ questions, currentIndex, answers, flagged, visited, o
       initial={{ x: -300, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -300, opacity: 0 }}
-      className="w-80 backdrop-blur-xl bg-white/10 border-r border-white/20 p-4 overflow-y-auto"
+      className="fixed top-40 left-0 h-[calc(100vh-160px)] w-80 backdrop-blur-xl bg-white/10 border-r border-white/20 p-4 overflow-y-auto z-30"
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-white">Questions</h3>
