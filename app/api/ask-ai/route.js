@@ -94,7 +94,7 @@ Provide accurate, helpful answers about:
         temperature: 0.3,
         topK: 20,
         topP: 0.8,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 5000,
         responseMimeType: 'text/plain',
       },
       safetySettings: [
