@@ -2,24 +2,31 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Minimize2, Maximize2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Minimize2, Maximize2, Sparkles, RotateCcw } from 'lucide-react';
 
 export default function AskAI() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'ai',
-      content: 'Hi! I\'m AskAI, your NCE preparation assistant. Ask me anything about energy management, thermal utilities, electrical utilities, or exam strategies!',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [context, setContext] = useState({});
+  const [previousContext, setPreviousContext] = useState({});
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Initial welcome message
+  const getWelcomeMessage = () => ({
+    id: Date.now(),
+    type: 'ai',
+    content: 'Hi! I\'m AskAI, your NCE preparation assistant. Ask me anything about energy management, thermal utilities, electrical utilities, or exam strategies!',
+    timestamp: new Date()
+  });
+
+  // Initialize messages
+  useEffect(() => {
+    setMessages([getWelcomeMessage()]);
+  }, []);
 
   // Auto-scroll to bottom of messages
   const scrollToBottom = () => {
@@ -30,7 +37,7 @@ export default function AskAI() {
     scrollToBottom();
   }, [messages]);
 
-  // Collect context from the current page
+  // Collect context from the current page and reset chat on question change
   useEffect(() => {
     const collectContext = () => {
       const pathname = window.location.pathname;
@@ -43,20 +50,34 @@ export default function AskAI() {
       if (pathname.includes('/nce/quiz')) {
         newContext.paper = 'quiz';
         
-        // Try to get current question text
-        const questionElement = document.querySelector('h2');
+        // Try to get current question text (more specific selector for quiz questions)
+        const questionElement = document.querySelector('h2') || document.querySelector('.text-lg.font-bold, .text-xl.font-bold');
         if (questionElement) {
-          newContext.currentQuestion = questionElement.textContent?.slice(0, 200) + '...';
+          newContext.currentQuestion = questionElement.textContent?.slice(0, 100); // Shorter identifier
+          newContext.questionId = questionElement.textContent?.slice(0, 50); // Unique identifier
         }
         
         // Get current chapter/topic if available
-        const chapterElement = document.querySelector('[data-chapter], .text-white\\/70');
+        const chapterElement = document.querySelector('.text-white\\/70, .text-white\\/60');
         if (chapterElement) {
           newContext.currentChapter = chapterElement.textContent;
         }
       } 
       else if (pathname.includes('/nce/test')) {
         newContext.paper = 'test';
+        
+        // Get current question for test interface
+        const questionElement = document.querySelector('h2') || document.querySelector('.text-lg.font-bold, .text-xl.font-bold');
+        if (questionElement) {
+          newContext.questionId = questionElement.textContent?.slice(0, 50);
+        }
+        
+        // Get question number from test interface
+        const questionNumberElement = document.querySelector('[class*="Q"], .px-3.py-1.bg-white');
+        if (questionNumberElement) {
+          newContext.questionNumber = questionNumberElement.textContent;
+        }
+        
         newContext.additionalContext = 'User is taking a mock test';
       }
       else if (pathname.includes('/nce/notes')) {
@@ -79,6 +100,19 @@ export default function AskAI() {
         newContext.additionalContext = 'User is on NCE preparation platform homepage';
       }
 
+      // Check if we've moved to a new question and should reset chat
+      const shouldResetChat = (
+        (newContext.questionId && previousContext.questionId && newContext.questionId !== previousContext.questionId) ||
+        (newContext.questionNumber && previousContext.questionNumber && newContext.questionNumber !== previousContext.questionNumber) ||
+        (newContext.currentPage !== previousContext.currentPage && newContext.paper !== previousContext.paper)
+      );
+
+      if (shouldResetChat && Object.keys(previousContext).length > 0) {
+        console.log('🔄 Resetting chat - moved to new question/page');
+        setMessages([getWelcomeMessage()]);
+      }
+
+      setPreviousContext(context);
       setContext(newContext);
     };
 
@@ -92,10 +126,14 @@ export default function AskAI() {
 
     window.addEventListener('popstate', handleLocationChange);
     
-    // Also observe DOM changes to capture dynamic content
-    const observer = new MutationObserver(() => {
-      collectContext();
-    });
+    // Also observe DOM changes to capture dynamic content (with debouncing)
+    let debounceTimer;
+    const debouncedCollectContext = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(collectContext, 300);
+    };
+
+    const observer = new MutationObserver(debouncedCollectContext);
     
     observer.observe(document.body, { 
       childList: true, 
@@ -107,8 +145,9 @@ export default function AskAI() {
     return () => {
       window.removeEventListener('popstate', handleLocationChange);
       observer.disconnect();
+      clearTimeout(debounceTimer);
     };
-  }, []);
+  }, [context, previousContext]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -210,6 +249,11 @@ export default function AskAI() {
     }
   };
 
+  // Manual chat reset function
+  const resetChat = () => {
+    setMessages([getWelcomeMessage()]);
+  };
+
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -281,10 +325,10 @@ export default function AskAI() {
               height: isMinimized ? '60px' : 'auto'
             }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 right-6 z-50 w-80 md:w-96 max-h-[80vh] backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl overflow-hidden shadow-2xl"
+            className="fixed bottom-6 right-6 z-50 w-80 md:w-96 max-h-[80vh] backdrop-blur-md bg-gray-900/95 border border-white/30 rounded-2xl overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20 bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+            <div className="flex items-center justify-between p-4 border-b border-white/20 bg-gradient-to-r from-purple-600/30 to-pink-600/30">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
@@ -296,6 +340,13 @@ export default function AskAI() {
               </div>
               
               <div className="flex items-center gap-2">
+                <button
+                  onClick={resetChat}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  title="Reset Chat"
+                >
+                  <RotateCcw className="h-4 w-4 text-white/70" />
+                </button>
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
                   className="p-1 hover:bg-white/20 rounded transition-colors"
@@ -317,7 +368,7 @@ export default function AskAI() {
             {!isMinimized && (
               <>
                 {/* Messages */}
-                <div className="h-64 md:h-80 overflow-y-auto p-4 space-y-4">
+                <div className="h-64 md:h-80 overflow-y-auto p-4 space-y-4 bg-gray-800/50">
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
@@ -328,15 +379,15 @@ export default function AskAI() {
                       <div
                         className={`max-w-[80%] p-3 rounded-xl text-sm ${
                           message.type === 'user'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
                             : message.isError
-                            ? 'bg-red-500/20 border border-red-400/50 text-red-200'
-                            : 'bg-white/10 border border-white/20 text-white'
+                            ? 'bg-red-900/80 border border-red-500/50 text-red-100 backdrop-blur-sm'
+                            : 'bg-gray-700/90 border border-gray-600/50 text-gray-100 backdrop-blur-sm shadow-lg'
                         }`}
                       >
-                        <p className="whitespace-pre-wrap leading-relaxed font-mono text-xs">{message.content}</p>
+                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
                         <p className={`text-xs mt-2 opacity-70 ${
-                          message.type === 'user' ? 'text-white/70' : 'text-white/50'
+                          message.type === 'user' ? 'text-white/70' : 'text-gray-300'
                         }`}>
                           {formatTime(message.timestamp)}
                         </p>
@@ -350,7 +401,7 @@ export default function AskAI() {
                       animate={{ opacity: 1 }}
                       className="flex justify-start"
                     >
-                      <div className="bg-white/10 border border-white/20 text-white p-3 rounded-xl">
+                      <div className="bg-gray-700/90 border border-gray-600/50 text-gray-100 p-3 rounded-xl backdrop-blur-sm shadow-lg">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span className="text-sm">AskAI is thinking...</span>
@@ -364,14 +415,14 @@ export default function AskAI() {
 
                 {/* Quick Suggestions */}
                 {messages.length <= 1 && (
-                  <div className="px-4 pb-2">
-                    <p className="text-white/60 text-xs mb-2">Quick suggestions:</p>
+                  <div className="px-4 pb-2 bg-gray-800/30">
+                    <p className="text-gray-300 text-xs mb-2">Quick suggestions:</p>
                     <div className="flex flex-wrap gap-2">
                       {getContextSuggestions().map((suggestion, index) => (
                         <button
                           key={index}
                           onClick={() => setInputMessage(suggestion)}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white/80 text-xs rounded-full border border-white/20 transition-colors"
+                          className="px-2 py-1 bg-gray-700/80 hover:bg-gray-600/80 text-gray-200 text-xs rounded-full border border-gray-600/50 transition-colors"
                         >
                           {suggestion}
                         </button>
@@ -381,7 +432,7 @@ export default function AskAI() {
                 )}
 
                 {/* Input */}
-                <div className="p-4 border-t border-white/20">
+                <div className="p-4 border-t border-white/20 bg-gray-800/30">
                   <div className="flex gap-2">
                     <input
                       ref={inputRef}
@@ -390,7 +441,7 @@ export default function AskAI() {
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about NCE topics..."
-                      className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="flex-1 bg-gray-700/80 border border-gray-600/50 rounded-lg px-3 py-2 text-gray-100 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                       disabled={isLoading}
                     />
                     <button
@@ -408,15 +459,15 @@ export default function AskAI() {
                   
                   {/* Context indicator */}
                   {context.currentPage && (
-                    <p className="text-white/40 text-xs mt-2">
+                    <p className="text-gray-400 text-xs mt-2">
                       📍 Context: {context.currentPage.split('/').pop() || 'NCE Platform'}
                       {context.currentChapter && ` • ${context.currentChapter}`}
                     </p>
                   )}
                   
-                  {/* Debug info */}
-                  <div className="mt-2 text-white/30 text-xs">
-                    <p>🔧 Debug Mode: All errors will be shown for troubleshooting</p>
+                  {/* Auto-reset info */}
+                  <div className="mt-2 text-gray-400 text-xs">
+                    <p>💡 Chat resets automatically when you move to a new question</p>
                   </div>
                 </div>
               </>
