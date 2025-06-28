@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const model = 'gemini-1.5-flash'; // Use regular model instead of reasoning model
+const model = 'gemini-2.5-pro'; // Back to reasoning model for best quality
 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
 // Rate limiting storage (in production, use Redis or database)
@@ -54,25 +54,34 @@ export async function POST(request) {
       return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
     }
 
-    // Build context-aware prompt (keep it concise to save tokens)
-    let systemPrompt = `You are AskAI, an NCE (National Certification Examination for Energy Managers and Energy Auditors) preparation assistant. 
+    // Build context-aware prompt with full details
+    let systemPrompt = `You are AskAI, an expert NCE (National Certification Examination for Energy Managers and Energy Auditors) preparation assistant. 
 
-Provide concise, accurate answers (max 250 words) about:
-- Energy Management and Audit
-- Thermal Utilities (boilers, steam systems)  
-- Electrical Utilities (motors, lighting, power factor)
+Provide accurate, helpful answers about:
+- Energy Management and Audit principles
+- Thermal Utilities (boilers, steam systems, furnaces, heat recovery)
+- Electrical Utilities (motors, lighting, power factor, HVAC)
 
 `;
 
-    // Add minimal context information
+    // Add comprehensive context information
     if (context?.currentQuestion) {
-      systemPrompt += `Current question: "${context.currentQuestion.substring(0, 100)}..."\n`;
+      systemPrompt += `CURRENT QUESTION: "${context.currentQuestion}"\n`;
     }
+    
+    if (context?.questionOptions) {
+      systemPrompt += `\nQUESTION OPTIONS:\n${context.questionOptions}\n`;
+    }
+    
     if (context?.currentChapter) {
-      systemPrompt += `Topic: ${context.currentChapter}\n`;
+      systemPrompt += `TOPIC/CHAPTER: ${context.currentChapter}\n`;
+    }
+    
+    if (context?.paper) {
+      systemPrompt += `CONTEXT: User is on ${context.paper} page\n`;
     }
 
-    systemPrompt += `\nUser: ${message}\n\nProvide a helpful, concise NCE-focused response:`;
+    systemPrompt += `\nUSER QUESTION: ${message}\n\nProvide a comprehensive, accurate response. If this relates to the current question, explain the concept clearly and help with understanding rather than just giving the answer:`;
 
     const payload = {
       contents: [
