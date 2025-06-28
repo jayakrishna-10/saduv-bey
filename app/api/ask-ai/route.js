@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const model = 'gemini-2.5-pro';
+const model = 'gemini-1.5-flash'; // Use regular model instead of reasoning model
 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
 // Rate limiting storage (in production, use Redis or database)
@@ -54,53 +54,32 @@ export async function POST(request) {
       return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
     }
 
-    // Build context-aware prompt
-    let systemPrompt = `You are AskAI, a helpful assistant for NCE (National Certification Examination for Energy Managers and Energy Auditors) preparation. 
+    // Build context-aware prompt (keep it concise to save tokens)
+    let systemPrompt = `You are AskAI, an NCE (National Certification Examination for Energy Managers and Energy Auditors) preparation assistant. 
 
-Guidelines:
-- Provide accurate, concise answers (max 300 words)
-- Focus on NCE exam topics: Energy Management, Thermal Utilities, Electrical Utilities
-- Give practical examples when possible
-- Keep answers focused and exam-relevant
-- If asked about specific questions, explain concepts rather than just giving answers
+Provide concise, accurate answers (max 250 words) about:
+- Energy Management and Audit
+- Thermal Utilities (boilers, steam systems)  
+- Electrical Utilities (motors, lighting, power factor)
 
 `;
 
-    // Add context information
-    if (context) {
-      if (context.currentPage) {
-        systemPrompt += `Current page: ${context.currentPage}\n`;
-      }
-      if (context.currentQuestion) {
-        systemPrompt += `Current question context: "${context.currentQuestion.substring(0, 150)}..."\n`;
-      }
-      if (context.currentChapter) {
-        systemPrompt += `Current chapter: ${context.currentChapter}\n`;
-      }
-      if (context.paper) {
-        systemPrompt += `Current paper: ${context.paper}\n`;
-      }
-      if (context.additionalContext) {
-        systemPrompt += `Additional context: ${context.additionalContext}\n`;
-      }
+    // Add minimal context information
+    if (context?.currentQuestion) {
+      systemPrompt += `Current question: "${context.currentQuestion.substring(0, 100)}..."\n`;
+    }
+    if (context?.currentChapter) {
+      systemPrompt += `Topic: ${context.currentChapter}\n`;
     }
 
-    systemPrompt += `\nUser question: ${message}
-
-Provide a helpful, concise response focused on NCE preparation.`;
-
-    console.log('📋 System prompt length:', systemPrompt.length);
+    systemPrompt += `\nUser: ${message}\n\nProvide a helpful, concise NCE-focused response:`;
 
     const payload = {
       contents: [
         {
           role: 'user',
-          parts: [
-            {
-              text: systemPrompt
-            },
-          ]
-        },
+          parts: [{ text: systemPrompt }]
+        }
       ],
       generationConfig: {
         temperature: 0.3,
@@ -129,18 +108,14 @@ Provide a helpful, concise response focused on NCE preparation.`;
       ]
     };
 
-    console.log('📦 Payload to Gemini:', JSON.stringify(payload, null, 2));
-
     const options = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(25000), // 25 second timeout
+      signal: AbortSignal.timeout(8000), // 8 second timeout for Vercel
     };
-
-    console.log('🚀 Sending request to Gemini...');
 
     const response = await fetch(url, options);
     
@@ -231,10 +206,7 @@ Provide a helpful, concise response focused on NCE preparation.`;
     });
 
   } catch (error) {
-    console.error('❌ AskAI API error:', error);
-    console.error('❌ Error name:', error.name);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ AskAI API error:', error.message);
     
     // Handle different types of errors with appropriate JSON responses
     if (error.name === 'TimeoutError' || error.name === 'AbortError') {
@@ -252,7 +224,7 @@ Provide a helpful, concise response focused on NCE preparation.`;
     }
     
     return NextResponse.json(
-      { error: `Unexpected error: ${error.name} - ${error.message}` }, 
+      { error: `Unexpected error: ${error.message}` }, 
       { status: 500 }
     );
   }
