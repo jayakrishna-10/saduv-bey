@@ -1,4 +1,4 @@
-// app/components/AskAI.js
+// app/components/AskAI.js - Fixed version
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -310,7 +310,7 @@ export default function AskAI() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+            className="fixed bottom-6 right-6 z-[45] w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <MessageCircle className="h-6 w-6" />
             
@@ -326,217 +326,198 @@ export default function AskAI() {
         )}
       </AnimatePresence>
 
-      {/* Backdrop for mobile */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-            onClick={() => setIsOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Push main content left on desktop when chat is open */}
-      <style jsx global>{`
-        ${isOpen ? `
-          @media (min-width: 768px) {
-            body {
-              margin-right: 50vw;
-              transition: margin-right 0.3s ease;
-            }
-          }
-        ` : `
-          @media (min-width: 768px) {
-            body {
-              margin-right: 0;
-              transition: margin-right 0.3s ease;
-            }
-          }
-        `}
-      `}</style>
-
       {/* Chat Window */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ 
-              opacity: 0, 
-              y: isMobile ? '100%' : 0,
-              x: !isMobile ? '100%' : 0
-            }}
-            animate={{ 
-              opacity: 1, 
-              y: 0,
-              x: 0,
-              height: isMinimized ? (isMobile ? '80px' : '60px') : 'auto'
-            }}
-            exit={{ 
-              opacity: 0, 
-              y: isMobile ? '100%' : 0,
-              x: !isMobile ? '100%' : 0
-            }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className={`
-              fixed z-50 backdrop-blur-md bg-gray-900/95 border border-white/30 overflow-hidden shadow-2xl
-              ${isMobile 
-                ? 'inset-x-0 bottom-0 h-3/4 rounded-t-2xl' 
-                : 'right-0 top-0 w-1/2 h-full rounded-l-2xl'
-              }
-            `}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/20 bg-gradient-to-r from-purple-600/30 to-pink-600/30">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold text-base md:text-lg">AskAI</h3>
-                  <p className="text-white/70 text-sm md:text-base">NCE Assistant</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={resetChat}
-                  className="p-2 md:p-3 hover:bg-white/20 rounded-lg transition-colors"
-                  title="Reset Chat"
-                >
-                  <RotateCcw className="h-4 w-4 md:h-5 md:w-5 text-white/70" />
-                </button>
-                <button
-                  onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-2 md:p-3 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  {isMinimized ? 
-                    <Maximize2 className="h-4 w-4 md:h-5 md:w-5 text-white/70" /> : 
-                    <Minimize2 className="h-4 w-4 md:h-5 md:w-5 text-white/70" />
-                  }
-                </button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 md:p-3 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <X className="h-4 w-4 md:h-5 md:w-5 text-white/70" />
-                </button>
-              </div>
-            </div>
+          <>
+            {/* Backdrop for mobile only */}
+            {isMobile && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[35]"
+                onClick={() => setIsOpen(false)}
+              />
+            )}
 
-            {!isMinimized && (
-              <>
-                {/* Messages */}
-                <div className="overflow-y-auto p-4 md:p-6 space-y-4 bg-gray-800/50" style={{
-                  height: isMobile 
-                    ? 'calc(75vh - 200px)' // Mobile: 75% viewport height minus header/input space
-                    : 'calc(100vh - 220px)' // Desktop: Full height minus header/input space
-                }}>
-                  {messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] md:max-w-[80%] p-4 md:p-5 rounded-xl text-sm md:text-base leading-relaxed ${
-                          message.type === 'user'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
-                            : message.isError
-                            ? 'bg-red-900/80 border border-red-500/50 text-red-100 backdrop-blur-sm'
-                            : 'bg-gray-700/90 border border-gray-600/50 text-gray-100 backdrop-blur-sm shadow-lg'
-                        }`}
+            <motion.div
+              initial={{ 
+                opacity: 0, 
+                y: isMobile ? '100%' : 0,
+                x: !isMobile ? '100%' : 0
+              }}
+              animate={{ 
+                opacity: 1, 
+                y: 0,
+                x: 0,
+                height: isMinimized ? (isMobile ? '80px' : '60px') : 'auto'
+              }}
+              exit={{ 
+                opacity: 0, 
+                y: isMobile ? '100%' : 0,
+                x: !isMobile ? '100%' : 0
+              }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className={`
+                fixed z-[40] backdrop-blur-md bg-gray-900/95 border border-white/30 overflow-hidden shadow-2xl
+                ${isMobile 
+                  ? 'inset-x-0 bottom-0 h-3/4 rounded-t-2xl' 
+                  : 'right-0 top-0 w-96 h-full max-w-[400px]'
+                }
+              `}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 md:p-6 border-b border-white/20 bg-gradient-to-r from-purple-600/30 to-pink-600/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-base md:text-lg">AskAI</h3>
+                    <p className="text-white/70 text-sm md:text-base">NCE Assistant</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={resetChat}
+                    className="p-2 md:p-3 hover:bg-white/20 rounded-lg transition-colors"
+                    title="Reset Chat"
+                  >
+                    <RotateCcw className="h-4 w-4 md:h-5 md:w-5 text-white/70" />
+                  </button>
+                  <button
+                    onClick={() => setIsMinimized(!isMinimized)}
+                    className="p-2 md:p-3 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    {isMinimized ? 
+                      <Maximize2 className="h-4 w-4 md:h-5 md:w-5 text-white/70" /> : 
+                      <Minimize2 className="h-4 w-4 md:h-5 md:w-5 text-white/70" />
+                    }
+                  </button>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    className="p-2 md:p-3 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="h-4 w-4 md:h-5 md:w-5 text-white/70" />
+                  </button>
+                </div>
+              </div>
+
+              {!isMinimized && (
+                <>
+                  {/* Messages */}
+                  <div className="overflow-y-auto p-4 md:p-6 space-y-4 bg-gray-800/50" style={{
+                    height: isMobile 
+                      ? 'calc(75vh - 200px)' // Mobile: 75% viewport height minus header/input space
+                      : 'calc(100vh - 220px)' // Desktop: Full height minus header/input space
+                  }}>
+                    {messages.map((message) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                        <p className={`text-xs md:text-sm mt-3 opacity-70 ${
-                          message.type === 'user' ? 'text-white/70' : 'text-gray-300'
-                        }`}>
-                          {formatTime(message.timestamp)}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                  
-                  {isLoading && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex justify-start"
-                    >
-                      <div className="bg-gray-700/90 border border-gray-600/50 text-gray-100 p-4 md:p-5 rounded-xl backdrop-blur-sm shadow-lg">
-                        <div className="flex items-center gap-3">
-                          <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
-                          <span className="text-sm md:text-base">AskAI is thinking...</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                  
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Quick Suggestions */}
-                {messages.length <= 1 && (
-                  <div className="px-4 md:px-6 pb-3 bg-gray-800/30">
-                    <p className="text-gray-300 text-sm md:text-base mb-3">Quick suggestions:</p>
-                    <div className="flex flex-wrap gap-2 md:gap-3">
-                      {getContextSuggestions().map((suggestion, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setInputMessage(suggestion)}
-                          className="px-3 py-2 md:px-4 md:py-2 bg-gray-700/80 hover:bg-gray-600/80 text-gray-200 text-sm md:text-base rounded-full border border-gray-600/50 transition-colors"
+                        <div
+                          className={`max-w-[85%] md:max-w-[80%] p-4 md:p-5 rounded-xl text-sm md:text-base leading-relaxed ${
+                            message.type === 'user'
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                              : message.isError
+                              ? 'bg-red-900/80 border border-red-500/50 text-red-100 backdrop-blur-sm'
+                              : 'bg-gray-700/90 border border-gray-600/50 text-gray-100 backdrop-blur-sm shadow-lg'
+                          }`}
                         >
-                          {suggestion}
-                        </button>
-                      ))}
+                          <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                          <p className={`text-xs md:text-sm mt-3 opacity-70 ${
+                            message.type === 'user' ? 'text-white/70' : 'text-gray-300'
+                          }`}>
+                            {formatTime(message.timestamp)}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                    
+                    {isLoading && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex justify-start"
+                      >
+                        <div className="bg-gray-700/90 border border-gray-600/50 text-gray-100 p-4 md:p-5 rounded-xl backdrop-blur-sm shadow-lg">
+                          <div className="flex items-center gap-3">
+                            <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
+                            <span className="text-sm md:text-base">AskAI is thinking...</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                    
+                    <div ref={messagesEndRef} />
+                  </div>
+
+                  {/* Quick Suggestions */}
+                  {messages.length <= 1 && (
+                    <div className="px-4 md:px-6 pb-3 bg-gray-800/30">
+                      <p className="text-gray-300 text-sm md:text-base mb-3">Quick suggestions:</p>
+                      <div className="flex flex-wrap gap-2 md:gap-3">
+                        {getContextSuggestions().map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setInputMessage(suggestion)}
+                            className="px-3 py-2 md:px-4 md:py-2 bg-gray-700/80 hover:bg-gray-600/80 text-gray-200 text-sm md:text-base rounded-full border border-gray-600/50 transition-colors"
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input */}
+                  <div className="p-4 md:p-6 border-t border-white/20 bg-gray-800/30">
+                    <div className="flex gap-3 md:gap-4">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Ask about NCE topics..."
+                        className="flex-1 bg-gray-700/80 border border-gray-600/50 rounded-lg px-4 py-3 md:px-5 md:py-4 text-gray-100 text-sm md:text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                        disabled={isLoading}
+                      />
+                      <button
+                        onClick={sendMessage}
+                        disabled={!inputMessage.trim() || isLoading}
+                        className="p-3 md:p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
+                        ) : (
+                          <Send className="h-5 w-5 md:h-6 md:w-6" />
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Context indicator */}
+                    {context.currentPage && (
+                      <p className="text-gray-400 text-xs md:text-sm mt-3">
+                        📍 Context: {context.currentPage.split('/').pop() || 'NCE Platform'}
+                        {context.currentChapter && ` • ${context.currentChapter}`}
+                      </p>
+                    )}
+                    
+                    {/* Auto-reset info */}
+                    <div className="mt-3 text-gray-400 text-xs md:text-sm">
+                      <p>💡 Chat resets automatically when you move to a new question</p>
                     </div>
                   </div>
-                )}
-
-                {/* Input */}
-                <div className="p-4 md:p-6 border-t border-white/20 bg-gray-800/30">
-                  <div className="flex gap-3 md:gap-4">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Ask about NCE topics..."
-                      className="flex-1 bg-gray-700/80 border border-gray-600/50 rounded-lg px-4 py-3 md:px-5 md:py-4 text-gray-100 text-sm md:text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                      disabled={isLoading}
-                    />
-                    <button
-                      onClick={sendMessage}
-                      disabled={!inputMessage.trim() || isLoading}
-                      className="p-3 md:p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin" />
-                      ) : (
-                        <Send className="h-5 w-5 md:h-6 md:w-6" />
-                      )}
-                    </button>
-                  </div>
-                  
-                  {/* Context indicator */}
-                  {context.currentPage && (
-                    <p className="text-gray-400 text-xs md:text-sm mt-3">
-                      📍 Context: {context.currentPage.split('/').pop() || 'NCE Platform'}
-                      {context.currentChapter && ` • ${context.currentChapter}`}
-                    </p>
-                  )}
-                  
-                  {/* Auto-reset info */}
-                  <div className="mt-3 text-gray-400 text-xs md:text-sm">
-                    <p>💡 Chat resets automatically when you move to a new question</p>
-                  </div>
-                </div>
-              </>
-            )}
-          </motion.div>
+                </>
+              )}
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </>
