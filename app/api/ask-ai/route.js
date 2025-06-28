@@ -31,11 +31,8 @@ export async function POST(request) {
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
     
-    console.log('🔵 AskAI API called from IP:', ip);
-    
     // Rate limiting
     if (isRateLimited(ip)) {
-      console.log('🔴 Rate limit exceeded for IP:', ip);
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please wait before asking again.' }, 
         { status: 429 }
@@ -43,16 +40,12 @@ export async function POST(request) {
     }
 
     const { message, context } = await request.json();
-    console.log('📝 Received message:', message);
-    console.log('📍 Context:', context);
     
     if (!message || message.trim().length === 0) {
-      console.log('❌ Empty message received');
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
     if (message.length > 500) {
-      console.log('❌ Message too long:', message.length);
       return NextResponse.json({ error: 'Message too long. Please keep it under 500 characters.' }, { status: 400 });
     }
 
@@ -60,9 +53,6 @@ export async function POST(request) {
       console.error('❌ GEMINI_API_KEY not configured');
       return NextResponse.json({ error: 'AI service not configured' }, { status: 500 });
     }
-
-    console.log('✅ GEMINI_API_KEY exists:', !!GEMINI_API_KEY);
-    console.log('🌐 Gemini URL:', url.replace(GEMINI_API_KEY, '[REDACTED]'));
 
     // Build context-aware prompt
     let systemPrompt = `You are AskAI, a helpful assistant for NCE (National Certification Examination for Energy Managers and Energy Auditors) preparation. 
