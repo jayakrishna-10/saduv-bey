@@ -18,6 +18,7 @@ export default function AskAI() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [context, setContext] = useState({});
+  const [isOffline, setIsOffline] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -110,6 +111,28 @@ export default function AskAI() {
     };
   }, []);
 
+  const getOfflineResponse = (message) => {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('energy audit')) {
+      return "Energy auditing is the systematic process of analyzing energy consumption to identify opportunities for energy savings. Key steps include: 1) Data collection, 2) Energy flow analysis, 3) Identification of energy-saving opportunities, 4) Economic evaluation, and 5) Implementation planning.";
+    }
+    
+    if (lowerMessage.includes('boiler') || lowerMessage.includes('thermal')) {
+      return "Boiler efficiency depends on factors like combustion efficiency, heat transfer, and heat losses. Key parameters include: stack temperature, excess air, fuel quality, and maintenance practices. Regular monitoring and optimization can improve efficiency by 5-15%.";
+    }
+    
+    if (lowerMessage.includes('motor') || lowerMessage.includes('electrical')) {
+      return "Electric motor efficiency is crucial for electrical systems. Key factors: proper sizing, power factor correction, variable frequency drives (VFDs), and regular maintenance. Energy-efficient motors can reduce consumption by 2-8% compared to standard motors.";
+    }
+    
+    if (lowerMessage.includes('power factor')) {
+      return "Power factor is the ratio of real power to apparent power. Low power factor leads to higher current draw and energy losses. Correction using capacitors can improve efficiency and reduce demand charges. Target power factor: 0.95 or higher.";
+    }
+    
+    return "I'm currently offline, but here are key NCE topics to focus on: 1) Energy Management principles, 2) Energy auditing methodology, 3) Thermal utilities (boilers, steam systems), 4) Electrical utilities (motors, lighting), 5) Economic analysis of energy projects. Try asking about specific topics when I'm back online!";
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
@@ -121,8 +144,25 @@ export default function AskAI() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputMessage;
     setInputMessage('');
     setIsLoading(true);
+
+    // If offline, provide fallback response
+    if (isOffline) {
+      setTimeout(() => {
+        const offlineResponse = {
+          id: Date.now() + 1,
+          type: 'ai',
+          content: getOfflineResponse(currentInput),
+          timestamp: new Date(),
+          isOffline: true
+        };
+        setMessages(prev => [...prev, offlineResponse]);
+        setIsLoading(false);
+      }, 1000);
+      return;
+    }
 
     try {
       const response = await fetch('/api/ask-ai', {
@@ -136,10 +176,20 @@ export default function AskAI() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Handle non-JSON responses (like HTML error pages)
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('Service temporarily unavailable');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get AI response');
+        throw new Error(data.error || `HTTP ${response.status}: Service error`);
       }
 
       const aiMessage = {
@@ -153,15 +203,45 @@ export default function AskAI() {
     } catch (error) {
       console.error('Error sending message:', error);
       
-      const errorMessage = {
-        id: Date.now() + 1,
-        type: 'ai',
-        content: 'Sorry, I\'m having trouble responding right now. Please try again in a moment.',
-        timestamp: new Date(),
-        isError: true
-      };
+      let errorMessage = 'Sorry, I\'m having trouble responding right now.';
+      let shouldGoOffline = false;
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'Network error. Switching to offline mode for basic help.';
+        shouldGoOffline = true;
+      } else if (error.message.includes('timeout') || error.message.includes('408')) {
+        errorMessage = 'Request timed out. Try asking a shorter question or use offline mode.';
+        shouldGoOffline = true;
+      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+        errorMessage = 'Too many requests. Please wait a moment before asking again.';
+      } else if (error.message.includes('Service temporarily unavailable')) {
+        errorMessage = 'AI service is temporarily unavailable. Switching to offline help mode.';
+        shouldGoOffline = true;
+      }
 
-      setMessages(prev => [...prev, errorMessage]);
+      if (shouldGoOffline) {
+        setIsOffline(true);
+        // Provide offline response for the current question
+        setTimeout(() => {
+          const offlineResponse = {
+            id: Date.now() + 2,
+            type: 'ai',
+            content: getOfflineResponse(currentInput),
+            timestamp: new Date(),
+            isOffline: true
+          };
+          setMessages(prev => [...prev, offlineResponse]);
+        }, 500);
+      } else {
+        const errorResponse = {
+          id: Date.now() + 1,
+          type: 'ai',
+          content: errorMessage,
+          timestamp: new Date(),
+          isError: true
+        };
+        setMessages(prev => [...prev, errorResponse]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -248,7 +328,9 @@ export default function AskAI() {
                 </div>
                 <div>
                   <h3 className="text-white font-semibold text-sm">AskAI</h3>
-                  <p className="text-white/70 text-xs">NCE Assistant</p>
+                  <p className="text-white/70 text-xs">
+                    {isOffline ? 'Offline Mode' : 'NCE Assistant'}
+                  </p>
                 </div>
               </div>
               
@@ -288,10 +370,15 @@ export default function AskAI() {
                             ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                             : message.isError
                             ? 'bg-red-500/20 border border-red-400/50 text-red-200'
+                            : message.isOffline
+                            ? 'bg-yellow-500/20 border border-yellow-400/50 text-yellow-100'
                             : 'bg-white/10 border border-white/20 text-white'
                         }`}
                       >
                         <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                        {message.isOffline && (
+                          <p className="text-xs mt-2 opacity-70 text-yellow-300">📱 Offline Response</p>
+                        )}
                         <p className={`text-xs mt-2 opacity-70 ${
                           message.type === 'user' ? 'text-white/70' : 'text-white/50'
                         }`}>
@@ -369,6 +456,19 @@ export default function AskAI() {
                       📍 Context: {context.currentPage.split('/').pop() || 'NCE Platform'}
                       {context.currentChapter && ` • ${context.currentChapter}`}
                     </p>
+                  )}
+                  
+                  {/* Offline mode indicator */}
+                  {isOffline && (
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-yellow-300 text-xs">⚠️ Offline mode - Basic help only</p>
+                      <button
+                        onClick={() => setIsOffline(false)}
+                        className="text-xs px-2 py-1 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded transition-colors"
+                      >
+                        Try Online
+                      </button>
+                    </div>
                   )}
                 </div>
               </>
