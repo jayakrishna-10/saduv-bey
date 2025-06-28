@@ -45,7 +45,7 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* Add to app/globals.css - Test Interface Styles */
+/* Test Interface Styles */
 
 /* Ensure test interface works with fixed navigation */
 .test-interface {
@@ -61,9 +61,10 @@ body {
   position: sticky;
   top: 64px;
   z-index: 40;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-/* Ensure submit button is always visible */
+/* Ensure submit button is always visible and prominent */
 .submit-button {
   min-width: fit-content;
   white-space: nowrap;
@@ -74,11 +75,17 @@ body {
   padding: 8px 16px;
   border-radius: 8px;
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .submit-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(45deg, #059669, #047857);
+}
+
+.submit-button:active {
+  transform: translateY(0);
 }
 
 /* Mobile responsive improvements */
@@ -101,12 +108,14 @@ body {
 /* Question palette improvements */
 .question-palette {
   position: fixed;
-  top: 120px;
+  top: 160px;
   left: 0;
-  height: calc(100vh - 120px);
+  height: calc(100vh - 160px);
   z-index: 30;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Progress bar container */
@@ -138,6 +147,7 @@ body {
 /* Flag button states */
 .flag-button {
   transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .flag-button.flagged {
@@ -153,4 +163,282 @@ body {
 
 .flag-button:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Navigation button improvements */
+.nav-button {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.nav-button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Question option improvements */
+.question-option {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.question-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.question-option.selected {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+/* Palette question button states */
+.palette-question {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.palette-question:hover {
+  transform: scale(1.1);
+}
+
+.palette-question:active {
+  transform: scale(0.9);
+}
+
+.palette-question.current {
+  background: rgb(139 92 246);
+  border-color: rgb(124 58 237);
+}
+
+.palette-question.answered {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.palette-question.flagged {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.5);
+}
+
+.palette-question.visited {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.palette-question.not-visited {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Quick actions bar */
+.quick-actions {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Sticky positioning improvements */
+.sticky-header {
+  position: sticky;
+  top: 64px;
+  z-index: 40;
+}
+
+@media (max-width: 768px) {
+  .sticky-header {
+    top: 56px;
+  }
+}
+
+.sticky-actions {
+  position: sticky;
+  top: 128px;
+  z-index: 30;
+}
+
+@media (max-width: 768px) {
+  .sticky-actions {
+    top: 112px;
+  }
+}
+
+/* Backdrop blur support */
+@supports (backdrop-filter: blur(20px)) {
+  .backdrop-blur-support {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+@supports not (backdrop-filter: blur(20px)) {
+  .backdrop-blur-support {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Question text improvements */
+.question-text {
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Option text improvements */
+.option-text {
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Results page improvements */
+.results-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.results-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Configuration page improvements */
+.config-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.config-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.config-card.selected {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Focus states for accessibility */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* Animation improvements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-300px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+/* Loading states */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .test-header {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .submit-button {
+    background: #000;
+    border: 2px solid #fff;
+  }
+  
+  .question-option {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .test-header,
+  .sticky-actions,
+  .question-palette {
+    display: none !important;
+  }
+  
+  .test-interface {
+    padding-top: 0 !important;
+  }
 }
