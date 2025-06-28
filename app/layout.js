@@ -3,6 +3,7 @@ import './globals.css'
 import 'katex/dist/katex.min.css'
 import ErrorBoundary from './components/ErrorBoundary'
 import NavBar from './components/NavBar'
+import AskAI from './components/AskAI'
 
 export const metadata = {
   title: {
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
         <ErrorBoundary>
           <NavBar />
           {children}
+          <AskAI />
         </ErrorBoundary>
       </body>
     </html>
