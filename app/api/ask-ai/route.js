@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const model = 'gemini-2.5-pro'; // Back to reasoning model for best quality
+const model = 'gemini-2.5-flash'; // Back to reasoning model for best quality
 const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
 // Rate limiting storage (in production, use Redis or database)
