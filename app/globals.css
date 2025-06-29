@@ -45,6 +45,208 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* AskAI Chat Improvements */
+.askai-chat {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* AskAI Message Styling */
+.askai-message {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.askai-message p {
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.askai-message p:last-child {
+  margin-bottom: 0;
+}
+
+/* AskAI Code Blocks */
+.askai-message pre {
+  background-color: rgba(55, 65, 81, 0.8) !important;
+  border: 1px solid rgba(75, 85, 99, 0.6);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.askai-message code {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+  font-size: 0.875rem;
+}
+
+/* AskAI Inline Code */
+.askai-message p code {
+  background-color: rgba(75, 85, 99, 0.8) !important;
+  color: rgb(196, 181, 253) !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  border: 1px solid rgba(107, 114, 128, 0.4);
+}
+
+/* AskAI Lists */
+.askai-message ul, 
+.askai-message ol {
+  margin: 8px 0;
+  padding-left: 1.5rem;
+}
+
+.askai-message li {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+/* AskAI Headers */
+.askai-message h1,
+.askai-message h2,
+.askai-message h3,
+.askai-message h4,
+.askai-message h5,
+.askai-message h6 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.askai-message h1 { font-size: 1.25rem; }
+.askai-message h2 { font-size: 1.125rem; }
+.askai-message h3 { font-size: 1rem; }
+.askai-message h4 { font-size: 0.9rem; }
+
+/* AskAI Blockquotes */
+.askai-message blockquote {
+  border-left: 4px solid rgb(147, 51, 234);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: rgb(209, 213, 219);
+  background-color: rgba(147, 51, 234, 0.1);
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+}
+
+/* AskAI Strong/Bold Text */
+.askai-message strong {
+  font-weight: 700;
+  color: rgb(255, 255, 255);
+}
+
+/* AskAI Em/Italic Text */
+.askai-message em {
+  font-style: italic;
+  color: rgb(229, 231, 235);
+}
+
+/* AskAI Table Styling */
+.askai-message table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+
+.askai-message th,
+.askai-message td {
+  border: 1px solid rgba(75, 85, 99, 0.6);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.askai-message th {
+  background-color: rgba(55, 65, 81, 0.8);
+  font-weight: 600;
+  color: rgb(255, 255, 255);
+}
+
+.askai-message td {
+  background-color: rgba(31, 41, 55, 0.6);
+}
+
+/* AskAI KaTeX Math Rendering */
+.askai-message .katex {
+  font-size: 1.1em;
+}
+
+.askai-message .katex-display {
+  margin: 1rem 0;
+  text-align: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* AskAI Scrollbar for mobile */
+.askai-chat::-webkit-scrollbar {
+  width: 4px;
+}
+
+.askai-chat::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.5);
+  border-radius: 2px;
+}
+
+.askai-chat::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.8);
+  border-radius: 2px;
+}
+
+.askai-chat::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.9);
+}
+
+/* AskAI Input Auto-resize */
+.askai-input {
+  field-sizing: content;
+  min-height: 44px;
+  max-height: 120px;
+  resize: none;
+  line-height: 1.5;
+}
+
+/* AskAI Mobile Optimizations */
+@media (max-width: 768px) {
+  .askai-message {
+    font-size: 16px; /* Prevent zoom on iOS */
+    line-height: 1.5;
+  }
+  
+  .askai-message pre {
+    font-size: 14px;
+    padding: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .askai-message code {
+    font-size: 14px;
+  }
+  
+  .askai-message p code {
+    font-size: 13px;
+  }
+  
+  /* Ensure touch targets are large enough */
+  .askai-suggestion-button {
+    min-height: 44px;
+    padding: 8px 16px;
+  }
+  
+  .askai-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 12px 16px;
+  }
+}
+
 /* Test Interface Styles */
 
 /* Ensure test interface works with fixed navigation */
@@ -416,6 +618,10 @@ select:focus-visible {
   .question-option {
     border-width: 2px;
   }
+  
+  .askai-message {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
 }
 
 /* Reduced motion support */
@@ -474,4 +680,31 @@ a,
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+/* Allow text selection for AskAI messages */
+.askai-message {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* iOS Safari optimizations for AskAI */
+@supports (-webkit-touch-callout: none) {
+  .askai-input {
+    font-size: 16px; /* Prevents zoom on focus */
+    transform: translateZ(0); /* Forces hardware acceleration */
+  }
+  
+  .askai-chat {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Android Chrome optimizations */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+  .askai-input {
+    font-size: 16px; /* Prevents zoom on focus */
+  }
 }
