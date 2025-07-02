@@ -1,4 +1,4 @@
-// app/components/QnAApp.js
+// app/components/QnAApp.js - Complete Fixed Version
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -86,13 +86,16 @@ export function QnAApp() {
       
       const result = await response.json();
       
-      setQuestions(result.questions || []);
+      // Ensure we always have arrays
+      setQuestions(Array.isArray(result.questions) ? result.questions : []);
       setFilters(result.filters || {});
       setCurrentQuestionIndex(0);
       setShowSolution(false);
       
     } catch (err) {
       console.error('Fetch questions error:', err);
+      setQuestions([]);
+      setFilters({});
     } finally {
       setIsLoading(false);
     }
@@ -104,14 +107,28 @@ export function QnAApp() {
   };
 
   const navigateToQuestion = (index) => {
-    if (index >= 0 && index < questions.length) {
-      setCurrentQuestionIndex(index);
-      setShowSolution(false);
-      setSolutionType('quick');
+    if (index >= 0 && index < questions.length && Array.isArray(questions)) {
+      try {
+        setCurrentQuestionIndex(index);
+        setShowSolution(false);
+        setSolutionType('quick');
+      } catch (error) {
+        console.error('Error navigating to question:', error);
+        // Reset to first question if navigation fails
+        setCurrentQuestionIndex(0);
+        setShowSolution(false);
+        setSolutionType('quick');
+      }
     }
   };
 
   const currentQuestion = questions[currentQuestionIndex];
+
+  // Safety check for current question
+  if (!currentQuestion && questions.length > 0) {
+    setCurrentQuestionIndex(0);
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -372,7 +389,7 @@ function FiltersPanel({ filters, activeFilters, setActiveFilters, onClose }) {
               className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm"
             >
               <option value="all" className="bg-gray-800">All Papers</option>
-              {filters.papers?.map(paper => (
+              {Array.isArray(filters.papers) && filters.papers.map(paper => (
                 <option key={paper} value={paper} className="bg-gray-800">{paper}</option>
               ))}
             </select>
@@ -387,7 +404,7 @@ function FiltersPanel({ filters, activeFilters, setActiveFilters, onClose }) {
               className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm"
             >
               <option value="all" className="bg-gray-800">All Topics</option>
-              {filters.topics?.map(topic => (
+              {Array.isArray(filters.topics) && filters.topics.map(topic => (
                 <option key={topic} value={topic} className="bg-gray-800">{topic}</option>
               ))}
             </select>
@@ -402,7 +419,7 @@ function FiltersPanel({ filters, activeFilters, setActiveFilters, onClose }) {
               className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm"
             >
               <option value="all" className="bg-gray-800">All Levels</option>
-              {filters.difficulties?.map(difficulty => (
+              {Array.isArray(filters.difficulties) && filters.difficulties.map(difficulty => (
                 <option key={difficulty} value={difficulty} className="bg-gray-800">{difficulty}</option>
               ))}
             </select>
@@ -417,7 +434,7 @@ function FiltersPanel({ filters, activeFilters, setActiveFilters, onClose }) {
               className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm"
             >
               <option value="all" className="bg-gray-800">All Years</option>
-              {filters.years?.map(year => (
+              {Array.isArray(filters.years) && filters.years.map(year => (
                 <option key={year} value={year} className="bg-gray-800">{year}</option>
               ))}
             </select>
@@ -589,7 +606,14 @@ function SolutionPanel({ question, showSolution, solutionType, setSolutionType }
 
 // Question Content Renderer
 function QuestionContent({ questionData }) {
-  if (!questionData) return null;
+  if (!questionData || typeof questionData !== 'object') {
+    return (
+      <div className="text-white/60 text-center py-8">
+        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-white/40" />
+        <p>Question content is not available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -624,7 +648,7 @@ function QuestionContent({ questionData }) {
       )}
 
       {/* Tables */}
-      {questionData.tables?.map((table, index) => (
+      {Array.isArray(questionData.tables) && questionData.tables.map((table, index) => (
         <div key={table.id || index} className="space-y-3">
           {table.title && (
             <h4 className="text-white font-semibold">{table.title}</h4>
@@ -633,7 +657,7 @@ function QuestionContent({ questionData }) {
             <table className="w-full bg-white/5 rounded-xl border border-white/20">
               <thead>
                 <tr className="border-b border-white/20">
-                  {table.headers?.map((header, idx) => (
+                  {Array.isArray(table.headers) && table.headers.map((header, idx) => (
                     <th key={idx} className="px-4 py-3 text-left text-white font-semibold">
                       {header}
                     </th>
@@ -641,9 +665,9 @@ function QuestionContent({ questionData }) {
                 </tr>
               </thead>
               <tbody>
-                {table.rows?.map((row, rowIdx) => (
+                {Array.isArray(table.rows) && table.rows.map((row, rowIdx) => (
                   <tr key={rowIdx} className="border-b border-white/10">
-                    {row.map((cell, cellIdx) => (
+                    {Array.isArray(row) && row.map((cell, cellIdx) => (
                       <td key={cellIdx} className="px-4 py-3 text-white">
                         {cell}
                       </td>
@@ -657,7 +681,7 @@ function QuestionContent({ questionData }) {
       ))}
 
       {/* Additional Info Boxes */}
-      {questionData.additional_info?.map((info, index) => (
+      {Array.isArray(questionData.additional_info) && questionData.additional_info.map((info, index) => (
         <div key={index} className={`rounded-xl p-4 border ${
           info.type === 'warning' ? 'bg-yellow-500/10 border-yellow-400/30' :
           info.type === 'note' ? 'bg-green-500/10 border-green-400/30' :
@@ -693,7 +717,14 @@ function QuestionContent({ questionData }) {
 
 // Solution Content Renderer
 function SolutionContent({ solutionData, type }) {
-  if (!solutionData) return null;
+  if (!solutionData || typeof solutionData !== 'object') {
+    return (
+      <div className="text-white/60 text-center py-8">
+        <AlertCircle className="h-12 w-12 mx-auto mb-4 text-white/40" />
+        <p>Solution content is not available</p>
+      </div>
+    );
+  }
 
   if (type === 'quick') {
     return (
@@ -720,7 +751,7 @@ function SolutionContent({ solutionData, type }) {
         )}
 
         {/* Steps */}
-        {solutionData.steps?.map((step, idx) => (
+        {Array.isArray(solutionData.steps) && solutionData.steps.map((step, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, y: 20 }}
@@ -771,7 +802,7 @@ function SolutionContent({ solutionData, type }) {
   // Detailed solution
   return (
     <div className="space-y-6">
-      {solutionData.sections?.map((section, idx) => (
+      {Array.isArray(solutionData.sections) && solutionData.sections.map((section, idx) => (
         <motion.div
           key={idx}
           initial={{ opacity: 0, y: 20 }}
@@ -797,7 +828,7 @@ function SolutionContent({ solutionData, type }) {
             </div>
           )}
           
-          {section.key_points && (
+          {Array.isArray(section.key_points) && (
             <ul className="space-y-2 mb-4">
               {section.key_points.map((point, pointIdx) => (
                 <li key={pointIdx} className="flex items-start gap-3 text-white/80">
