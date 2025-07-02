@@ -1,14 +1,14 @@
-// app/components/NCEHomepage.js - Cleaned up version
+// app/components/NCEHomepage.js - Updated with QnA feature
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Brain, FileText, BookOpen } from 'lucide-react';
+import { Brain, FileText, BookOpen, PenTool } from 'lucide-react';
 
 const features = [
   {
     id: 'quiz',
     title: 'Practice Quiz',
-    description: 'Interactive learning with instant feedback and explanations',
+    description: 'Interactive MCQ learning with instant feedback and explanations',
     icon: Brain,
     href: '/nce/quiz',
     color: 'from-blue-500 to-cyan-500',
@@ -17,11 +17,21 @@ const features = [
   {
     id: 'test',
     title: 'Mock Tests',
-    description: 'Exam-style tests with timer and comprehensive analysis',
+    description: 'Exam-style MCQ tests with timer and comprehensive analysis',
     icon: FileText,
     href: '/nce/test',
     color: 'from-purple-500 to-pink-500',
     features: ['Timed exams', 'Detailed analytics', 'Review mode']
+  },
+  {
+    id: 'qna',
+    title: 'Practice Questions',
+    description: 'Short & long answer questions with detailed step-by-step solutions',
+    icon: PenTool,
+    href: '/nce/qna',
+    color: 'from-orange-500 to-red-500',
+    features: ['Quick solutions', 'Detailed explanations', 'Formula support'],
+    isNew: true
   },
   {
     id: 'notes',
@@ -75,7 +85,7 @@ export default function NCEHomepage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.id}
@@ -83,10 +93,17 @@ export default function NCEHomepage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.2 }}
                 whileHover={{ scale: 1.02 }}
-                className="group"
+                className="group relative"
               >
                 <Link href={feature.href} className="block">
-                  <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-8 border border-white/20 hover:border-white/40 transition-all duration-300 h-full">
+                  <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-8 border border-white/20 hover:border-white/40 transition-all duration-300 h-full relative">
+                    {/* New Badge */}
+                    {feature.isNew && (
+                      <div className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-xs px-3 py-1 rounded-full text-white font-bold">
+                        NEW
+                      </div>
+                    )}
+                    
                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                       <feature.icon className="h-8 w-8 text-white" />
                     </div>
@@ -188,11 +205,11 @@ export default function NCEHomepage() {
                 Start Practice Quiz
               </Link>
               <Link
-                href="/nce/test"
-                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2"
+                href="/nce/qna"
+                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all duration-200 inline-flex items-center justify-center gap-2"
               >
-                <FileText className="h-5 w-5" />
-                Take Mock Test
+                <PenTool className="h-5 w-5" />
+                Practice Questions
               </Link>
             </div>
           </motion.div>
