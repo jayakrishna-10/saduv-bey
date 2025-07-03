@@ -1,23 +1,20 @@
-// app/components/AskAI.js
-'use client';
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Minimize2, Maximize2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Minimize2, Maximize2, Sparkles, Bot, User } from 'lucide-react';
 
-export default function AskAI() {
+export default function MinimalistAskAI() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'ai',
-      content: 'Hi! I\'m AskAI, your NCE preparation assistant. Ask me anything about energy management, thermal utilities, electrical utilities, or exam strategies!',
+      content: 'Hi! I\'m your NCE preparation assistant. Ask me anything about energy management, thermal utilities, electrical utilities, or exam strategies.',
       timestamp: new Date()
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [context, setContext] = useState({});
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -30,85 +27,12 @@ export default function AskAI() {
     scrollToBottom();
   }, [messages]);
 
-  // Collect context from the current page
+  // Focus input when opened
   useEffect(() => {
-    const collectContext = () => {
-      const pathname = window.location.pathname;
-      const newContext = {
-        currentPage: pathname,
-        timestamp: new Date().toISOString()
-      };
-
-      // Detect current page type and extract relevant context
-      if (pathname.includes('/nce/quiz')) {
-        newContext.paper = 'quiz';
-        
-        // Try to get current question text
-        const questionElement = document.querySelector('h2');
-        if (questionElement) {
-          newContext.currentQuestion = questionElement.textContent?.slice(0, 200) + '...';
-        }
-        
-        // Get current chapter/topic if available
-        const chapterElement = document.querySelector('[data-chapter], .text-white\\/70');
-        if (chapterElement) {
-          newContext.currentChapter = chapterElement.textContent;
-        }
-      } 
-      else if (pathname.includes('/nce/test')) {
-        newContext.paper = 'test';
-        newContext.additionalContext = 'User is taking a mock test';
-      }
-      else if (pathname.includes('/nce/notes')) {
-        newContext.paper = 'study notes';
-        
-        // Extract chapter/book info from URL or headings
-        const pathParts = pathname.split('/');
-        if (pathParts.length > 3) {
-          newContext.currentChapter = pathParts.slice(3).join(' > ');
-        }
-        
-        // Get page title if available
-        const titleElement = document.querySelector('h1, h2');
-        if (titleElement) {
-          newContext.additionalContext = `Reading: ${titleElement.textContent}`;
-        }
-      }
-      else if (pathname.includes('/nce')) {
-        newContext.paper = 'NCE homepage';
-        newContext.additionalContext = 'User is on NCE preparation platform homepage';
-      }
-
-      setContext(newContext);
-    };
-
-    // Collect context on mount and when URL changes
-    collectContext();
-    
-    // Listen for URL changes (for SPA navigation)
-    const handleLocationChange = () => {
-      setTimeout(collectContext, 100); // Small delay to let content load
-    };
-
-    window.addEventListener('popstate', handleLocationChange);
-    
-    // Also observe DOM changes to capture dynamic content
-    const observer = new MutationObserver(() => {
-      collectContext();
-    });
-    
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true,
-      attributes: false,
-      characterData: false
-    });
-
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      observer.disconnect();
-    };
-  }, []);
+    if (isOpen && !isMinimized) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen, isMinimized]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -125,89 +49,17 @@ export default function AskAI() {
     setInputMessage('');
     setIsLoading(true);
 
-    try {
-      console.log('Sending request to /api/ask-ai with:', {
-        message: currentInput,
-        context: context
-      });
-
-      const response = await fetch('/api/ask-ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: currentInput,
-          context: context
-        }),
-      });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-      let data;
-      const contentType = response.headers.get('content-type');
-      
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-        console.log('Response data:', data);
-      } else {
-        // Handle non-JSON responses (like HTML error pages)
-        const text = await response.text();
-        console.error('Non-JSON response received:', text);
-        throw new Error(`Server returned non-JSON response: ${text.slice(0, 200)}...`);
-      }
-
-      if (!response.ok) {
-        console.error('API error response:', data);
-        throw new Error(data.error || `HTTP ${response.status}: ${data.message || 'Service error'}`);
-      }
-
+    // Simulate AI response
+    setTimeout(() => {
       const aiMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: data.response,
+        content: `That's a great question about "${currentInput}". In the context of NCE preparation, this topic relates to energy efficiency principles. Would you like me to explain the specific concepts or provide practice questions on this topic?`,
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
-      console.error('Full error details:', error);
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      
-      // Create detailed error message for troubleshooting
-      let errorMessage = `❌ Error Details:\n`;
-      errorMessage += `• Error Type: ${error.name}\n`;
-      errorMessage += `• Message: ${error.message}\n`;
-      
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorMessage += `• Cause: Network/Fetch error - check internet connection\n`;
-        errorMessage += `• URL: /api/ask-ai\n`;
-      } else if (error.message.includes('timeout') || error.message.includes('408')) {
-        errorMessage += `• Cause: Request timeout\n`;
-      } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-        errorMessage += `• Cause: Rate limit exceeded\n`;
-      } else if (error.message.includes('non-JSON response')) {
-        errorMessage += `• Cause: Server returned HTML instead of JSON\n`;
-      } else {
-        errorMessage += `• Cause: Unknown error\n`;
-      }
-      
-      errorMessage += `\nFull error: ${error.toString()}`;
-
-      const errorResponse = {
-        id: Date.now() + 1,
-        type: 'ai',
-        content: errorMessage,
-        timestamp: new Date(),
-        isError: true
-      };
-      setMessages(prev => [...prev, errorResponse]);
-    } finally {
       setIsLoading(false);
-    }
+    }, 1500);
   };
 
   const handleKeyPress = (e) => {
@@ -224,22 +76,12 @@ export default function AskAI() {
     });
   };
 
-  // Context suggestions based on current page
-  const getContextSuggestions = () => {
-    const suggestions = [];
-    
-    if (context.currentPage?.includes('/quiz')) {
-      suggestions.push("Explain this concept", "Why is this answer correct?", "Give me a similar example");
-    } else if (context.currentPage?.includes('/test')) {
-      suggestions.push("Test-taking strategies", "Time management tips", "Common mistakes to avoid");
-    } else if (context.currentPage?.includes('/notes')) {
-      suggestions.push("Summarize this chapter", "Key formulas to remember", "Real-world applications");
-    } else {
-      suggestions.push("Study plan advice", "Important NCE topics", "Exam preparation tips");
-    }
-    
-    return suggestions;
-  };
+  const suggestions = [
+    "Explain energy audit process",
+    "Key formulas for thermal efficiency",
+    "Power factor calculation",
+    "Study plan for NCE"
+  ];
 
   return (
     <>
@@ -247,24 +89,32 @@ export default function AskAI() {
       <AnimatePresence>
         {!isOpen && (
           <motion.button
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+            className="fixed bottom-8 right-8 z-50 group"
           >
-            <MessageCircle className="h-6 w-6" />
+            <div className="w-14 h-14 bg-gray-900 text-white rounded-2xl flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 relative">
+              <MessageCircle className="h-6 w-6" />
+              
+              {/* Notification pulse */}
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center"
+              >
+                <Sparkles className="h-2 w-2 text-white" />
+              </motion.div>
+            </div>
             
-            {/* Notification dot for new users */}
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center"
-            >
-              <Sparkles className="h-2 w-2 text-yellow-900" />
-            </motion.div>
+            {/* Tooltip */}
+            <div className="absolute bottom-full right-0 mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Ask me anything about NCE
+              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+            </div>
           </motion.button>
         )}
       </AnimatePresence>
@@ -278,46 +128,51 @@ export default function AskAI() {
               opacity: 1, 
               y: 0, 
               scale: 1,
-              height: isMinimized ? '60px' : 'auto'
             }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 right-6 z-50 w-80 md:w-96 max-h-[80vh] backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl overflow-hidden shadow-2xl"
+            className={`fixed bottom-8 right-8 z-50 w-80 md:w-96 bg-white rounded-3xl shadow-2xl border border-gray-200/50 overflow-hidden transition-all duration-300 ${
+              isMinimized ? 'h-16' : 'h-[32rem]'
+            }`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20 bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+            <div className="flex items-center justify-between p-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
+                <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold text-sm">AskAI</h3>
-                  <p className="text-white/70 text-xs">NCE Assistant</p>
+                  <h3 className="text-gray-900 font-medium text-sm">AskAI</h3>
+                  <p className="text-gray-500 text-xs">NCE Assistant</p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
-                <button
+              <div className="flex items-center gap-1">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
                   {isMinimized ? 
-                    <Maximize2 className="h-4 w-4 text-white/70" /> : 
-                    <Minimize2 className="h-4 w-4 text-white/70" />
+                    <Maximize2 className="h-4 w-4 text-gray-500" /> : 
+                    <Minimize2 className="h-4 w-4 text-gray-500" />
                   }
-                </button>
-                <button
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setIsOpen(false)}
-                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
                 >
-                  <X className="h-4 w-4 text-white/70" />
-                </button>
+                  <X className="h-4 w-4 text-gray-500" />
+                </motion.button>
               </div>
             </div>
 
             {!isMinimized && (
               <>
                 {/* Messages */}
-                <div className="h-64 md:h-80 overflow-y-auto p-4 space-y-4">
+                <div className="h-64 md:h-72 overflow-y-auto p-4 space-y-4">
                   {messages.map((message) => (
                     <motion.div
                       key={message.id}
@@ -325,21 +180,34 @@ export default function AskAI() {
                       animate={{ opacity: 1, y: 0 }}
                       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div
-                        className={`max-w-[80%] p-3 rounded-xl text-sm ${
-                          message.type === 'user'
-                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                            : message.isError
-                            ? 'bg-red-500/20 border border-red-400/50 text-red-200'
-                            : 'bg-white/10 border border-white/20 text-white'
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap leading-relaxed font-mono text-xs">{message.content}</p>
-                        <p className={`text-xs mt-2 opacity-70 ${
-                          message.type === 'user' ? 'text-white/70' : 'text-white/50'
+                      <div className={`flex gap-3 max-w-[80%] ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                        {/* Avatar */}
+                        <div className={`w-6 h-6 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          message.type === 'user' 
+                            ? 'bg-gray-900 text-white' 
+                            : 'bg-gray-100 text-gray-600'
                         }`}>
-                          {formatTime(message.timestamp)}
-                        </p>
+                          {message.type === 'user' ? 
+                            <User className="h-3 w-3" /> : 
+                            <Bot className="h-3 w-3" />
+                          }
+                        </div>
+                        
+                        {/* Message */}
+                        <div
+                          className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                            message.type === 'user'
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-gray-50 text-gray-900'
+                          }`}
+                        >
+                          <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className={`text-xs mt-2 opacity-70 ${
+                            message.type === 'user' ? 'text-gray-300' : 'text-gray-500'
+                          }`}>
+                            {formatTime(message.timestamp)}
+                          </p>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -350,10 +218,15 @@ export default function AskAI() {
                       animate={{ opacity: 1 }}
                       className="flex justify-start"
                     >
-                      <div className="bg-white/10 border border-white/20 text-white p-3 rounded-xl">
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">AskAI is thinking...</span>
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 bg-gray-100 rounded-xl flex items-center justify-center">
+                          <Bot className="h-3 w-3 text-gray-600" />
+                        </div>
+                        <div className="bg-gray-50 text-gray-900 p-3 rounded-2xl">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                            <span className="text-sm text-gray-500">Thinking...</span>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -365,23 +238,26 @@ export default function AskAI() {
                 {/* Quick Suggestions */}
                 {messages.length <= 1 && (
                   <div className="px-4 pb-2">
-                    <p className="text-white/60 text-xs mb-2">Quick suggestions:</p>
+                    <p className="text-gray-500 text-xs mb-3">Quick suggestions:</p>
                     <div className="flex flex-wrap gap-2">
-                      {getContextSuggestions().map((suggestion, index) => (
-                        <button
+                      {suggestions.map((suggestion, index) => (
+                        <motion.button
                           key={index}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.1 }}
                           onClick={() => setInputMessage(suggestion)}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white/80 text-xs rounded-full border border-white/20 transition-colors"
+                          className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs rounded-xl border border-gray-200 transition-all"
                         >
                           {suggestion}
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
                   </div>
                 )}
 
                 {/* Input */}
-                <div className="p-4 border-t border-white/20">
+                <div className="p-4 border-t border-gray-100">
                   <div className="flex gap-2">
                     <input
                       ref={inputRef}
@@ -390,34 +266,29 @@ export default function AskAI() {
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about NCE topics..."
-                      className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                       disabled={isLoading}
                     />
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={sendMessage}
                       disabled={!inputMessage.trim() || isLoading}
-                      className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />
                       )}
-                    </button>
+                    </motion.button>
                   </div>
                   
                   {/* Context indicator */}
-                  {context.currentPage && (
-                    <p className="text-white/40 text-xs mt-2">
-                      📍 Context: {context.currentPage.split('/').pop() || 'NCE Platform'}
-                      {context.currentChapter && ` • ${context.currentChapter}`}
-                    </p>
-                  )}
-                  
-                  {/* Debug info */}
-                  <div className="mt-2 text-white/30 text-xs">
-                    <p>🔧 Debug Mode: All errors will be shown for troubleshooting</p>
-                  </div>
+                  <p className="text-gray-400 text-xs mt-2 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+                    Context: NCE Platform
+                  </p>
                 </div>
               </>
             )}
