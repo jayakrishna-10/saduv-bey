@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, FileText, BookOpen, PenTool, Play, ChevronRight, Zap, Target, Clock, Users, Download, Sparkles, ArrowRight } from 'lucide-react';
+// app/page.js - Redesigned with minimalist geometric style
+'use client';
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Brain, BookOpen, Target, Zap, Users, Trophy, ArrowRight, Sparkles, Download, Play, ChevronRight, Clock, FileText, PenTool } from "lucide-react"
+import { useState, useEffect } from "react"
 
-export default function MinimalistHomepage() {
+export default function HomePage() {
+  const [activeFeature, setActiveFeature] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [currentFeature, setCurrentFeature] = useState(0);
 
   // Track mouse for subtle parallax effect
   useEffect(() => {
@@ -18,14 +21,6 @@ export default function MinimalistHomepage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Auto-rotate features
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentFeature(prev => (prev + 1) % features.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
-
   const features = [
     {
       id: 'quiz',
@@ -34,8 +29,8 @@ export default function MinimalistHomepage() {
       description: 'AI-powered adaptive quizzes that learn from your performance and optimize your study path.',
       icon: Brain,
       color: '#6366f1',
-      stats: ['2000+ Questions', 'Real-time Analysis', 'Personalized Learning'],
-      href: '/nce/quiz'
+      href: '/nce/quiz',
+      stats: ['2000+ Questions', 'Real-time Analysis', 'Personalized Learning']
     },
     {
       id: 'test',
@@ -44,8 +39,8 @@ export default function MinimalistHomepage() {
       description: 'Full-scale mock tests that replicate actual NCE exam conditions with precise timing.',
       icon: FileText,
       color: '#8b5cf6',
-      stats: ['Timed Tests', 'Detailed Reports', 'Performance Tracking'],
-      href: '/nce/test'
+      href: '/nce/test',
+      stats: ['Timed Tests', 'Detailed Reports', 'Performance Tracking']
     },
     {
       id: 'notes',
@@ -54,16 +49,19 @@ export default function MinimalistHomepage() {
       description: 'Professionally curated study notes organized by topics with visual learning aids.',
       icon: BookOpen,
       color: '#10b981',
-      stats: ['50+ Chapters', 'Visual Diagrams', 'Quick Reference'],
-      href: '/nce/notes'
+      href: '/nce/notes',
+      stats: ['50+ Chapters', 'Visual Diagrams', 'Quick Reference']
+    },
+    {
+      id: 'flashcards',
+      title: 'Smart Flashcards',
+      subtitle: 'Memory Enhancement',
+      description: 'Spaced repetition flashcards that adapt to your learning pace and memory retention.',
+      icon: PenTool,
+      color: '#f59e0b',
+      href: '/nce/flashcards',
+      stats: ['Active Recall', 'Spaced Repetition', 'Progress Tracking']
     }
-  ];
-
-  const stats = [
-    { label: 'Practice Questions', value: '2,500+', icon: Target, color: '#6366f1' },
-    { label: 'Study Materials', value: '50+', icon: BookOpen, color: '#10b981' },
-    { label: 'Mock Tests', value: '25+', icon: Clock, color: '#8b5cf6' },
-    { label: 'Success Rate', value: '94%', icon: Zap, color: '#f59e0b' }
   ];
 
   return (
@@ -109,13 +107,6 @@ export default function MinimalistHomepage() {
             className="w-3 h-8 bg-gradient-to-b from-yellow-300 to-orange-300 rounded-full opacity-60"
           />
         </div>
-        <div className="absolute top-2/3 left-1/4">
-          <motion.div
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-            className="w-2 h-2 bg-indigo-400 rounded-full opacity-70"
-          />
-        </div>
       </div>
 
       {/* Navigation */}
@@ -124,14 +115,9 @@ export default function MinimalistHomepage() {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-3"
+            className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-2xl font-light bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              saduvbey
-            </div>
+            saduvbey
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 20 }}
@@ -140,14 +126,12 @@ export default function MinimalistHomepage() {
           >
             <a href="#features" className="text-gray-700 hover:text-gray-900 transition-colors">Features</a>
             <a href="#about" className="text-gray-700 hover:text-gray-900 transition-colors">About</a>
-            <a href="/nce" className="text-gray-700 hover:text-gray-900 transition-colors">NCE Prep</a>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-2 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all"
-            >
-              Get Started
-            </motion.button>
+            <a href="#products" className="text-gray-700 hover:text-gray-900 transition-colors">Products</a>
+            <Link href="/nce">
+              <button className="px-6 py-2 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all transform hover:scale-105">
+                Get Started
+              </button>
+            </Link>
           </motion.div>
         </div>
       </nav>
@@ -172,7 +156,7 @@ export default function MinimalistHomepage() {
                 animate={{ backgroundPosition: "100% 50%" }}
                 transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
                 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent bg-300% font-normal"
-                style={{ backgroundSize: "300% 100%" }}
+                style={{ backgroundSize: '300% 100%' }}
               >
                 Exam Journey
               </motion.span>
@@ -184,7 +168,7 @@ export default function MinimalistHomepage() {
               className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed"
             >
               Experience the future of exam preparation with our precision-engineered learning platform. 
-              Clean, focused, and designed for serious learners seeking excellence.
+              Clean, focused, and designed for serious learners who demand excellence.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -192,24 +176,16 @@ export default function MinimalistHomepage() {
               transition={{ delay: 0.6 }}
               className="flex flex-col sm:flex-row gap-6 justify-center items-center"
             >
-              <motion.a
-                href="/nce"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="group px-8 py-4 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center gap-3"
-              >
-                <Play className="h-5 w-5" />
-                Start Learning
-                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </motion.a>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-gray-400 hover:bg-gray-100 transition-all"
-              >
-                <Download className="h-5 w-5 inline mr-2" />
-                Download App
-              </motion.button>
+              <Link href="/nce">
+                <button className="group px-8 py-4 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all transform hover:scale-105 flex items-center gap-3">
+                  <Play className="h-5 w-5" />
+                  Start Learning
+                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+              <button className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-gray-400 transition-all">
+                View Demo
+              </button>
             </motion.div>
           </motion.div>
 
@@ -220,144 +196,98 @@ export default function MinimalistHomepage() {
             transition={{ delay: 0.8 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24"
           >
-            {stats.map((stat, index) => (
+            {[
+              { label: 'Active Learners', value: '12,000+', icon: Users },
+              { label: 'Practice Questions', value: '2,500+', icon: Target },
+              { label: 'Study Hours', value: '50,000+', icon: Clock },
+              { label: 'Success Rate', value: '94%', icon: Zap }
+            ].map((stat, index) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 + index * 0.1 }}
-                whileHover={{ y: -5 }}
-                className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/80 hover:shadow-xl transition-all duration-300"
+                className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/80 transition-all"
               >
-                <div 
-                  className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                  style={{ backgroundColor: `${stat.color}20` }}
-                >
-                  <stat.icon className="h-6 w-6" style={{ color: stat.color }} />
-                </div>
+                <stat.icon className="h-8 w-8 text-gray-700 mx-auto mb-3" />
                 <div className="text-3xl font-light text-gray-900 mb-1">{stat.value}</div>
                 <div className="text-sm text-gray-600">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>
 
-          {/* Featured Product Showcase */}
+          {/* Features Grid */}
+          <div id="features" className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-24">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 + index * 0.1 }}
+                onHoverStart={() => setActiveFeature(index)}
+                className="group cursor-pointer"
+              >
+                <Link href={feature.href}>
+                  <div className="h-full p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/90 hover:shadow-xl transition-all duration-300">
+                    <div className="flex items-start gap-6">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center"
+                        style={{ backgroundColor: `${feature.color}20` }}
+                      >
+                        <feature.icon className="h-8 w-8" style={{ color: feature.color }} />
+                      </motion.div>
+                      
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-500 mb-1">{feature.subtitle}</div>
+                        <h3 className="text-2xl font-light text-gray-900 mb-4">{feature.title}</h3>
+                        <p className="text-gray-600 mb-6 leading-relaxed">{feature.description}</p>
+                        
+                        <div className="space-y-2">
+                          {feature.stats.map((stat, idx) => (
+                            <motion.div
+                              key={idx}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 1.4 + index * 0.1 + idx * 0.05 }}
+                              className="flex items-center gap-3 text-sm text-gray-600"
+                            >
+                              <div 
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: feature.color }}
+                              />
+                              {stat}
+                            </motion.div>
+                          ))}
+                        </div>
+                        
+                        <motion.div
+                          whileHover={{ x: 5 }}
+                          className="mt-6 flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium group-hover:translate-x-2 transition-all"
+                        >
+                          Explore
+                          <ChevronRight className="h-4 w-4" />
+                        </motion.div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* NCE Specific Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2 }}
+            transition={{ delay: 2 }}
             className="mb-24"
           >
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-6">
-                NCE Preparation Platform
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Comprehensive preparation for National Certification Examination for Energy Managers and Energy Auditors
+              <h2 className="text-4xl font-light text-gray-900 mb-4">NCE Examination Coverage</h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Complete preparation for all three papers of the National Certification Examination
               </p>
-            </div>
-
-            <div className="relative p-8 md:p-12 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/90 hover:shadow-2xl transition-all duration-500">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                {/* Feature Description */}
-                <div>
-                  <motion.div
-                    key={currentFeature}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div 
-                        className="w-16 h-16 rounded-2xl flex items-center justify-center"
-                        style={{ backgroundColor: `${features[currentFeature].color}20` }}
-                      >
-                        <features[currentFeature].icon 
-                          className="h-8 w-8" 
-                          style={{ color: features[currentFeature].color }} 
-                        />
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-500">{features[currentFeature].subtitle}</div>
-                        <h3 className="text-3xl font-light text-gray-900">{features[currentFeature].title}</h3>
-                      </div>
-                    </div>
-                    
-                    <p className="text-lg text-gray-600 leading-relaxed">
-                      {features[currentFeature].description}
-                    </p>
-                    
-                    <div className="space-y-3">
-                      {features[currentFeature].stats.map((stat, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.1 }}
-                          className="flex items-center gap-3 text-gray-600"
-                        >
-                          <div 
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: features[currentFeature].color }}
-                          />
-                          {stat}
-                        </motion.div>
-                      ))}
-                    </div>
-                    
-                    <motion.a
-                      href={features[currentFeature].href}
-                      whileHover={{ x: 5 }}
-                      className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium transition-all group"
-                    >
-                      Try {features[currentFeature].title}
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </motion.a>
-                  </motion.div>
-                </div>
-
-                {/* Feature Tabs */}
-                <div className="space-y-4">
-                  {features.map((feature, index) => (
-                    <motion.button
-                      key={feature.id}
-                      onClick={() => setCurrentFeature(index)}
-                      whileHover={{ scale: 1.02 }}
-                      className={`w-full p-6 rounded-2xl border transition-all text-left ${
-                        currentFeature === index
-                          ? 'bg-white border-gray-300 shadow-lg'
-                          : 'bg-white/30 border-gray-200 hover:bg-white/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div 
-                          className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${feature.color}20` }}
-                        >
-                          <feature.icon className="h-6 w-6" style={{ color: feature.color }} />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{feature.title}</div>
-                          <div className="text-sm text-gray-600">{feature.subtitle}</div>
-                        </div>
-                      </div>
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Papers Overview */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.6 }}
-            className="mb-24"
-          >
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-light text-gray-900 mb-4">Examination Structure</h2>
-              <p className="text-lg text-gray-600">Complete coverage of all three NCE papers</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -366,47 +296,36 @@ export default function MinimalistHomepage() {
                   paper: 'Paper 1',
                   title: 'General Aspects of Energy Management and Energy Audit',
                   color: '#6366f1',
-                  topics: ['Energy Scenario', 'Energy Management', 'Financial Management']
+                  description: 'Fundamental concepts and principles'
                 },
                 {
-                  paper: 'Paper 2',
+                  paper: 'Paper 2', 
                   title: 'Energy Efficiency in Thermal Utilities',
                   color: '#f59e0b',
-                  topics: ['Fuels & Combustion', 'Boilers', 'Steam Systems']
+                  description: 'Boilers, steam systems, and heat recovery'
                 },
                 {
                   paper: 'Paper 3',
-                  title: 'Energy Efficiency in Electrical Utilities',
+                  title: 'Energy Efficiency in Electrical Utilities', 
                   color: '#10b981',
-                  topics: ['Electric Motors', 'HVAC Systems', 'Lighting']
+                  description: 'Motors, lighting, and power systems'
                 }
               ].map((paper, index) => (
                 <motion.div
                   key={paper.paper}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.8 + index * 0.1 }}
-                  whileHover={{ y: -5 }}
-                  className="p-8 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/80 hover:shadow-xl transition-all duration-300"
+                  transition={{ delay: 2.2 + index * 0.1 }}
+                  className="p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/90 transition-all"
                 >
                   <div 
-                    className="inline-block px-4 py-2 rounded-2xl text-white text-sm font-medium mb-6"
+                    className="inline-block px-4 py-2 rounded-full text-white text-sm font-medium mb-4"
                     style={{ backgroundColor: paper.color }}
                   >
                     {paper.paper}
                   </div>
-                  <h3 className="text-xl font-medium text-gray-900 mb-6 leading-relaxed">{paper.title}</h3>
-                  <div className="space-y-2">
-                    {paper.topics.map((topic, idx) => (
-                      <div key={idx} className="flex items-center gap-3 text-sm text-gray-600">
-                        <div 
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: paper.color }}
-                        />
-                        {topic}
-                      </div>
-                    ))}
-                  </div>
+                  <h3 className="text-xl font-light text-gray-900 mb-4">{paper.title}</h3>
+                  <p className="text-gray-600">{paper.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -415,44 +334,37 @@ export default function MinimalistHomepage() {
       </section>
 
       {/* Bottom CTA */}
-      <section className="relative z-10 px-8 py-20">
+      <section id="about" className="relative z-10 px-8 py-20">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 2 }}
-          className="max-w-4xl mx-auto text-center p-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl text-white relative overflow-hidden"
+          transition={{ delay: 2.5 }}
+          className="max-w-4xl mx-auto text-center p-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl text-white"
         >
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full -translate-y-16 translate-x-16" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-white/10 to-transparent rounded-full translate-y-12 -translate-x-12" />
-          
-          <div className="relative z-10">
-            <h2 className="text-4xl md:text-5xl font-light mb-6">Ready to Transform Your Learning?</h2>
-            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Join thousands who've already elevated their exam preparation with our comprehensive platform
-            </p>
-            <motion.a
-              href="/nce"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-block px-8 py-4 bg-white text-gray-900 rounded-full hover:bg-gray-100 transition-all font-medium"
-            >
-              Start Your Journey Today
-            </motion.a>
+          <h2 className="text-4xl font-light mb-6">Ready to Transform Your Learning?</h2>
+          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+            Join the thousands who've already elevated their NCE exam preparation with our modern platform
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/nce">
+              <button className="px-8 py-4 bg-white text-gray-900 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 font-medium">
+                Start Your Journey Today
+              </button>
+            </Link>
+            <button className="px-8 py-4 border-2 border-gray-400 text-gray-300 rounded-full hover:border-gray-300 hover:text-white transition-all">
+              Download Mobile App
+            </button>
           </div>
         </motion.div>
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 px-8 py-12 border-t border-gray-200/50">
+      <footer className="relative z-10 px-8 py-12">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-light text-gray-900">saduvbey</span>
+              <div className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                saduvbey
               </div>
               <p className="text-gray-600 text-sm max-w-xs">
                 Empowering students with cutting-edge technology for competitive exam success.
@@ -462,27 +374,27 @@ export default function MinimalistHomepage() {
             <div>
               <h4 className="font-medium text-gray-900 mb-4">Products</h4>
               <ul className="space-y-2 text-gray-600 text-sm">
-                <li><a href="/nce" className="hover:text-gray-900 transition-colors">NCE Preparation</a></li>
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Mobile App</a></li>
-                <li><a href="#" className="hover:text-gray-900 transition-colors">More Exams (Soon)</a></li>
+                <li><Link href="/nce" className="hover:text-gray-900 transition-colors">NCE Preparation</Link></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">More Exams (Soon)</Link></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Mobile App</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-medium text-gray-900 mb-4">Resources</h4>
               <ul className="space-y-2 text-gray-600 text-sm">
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Study Guides</a></li>
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Practice Tests</a></li>
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Blog</a></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Study Guides</Link></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Practice Tests</Link></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Blog</Link></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-medium text-gray-900 mb-4">Support</h4>
               <ul className="space-y-2 text-gray-600 text-sm">
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-gray-900 transition-colors">Privacy Policy</a></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Help Center</Link></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Contact Us</Link></li>
+                <li><Link href="#" className="hover:text-gray-900 transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
           </div>
@@ -495,5 +407,5 @@ export default function MinimalistHomepage() {
         </div>
       </footer>
     </div>
-  );
+  )
 }
