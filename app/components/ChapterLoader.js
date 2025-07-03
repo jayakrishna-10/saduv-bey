@@ -154,7 +154,7 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
                   </motion.button>
                 </Link>
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
       </header>
