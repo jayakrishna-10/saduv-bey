@@ -1,400 +1,499 @@
-// app/page.js
-'use client';
-import Link from "next/link"
-import { motion } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Brain, BookOpen, Target, Zap, Users, Trophy, ArrowRight, Sparkles, Download } from "lucide-react"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Brain, FileText, BookOpen, PenTool, Play, ChevronRight, Zap, Target, Clock, Users, Download, Sparkles, ArrowRight } from 'lucide-react';
 
-export default function HomePage() {
-  const [particles, setParticles] = useState([]);
+export default function MinimalistHomepage() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [currentFeature, setCurrentFeature] = useState(0);
 
-  // Generate floating particles for background
+  // Track mouse for subtle parallax effect
   useEffect(() => {
-    const newParticles = Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 60 + 30,
-      duration: Math.random() * 20 + 15
-    }));
-    setParticles(newParticles);
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Auto-rotate features
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentFeature(prev => (prev + 1) % features.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const features = [
+    {
+      id: 'quiz',
+      title: 'Interactive Quiz',
+      subtitle: 'Smart Learning System',
+      description: 'AI-powered adaptive quizzes that learn from your performance and optimize your study path.',
+      icon: Brain,
+      color: '#6366f1',
+      stats: ['2000+ Questions', 'Real-time Analysis', 'Personalized Learning'],
+      href: '/nce/quiz'
+    },
+    {
+      id: 'test',
+      title: 'Mock Examinations',
+      subtitle: 'Exam Simulation',
+      description: 'Full-scale mock tests that replicate actual NCE exam conditions with precise timing.',
+      icon: FileText,
+      color: '#8b5cf6',
+      stats: ['Timed Tests', 'Detailed Reports', 'Performance Tracking'],
+      href: '/nce/test'
+    },
+    {
+      id: 'notes',
+      title: 'Study Materials',
+      subtitle: 'Curated Content',
+      description: 'Professionally curated study notes organized by topics with visual learning aids.',
+      icon: BookOpen,
+      color: '#10b981',
+      stats: ['50+ Chapters', 'Visual Diagrams', 'Quick Reference'],
+      href: '/nce/notes'
+    }
+  ];
+
+  const stats = [
+    { label: 'Practice Questions', value: '2,500+', icon: Target, color: '#6366f1' },
+    { label: 'Study Materials', value: '50+', icon: BookOpen, color: '#10b981' },
+    { label: 'Mock Tests', value: '25+', icon: Clock, color: '#8b5cf6' },
+    { label: 'Success Rate', value: '94%', icon: Zap, color: '#f59e0b' }
+  ];
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-      {/* Animated background particles */}
-      {particles.map(particle => (
+    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+      {/* Animated geometric background */}
+      <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          key={particle.id}
-          className="absolute rounded-full bg-gradient-to-br from-purple-400/10 to-pink-400/10 blur-2xl"
-          style={{
-            width: particle.size,
-            height: particle.size,
-            left: `${particle.x}%`,
-            top: `${particle.y}%`,
-          }}
           animate={{
-            x: [0, 30, -30, 0],
-            y: [0, -30, 30, 0],
-            scale: [1, 1.1, 0.9, 1],
+            x: mousePosition.x * 0.1,
+            y: mousePosition.y * 0.1,
           }}
-          transition={{
-            duration: particle.duration,
-            repeat: Infinity,
-            ease: "linear"
-          }}
+          transition={{ type: "spring", stiffness: 50, damping: 15 }}
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 opacity-60 blur-3xl"
         />
-      ))}
+        <motion.div
+          animate={{
+            x: -mousePosition.x * 0.05,
+            y: -mousePosition.y * 0.05,
+          }}
+          transition={{ type: "spring", stiffness: 30, damping: 15 }}
+          className="absolute top-1/2 -left-32 w-80 h-80 rounded-full bg-gradient-to-br from-yellow-100 to-orange-100 opacity-40 blur-3xl"
+        />
+        
+        {/* Geometric shapes */}
+        <div className="absolute top-20 left-20">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="w-4 h-4 border-2 border-indigo-300 rotate-45"
+          />
+        </div>
+        <div className="absolute bottom-40 right-32">
+          <motion.div
+            animate={{ rotate: -360 }}
+            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+            className="w-6 h-6 rounded-full border-2 border-purple-300"
+          />
+        </div>
+        <div className="absolute top-1/3 right-20">
+          <motion.div
+            animate={{ y: [-10, 10, -10] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="w-3 h-8 bg-gradient-to-b from-yellow-300 to-orange-300 rounded-full opacity-60"
+          />
+        </div>
+        <div className="absolute top-2/3 left-1/4">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="w-2 h-2 bg-indigo-400 rounded-full opacity-70"
+          />
+        </div>
+      </div>
 
       {/* Navigation */}
-      <header className="fixed top-0 z-50 w-full backdrop-blur-xl bg-white/5 border-b border-white/10">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link className="flex items-center space-x-3" href="/">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg"
-            >
+      <nav className="relative z-50 px-8 py-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center space-x-3"
+          >
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
-            </motion.div>
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              saduvbey
-            </span>
-          </Link>
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link className="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#features">
-              Features
-            </Link>
-            <Link className="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#about">
-              About
-            </Link>
-            <Link className="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#products">
-              Products
-            </Link>
-            <Link className="text-sm font-medium text-white/80 hover:text-white transition-colors" href="#contact">
-              Contact
-            </Link>
-          </nav>
-          <div className="flex items-center space-x-4">
-            <Link
-              className="text-sm font-medium text-white/80 hover:text-white transition-colors"
-              href="#"
-            >
-              Log in
-            </Link>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-2 rounded-xl border-0 shadow-lg">
-                Sign up
-              </Button>
-            </motion.div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="relative z-10">
-        {/* Hero Section */}
-        <section className="min-h-screen flex items-center justify-center px-4 pt-16">
-          <div className="container mx-auto">
-            <div className="flex min-h-[80vh] flex-col lg:flex-row items-center justify-between gap-12">
-              {/* Left Column: Hero Text */}
-              <motion.div 
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-                className="lg:w-1/2 space-y-8"
-              >
-                <div className="space-y-6">
-                  <motion.h1 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-5xl font-bold leading-tight tracking-tight text-white md:text-6xl lg:text-7xl"
-                  >
-                    Prepare.{" "}
-                    <span className="relative">
-                      <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                        Practice
-                      </span>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: "100%" }}
-                        transition={{ delay: 1, duration: 0.8 }}
-                        className="absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"
-                      />
-                    </span>
-                    . Succeed.
-                  </motion.h1>
-                  
-                  <motion.p 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-xl text-white/80 max-w-2xl"
-                  >
-                    Your ultimate competitive exam companion. Master your preparation with AI-powered learning, comprehensive study materials, and real-time progress tracking.
-                  </motion.p>
-                </div>
-
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="flex flex-col gap-4 sm:flex-row"
-                >
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button className="inline-flex h-12 items-center justify-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl px-8 border-0 shadow-lg">
-                      <Download className="h-5 w-5" />
-                      <span className="font-medium">Download App</span>
-                    </Button>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button className="inline-flex h-12 items-center justify-center space-x-2 backdrop-blur-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl px-8">
-                      <Brain className="h-5 w-5" />
-                      <span className="font-medium">Try Web Version</span>
-                    </Button>
-                  </motion.div>
-                </motion.div>
-                
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="text-sm text-white/60"
-                >
-                  Different Platform?{" "}
-                  <Link className="font-medium text-white/80 hover:text-white underline transition-colors" href="#contact">
-                    Contact us
-                  </Link>
-                </motion.div>
-              </motion.div>
-
-              {/* Right Column: Product Cards */}
-              <motion.div 
-                initial={{ opacity: 0, x: 50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="lg:w-1/2 space-y-6 w-full"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <Link href="/nce" className="block">
-                    <div className="backdrop-blur-xl bg-gradient-to-br from-white/10 to-white/5 rounded-3xl shadow-2xl p-8 border border-white/20 hover:border-white/40 transition-all duration-300">
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
-                          <Zap className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h2 className="text-2xl font-bold text-white">NCE Preparation</h2>
-                          <p className="text-white/70 text-sm">Energy Managers & Auditors</p>
-                        </div>
-                      </div>
-                      <p className="text-white/80 mb-4">
-                        Comprehensive preparation for National Certification Examination with interactive quizzes, mock tests, and detailed study materials.
-                      </p>
-                      <div className="flex items-center gap-4 text-sm text-white/60">
-                        <div className="flex items-center gap-1">
-                          <Target className="w-4 h-4" />
-                          <span>2000+ Questions</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="w-4 h-4" />
-                          <span>50+ Topics</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center text-purple-400 text-sm font-medium">
-                        Start Learning <ArrowRight className="w-4 h-4 ml-1" />
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                  className="backdrop-blur-xl bg-gradient-to-br from-white/5 to-white/10 rounded-3xl shadow-2xl p-8 border border-white/20"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-white">More Exams</h2>
-                      <p className="text-white/70 text-sm">Coming Soon</p>
-                    </div>
-                  </div>
-                  <p className="text-white/80 mb-4">
-                    Expanding our platform to cover more competitive exams. Stay tuned for exciting new features and comprehensive study materials.
-                  </p>
-                  <div className="flex items-center gap-4 text-sm text-white/60">
-                    <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      <span>Growing Community</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Trophy className="w-4 h-4" />
-                      <span>High Success Rate</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 text-white/50 text-sm">
-                    Notify me when available
-                  </div>
-                </motion.div>
-              </motion.div>
             </div>
-          </div>
-        </section>
+            <div className="text-2xl font-light bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              saduvbey
+            </div>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center space-x-8"
+          >
+            <a href="#features" className="text-gray-700 hover:text-gray-900 transition-colors">Features</a>
+            <a href="#about" className="text-gray-700 hover:text-gray-900 transition-colors">About</a>
+            <a href="/nce" className="text-gray-700 hover:text-gray-900 transition-colors">NCE Prep</a>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all"
+            >
+              Get Started
+            </motion.button>
+          </motion.div>
+        </div>
+      </nav>
 
-        {/* Features Section */}
-        <section id="features" className="py-20 px-4">
-          <div className="container mx-auto">
+      {/* Hero Section */}
+      <section className="relative z-10 px-8 py-20">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-20"
+          >
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-6xl md:text-7xl font-light text-gray-900 mb-8 leading-tight"
+            >
+              Perfect Your{' '}
+              <motion.span
+                initial={{ backgroundPosition: "0% 50%" }}
+                animate={{ backgroundPosition: "100% 50%" }}
+                transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+                className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent bg-300% font-normal"
+                style={{ backgroundSize: "300% 100%" }}
+              >
+                Exam Journey
+              </motion.span>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed"
+            >
+              Experience the future of exam preparation with our precision-engineered learning platform. 
+              Clean, focused, and designed for serious learners seeking excellence.
+            </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center mb-16"
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex flex-col sm:flex-row gap-6 justify-center items-center"
             >
-              <h2 className="text-4xl font-bold text-white mb-4">
-                Why Choose <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">saduvbey</span>?
-              </h2>
-              <p className="text-xl text-white/70 max-w-3xl mx-auto">
-                Advanced features designed to accelerate your learning and boost exam performance
-              </p>
+              <motion.a
+                href="/nce"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="group px-8 py-4 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center gap-3"
+              >
+                <Play className="h-5 w-5" />
+                Start Learning
+                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </motion.a>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-gray-400 hover:bg-gray-100 transition-all"
+              >
+                <Download className="h-5 w-5 inline mr-2" />
+                Download App
+              </motion.button>
             </motion.div>
+          </motion.div>
+
+          {/* Stats Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+            className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24"
+          >
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 + index * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/80 hover:shadow-xl transition-all duration-300"
+              >
+                <div 
+                  className="w-12 h-12 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                  style={{ backgroundColor: `${stat.color}20` }}
+                >
+                  <stat.icon className="h-6 w-6" style={{ color: stat.color }} />
+                </div>
+                <div className="text-3xl font-light text-gray-900 mb-1">{stat.value}</div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Featured Product Showcase */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2 }}
+            className="mb-24"
+          >
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-light text-gray-900 mb-6">
+                NCE Preparation Platform
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Comprehensive preparation for National Certification Examination for Energy Managers and Energy Auditors
+              </p>
+            </div>
+
+            <div className="relative p-8 md:p-12 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/90 hover:shadow-2xl transition-all duration-500">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                {/* Feature Description */}
+                <div>
+                  <motion.div
+                    key={currentFeature}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-6"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div 
+                        className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                        style={{ backgroundColor: `${features[currentFeature].color}20` }}
+                      >
+                        <features[currentFeature].icon 
+                          className="h-8 w-8" 
+                          style={{ color: features[currentFeature].color }} 
+                        />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">{features[currentFeature].subtitle}</div>
+                        <h3 className="text-3xl font-light text-gray-900">{features[currentFeature].title}</h3>
+                      </div>
+                    </div>
+                    
+                    <p className="text-lg text-gray-600 leading-relaxed">
+                      {features[currentFeature].description}
+                    </p>
+                    
+                    <div className="space-y-3">
+                      {features[currentFeature].stats.map((stat, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className="flex items-center gap-3 text-gray-600"
+                        >
+                          <div 
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: features[currentFeature].color }}
+                          />
+                          {stat}
+                        </motion.div>
+                      ))}
+                    </div>
+                    
+                    <motion.a
+                      href={features[currentFeature].href}
+                      whileHover={{ x: 5 }}
+                      className="inline-flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium transition-all group"
+                    >
+                      Try {features[currentFeature].title}
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </motion.a>
+                  </motion.div>
+                </div>
+
+                {/* Feature Tabs */}
+                <div className="space-y-4">
+                  {features.map((feature, index) => (
+                    <motion.button
+                      key={feature.id}
+                      onClick={() => setCurrentFeature(index)}
+                      whileHover={{ scale: 1.02 }}
+                      className={`w-full p-6 rounded-2xl border transition-all text-left ${
+                        currentFeature === index
+                          ? 'bg-white border-gray-300 shadow-lg'
+                          : 'bg-white/30 border-gray-200 hover:bg-white/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div 
+                          className="w-12 h-12 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: `${feature.color}20` }}
+                        >
+                          <feature.icon className="h-6 w-6" style={{ color: feature.color }} />
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">{feature.title}</div>
+                          <div className="text-sm text-gray-600">{feature.subtitle}</div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Papers Overview */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.6 }}
+            className="mb-24"
+          >
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-light text-gray-900 mb-4">Examination Structure</h2>
+              <p className="text-lg text-gray-600">Complete coverage of all three NCE papers</p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 {
-                  icon: Brain,
-                  title: "AI-Powered Learning",
-                  description: "Personalized study plans and intelligent recommendations based on your progress and performance patterns.",
-                  gradient: "from-blue-500/20 to-cyan-500/20"
+                  paper: 'Paper 1',
+                  title: 'General Aspects of Energy Management and Energy Audit',
+                  color: '#6366f1',
+                  topics: ['Energy Scenario', 'Energy Management', 'Financial Management']
                 },
                 {
-                  icon: Target,
-                  title: "Precision Practice",
-                  description: "Targeted practice sessions with real exam questions and detailed explanations for every answer.",
-                  gradient: "from-purple-500/20 to-pink-500/20"
+                  paper: 'Paper 2',
+                  title: 'Energy Efficiency in Thermal Utilities',
+                  color: '#f59e0b',
+                  topics: ['Fuels & Combustion', 'Boilers', 'Steam Systems']
                 },
                 {
-                  icon: Trophy,
-                  title: "Track Progress",
-                  description: "Comprehensive analytics and performance insights to monitor your improvement journey.",
-                  gradient: "from-green-500/20 to-emerald-500/20"
+                  paper: 'Paper 3',
+                  title: 'Energy Efficiency in Electrical Utilities',
+                  color: '#10b981',
+                  topics: ['Electric Motors', 'HVAC Systems', 'Lighting']
                 }
-              ].map((feature, index) => (
+              ].map((paper, index) => (
                 <motion.div
-                  key={feature.title}
+                  key={paper.paper}
                   initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.2 }}
-                  whileHover={{ scale: 1.05 }}
-                  className={`backdrop-blur-xl bg-gradient-to-br ${feature.gradient} rounded-3xl p-8 border border-white/20 hover:border-white/40 transition-all duration-300`}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.8 + index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="p-8 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/80 hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-6">
-                    <feature.icon className="w-8 h-8 text-white" />
+                  <div 
+                    className="inline-block px-4 py-2 rounded-2xl text-white text-sm font-medium mb-6"
+                    style={{ backgroundColor: paper.color }}
+                  >
+                    {paper.paper}
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
-                  <p className="text-white/80 leading-relaxed">{feature.description}</p>
+                  <h3 className="text-xl font-medium text-gray-900 mb-6 leading-relaxed">{paper.title}</h3>
+                  <div className="space-y-2">
+                    {paper.topics.map((topic, idx) => (
+                      <div key={idx} className="flex items-center gap-3 text-sm text-gray-600">
+                        <div 
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: paper.color }}
+                        />
+                        {topic}
+                      </div>
+                    ))}
+                  </div>
                 </motion.div>
               ))}
             </div>
-          </div>
-        </section>
+          </motion.div>
+        </div>
+      </section>
 
-        {/* CTA Section */}
-        <section className="py-20 px-4">
-          <div className="container mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="backdrop-blur-xl bg-gradient-to-br from-white/10 to-white/5 rounded-3xl p-12 border border-white/20 text-center"
+      {/* Bottom CTA */}
+      <section className="relative z-10 px-8 py-20">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 2 }}
+          className="max-w-4xl mx-auto text-center p-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl text-white relative overflow-hidden"
+        >
+          {/* Background decoration */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-white/10 to-transparent rounded-full -translate-y-16 translate-x-16" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-white/10 to-transparent rounded-full translate-y-12 -translate-x-12" />
+          
+          <div className="relative z-10">
+            <h2 className="text-4xl md:text-5xl font-light mb-6">Ready to Transform Your Learning?</h2>
+            <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Join thousands who've already elevated their exam preparation with our comprehensive platform
+            </p>
+            <motion.a
+              href="/nce"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-block px-8 py-4 bg-white text-gray-900 rounded-full hover:bg-gray-100 transition-all font-medium"
             >
-              <h2 className="text-4xl font-bold text-white mb-6">
-                Ready to Transform Your Exam Preparation?
-              </h2>
-              <p className="text-xl text-white/70 mb-8 max-w-2xl mx-auto">
-                Join thousands of successful candidates who achieved their goals with our comprehensive learning platform.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link
-                    href="/nce"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:shadow-2xl transition-all duration-200"
-                  >
-                    <Brain className="h-5 w-5" />
-                    Start Learning Now
-                  </Link>
-                </motion.div>
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link
-                    href="#"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 backdrop-blur-xl bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 transition-all duration-200"
-                  >
-                    <Download className="h-5 w-5" />
-                    Download App
-                  </Link>
-                </motion.div>
-              </div>
-            </motion.div>
+              Start Your Journey Today
+            </motion.a>
           </div>
-        </section>
-      </main>
+        </motion.div>
+      </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-xl py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="relative z-10 px-8 py-12 border-t border-gray-200/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-bold text-white">saduvbey</span>
+                <span className="text-lg font-light text-gray-900">saduvbey</span>
               </div>
-              <p className="text-white/60 text-sm max-w-xs">
+              <p className="text-gray-600 text-sm max-w-xs">
                 Empowering students with cutting-edge technology for competitive exam success.
               </p>
             </div>
             
             <div>
-              <h4 className="font-semibold text-white mb-4">Products</h4>
-              <ul className="space-y-2 text-white/60 text-sm">
-                <li><Link href="/nce" className="hover:text-white transition-colors">NCE Preparation</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">More Exams (Soon)</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Mobile App</Link></li>
+              <h4 className="font-medium text-gray-900 mb-4">Products</h4>
+              <ul className="space-y-2 text-gray-600 text-sm">
+                <li><a href="/nce" className="hover:text-gray-900 transition-colors">NCE Preparation</a></li>
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Mobile App</a></li>
+                <li><a href="#" className="hover:text-gray-900 transition-colors">More Exams (Soon)</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold text-white mb-4">Resources</h4>
-              <ul className="space-y-2 text-white/60 text-sm">
-                <li><Link href="#" className="hover:text-white transition-colors">Study Guides</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Practice Tests</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Blog</Link></li>
+              <h4 className="font-medium text-gray-900 mb-4">Resources</h4>
+              <ul className="space-y-2 text-gray-600 text-sm">
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Study Guides</a></li>
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Practice Tests</a></li>
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Blog</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold text-white mb-4">Support</h4>
-              <ul className="space-y-2 text-white/60 text-sm">
-                <li><Link href="#" className="hover:text-white transition-colors">Help Center</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Contact Us</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              <h4 className="font-medium text-gray-900 mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-600 text-sm">
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Help Center</a></li>
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Contact Us</a></li>
+                <li><a href="#" className="hover:text-gray-900 transition-colors">Privacy Policy</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-white/10 mt-12 pt-8 text-center">
-            <p className="text-white/60 text-sm">
+          <div className="border-t border-gray-200 pt-8 text-center">
+            <p className="text-gray-600 text-sm">
               © 2025 saduvbey. All rights reserved. Empowering exam preparation worldwide.
             </p>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }
