@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Updated to use comprehensive explanations
+// app/components/QuizApp.js - Updated with working quiz selector
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,6 +7,8 @@ import Link from 'next/link';
 
 // Import the comprehensive explanation display component
 import { ExplanationDisplay } from './ExplanationDisplay';
+// Import the new QuizSelector component
+import { QuizSelector } from './QuizSelector';
 
 const PAPERS = {
   paper1: {
@@ -66,6 +68,7 @@ export function QuizApp() {
   const [years, setYears] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('all');
   const [selectedYear, setSelectedYear] = useState('all');
+  const [questionCount, setQuestionCount] = useState(20);
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [showSummary, setShowSummary] = useState(false);
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
@@ -141,7 +144,7 @@ export function QuizApp() {
       
       const params = new URLSearchParams({
         paper: selectedPaper,
-        limit: '1000'
+        limit: questionCount.toString()
       });
 
       if (selectedTopic !== 'all') {
@@ -255,6 +258,71 @@ export function QuizApp() {
     setIsLoadingExplanation(false);
   };
 
+  // UPDATED: Handle quiz configuration from the selector
+  const handleQuizConfiguration = (config) => {
+    console.log('Applying quiz configuration:', config);
+    setSelectedPaper(config.selectedPaper);
+    setSelectedTopic(config.selectedTopic);
+    setSelectedYear(config.selectedYear);
+    setQuestionCount(config.questionCount);
+    
+    // Reset quiz state
+    setCompletedQuestionIds(new Set());
+    setAnsweredQuestions([]);
+    setSelectedOption(null);
+    setShowFeedback(false);
+    setShowAnswer(false);
+    setCurrentExplanation(null);
+    setCurrentQuestionIndex(0);
+    
+    // Fetch new questions with the new configuration
+    fetchQuestionsWithConfig(config);
+  };
+
+  const fetchQuestionsWithConfig = async (config) => {
+    try {
+      setIsLoading(true);
+      console.log('Fetching questions with config:', config);
+      
+      const params = new URLSearchParams({
+        paper: config.selectedPaper,
+        limit: config.questionCount.toString()
+      });
+
+      if (config.selectedTopic !== 'all') {
+        params.append('topic', config.selectedTopic);
+      }
+      if (config.selectedYear !== 'all') {
+        params.append('year', config.selectedYear);
+      }
+
+      const response = await fetch(`/api/quiz?${params}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('API response with new config:', result);
+      
+      const normalizedData = result.questions?.map(q => ({
+        ...q,
+        option_a: normalizeOptionText(q.option_a),
+        option_b: normalizeOptionText(q.option_b),
+        option_c: normalizeOptionText(q.option_c),
+        option_d: normalizeOptionText(q.option_d)
+      })) || [];
+      
+      const shuffledQuestions = [...normalizedData].sort(() => Math.random() - 0.5);
+      
+      setQuestions(shuffledQuestions);
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Fetch questions with config error:', err);
+      setIsLoading(false);
+    }
+  };
+
   const handleGetAnswer = () => {
     if (showAnswer || showFeedback || isTransitioning) return;
     
@@ -299,17 +367,6 @@ export function QuizApp() {
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
 
     await loadExplanation(questionId); // UPDATED: Load comprehensive explanation
-  };
-
-  const handleModifyQuiz = () => {
-    setShowModifyQuiz(false);
-    setCompletedQuestionIds(new Set());
-    setAnsweredQuestions([]);
-    setSelectedOption(null);
-    setShowFeedback(false);
-    setShowAnswer(false);
-    setCurrentExplanation(null); // UPDATED: Reset explanation
-    fetchQuestions();
   };
 
   const handleNextQuestion = () => {
@@ -660,7 +717,6 @@ export function QuizApp() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Keep existing Stats Cards, Modals, etc. - they remain the same */}
           {/* Stats Cards */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -691,8 +747,155 @@ export function QuizApp() {
         </div>
       </main>
 
-      {/* Keep all existing modals - Settings Modal, Summary Modal, Completion Modal */}
-      {/* ... rest of existing modal code ... */}
+      {/* UPDATED: Quiz Selector Modal */}
+      <QuizSelector
+        isOpen={showModifyQuiz}
+        onClose={() => setShowModifyQuiz(false)}
+        currentConfig={{
+          selectedPaper,
+          selectedTopic,
+          selectedYear,
+          questionCount,
+          showExplanations: true
+        }}
+        onApply={handleQuizConfiguration}
+        topics={topics}
+        years={years}
+      />
+
+      {/* Keep existing modals - Summary Modal, Completion Modal, etc. */}
+      {/* Summary Modal */}
+      <AnimatePresence>
+        {showSummary && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => e.target === e.currentTarget && setShowSummary(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl"
+            >
+              {/* Summary content */}
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-light text-gray-900">Quiz Summary</h2>
+                  <button
+                    onClick={() => setShowSummary(false)}
+                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-500" />
+                  </button>
+                </div>
+
+                {answeredQuestions.length > 0 && (() => {
+                  const summary = generateSummary();
+                  return (
+                    <div className="space-y-8">
+                      {/* Overall Stats */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        <div className="text-center p-6 bg-emerald-50 rounded-2xl">
+                          <div className="text-3xl font-light text-emerald-600 mb-2">{summary.correctAnswers}</div>
+                          <div className="text-emerald-800 text-sm">Correct</div>
+                        </div>
+                        <div className="text-center p-6 bg-red-50 rounded-2xl">
+                          <div className="text-3xl font-light text-red-600 mb-2">{summary.incorrectAnswers}</div>
+                          <div className="text-red-800 text-sm">Incorrect</div>
+                        </div>
+                        <div className="text-center p-6 bg-blue-50 rounded-2xl">
+                          <div className="text-3xl font-light text-blue-600 mb-2">{summary.score}%</div>
+                          <div className="text-blue-800 text-sm">Score</div>
+                        </div>
+                        <div className="text-center p-6 bg-purple-50 rounded-2xl">
+                          <div className="text-3xl font-light text-purple-600 mb-2">{formatTime(summary.timeTaken)}</div>
+                          <div className="text-purple-800 text-sm">Time</div>
+                        </div>
+                      </div>
+
+                      {/* Chapter Performance */}
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">Chapter Performance</h3>
+                        <div className="space-y-3">
+                          {Object.entries(summary.chapterPerformance).map(([chapter, performance]) => (
+                            <div key={chapter} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                              <span className="text-gray-900 font-medium">{chapter}</span>
+                              <div className="flex items-center gap-4">
+                                <span className="text-gray-600 text-sm">
+                                  {performance.correct}/{performance.total}
+                                </span>
+                                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"
+                                    style={{ width: `${(performance.correct / performance.total) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-gray-900 text-sm font-medium w-12">
+                                  {Math.round((performance.correct / performance.total) * 100)}%
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Completion Modal */}
+      <AnimatePresence>
+        {showCompletionModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 w-full max-w-lg p-8 shadow-2xl text-center"
+            >
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="h-10 w-10 text-white" />
+              </div>
+              
+              <h2 className="text-2xl font-light text-gray-900 mb-4">Quiz Complete! 🎉</h2>
+              <p className="text-gray-600 mb-8">
+                You've completed all available questions. Great job!
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                <motion.button
+                  onClick={() => setShowSummary(true)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-2xl transition-all duration-200"
+                >
+                  View Summary
+                </motion.button>
+                <motion.button
+                  onClick={resetFilters}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-2xl transition-all duration-200"
+                >
+                  Start New Quiz
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
