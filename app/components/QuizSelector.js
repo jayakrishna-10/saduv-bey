@@ -1,6 +1,6 @@
 // app/components/QuizSelector.js
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -61,19 +61,25 @@ export function QuizSelector({
     settings: false
   });
 
-  // Initialize config when modal opens
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize config ONLY when modal first opens, not on every currentConfig change
   useEffect(() => {
-    if (isOpen) {
-      console.log('QuizSelector opened with currentConfig:', currentConfig);
-      setConfig(prevConfig => ({
+    if (isOpen && !isInitialized) {
+      console.log('QuizSelector initializing with currentConfig:', currentConfig);
+      setConfig({
         selectedPaper: currentConfig?.selectedPaper || 'paper1',
         selectedTopic: currentConfig?.selectedTopic || 'all',
         selectedYear: currentConfig?.selectedYear || 'all',
         questionCount: currentConfig?.questionCount || 20,
         showExplanations: currentConfig?.showExplanations !== undefined ? currentConfig.showExplanations : true
-      }));
+      });
+      setIsInitialized(true);
+    } else if (!isOpen) {
+      // Reset initialization when modal closes
+      setIsInitialized(false);
     }
-  }, [isOpen, currentConfig]);
+  }, [isOpen]); // Removed currentConfig from dependencies
 
   // Debug config changes
   useEffect(() => {
@@ -87,53 +93,55 @@ export function QuizSelector({
     }));
   };
 
-  const handlePaperSelect = (paperId) => {
+  const handlePaperSelect = useCallback((paperId) => {
     console.log('Selecting paper:', paperId);
     setConfig(prev => ({
       ...prev,
       selectedPaper: paperId
     }));
-  };
+  }, []);
 
-  const handleTopicChange = (topic) => {
+  const handleTopicChange = useCallback((topic) => {
     console.log('Selecting topic:', topic);
     setConfig(prev => ({
       ...prev,
       selectedTopic: topic
     }));
-  };
+  }, []);
 
-  const handleYearChange = (year) => {
+  const handleYearChange = useCallback((year) => {
     console.log('Selecting year:', year);
     setConfig(prev => ({
       ...prev,
       selectedYear: year
     }));
-  };
+  }, []);
 
-  const handleQuestionCountChange = (count) => {
+  const handleQuestionCountChange = useCallback((count) => {
     console.log('Setting question count:', count);
     setConfig(prev => ({
       ...prev,
       questionCount: parseInt(count)
     }));
-  };
+  }, []);
 
-  const handleExplanationsToggle = () => {
-    console.log('Toggling explanations:', !config.showExplanations);
-    setConfig(prev => ({
-      ...prev,
-      showExplanations: !prev.showExplanations
-    }));
-  };
+  const handleExplanationsToggle = useCallback(() => {
+    setConfig(prev => {
+      console.log('Toggling explanations from:', prev.showExplanations, 'to:', !prev.showExplanations);
+      return {
+        ...prev,
+        showExplanations: !prev.showExplanations
+      };
+    });
+  }, []);
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     console.log('Applying config:', config);
     onApply(config);
     onClose();
-  };
+  }, [config, onApply, onClose]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     const resetConfig = {
       selectedPaper: 'paper1',
       selectedTopic: 'all',
@@ -143,7 +151,7 @@ export function QuizSelector({
     };
     console.log('Resetting to:', resetConfig);
     setConfig(resetConfig);
-  };
+  }, []);
 
   const SectionHeader = ({ title, icon: Icon, section, count }) => (
     <button
