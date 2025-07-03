@@ -52,8 +52,7 @@ export function QuizSelector({
     selectedTopic: 'all',
     selectedYear: 'all',
     questionCount: 20,
-    showExplanations: true,
-    ...currentConfig
+    showExplanations: true
   });
 
   const [expandedSections, setExpandedSections] = useState({
@@ -62,18 +61,24 @@ export function QuizSelector({
     settings: false
   });
 
+  // Initialize config when modal opens
   useEffect(() => {
     if (isOpen) {
-      setConfig({
-        selectedPaper: 'paper1',
-        selectedTopic: 'all', 
-        selectedYear: 'all',
-        questionCount: 20,
-        showExplanations: true,
-        ...currentConfig
-      });
+      console.log('QuizSelector opened with currentConfig:', currentConfig);
+      setConfig(prevConfig => ({
+        selectedPaper: currentConfig?.selectedPaper || 'paper1',
+        selectedTopic: currentConfig?.selectedTopic || 'all',
+        selectedYear: currentConfig?.selectedYear || 'all',
+        questionCount: currentConfig?.questionCount || 20,
+        showExplanations: currentConfig?.showExplanations !== undefined ? currentConfig.showExplanations : true
+      }));
     }
   }, [isOpen, currentConfig]);
+
+  // Debug config changes
+  useEffect(() => {
+    console.log('Config updated:', config);
+  }, [config]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -82,19 +87,62 @@ export function QuizSelector({
     }));
   };
 
+  const handlePaperSelect = (paperId) => {
+    console.log('Selecting paper:', paperId);
+    setConfig(prev => ({
+      ...prev,
+      selectedPaper: paperId
+    }));
+  };
+
+  const handleTopicChange = (topic) => {
+    console.log('Selecting topic:', topic);
+    setConfig(prev => ({
+      ...prev,
+      selectedTopic: topic
+    }));
+  };
+
+  const handleYearChange = (year) => {
+    console.log('Selecting year:', year);
+    setConfig(prev => ({
+      ...prev,
+      selectedYear: year
+    }));
+  };
+
+  const handleQuestionCountChange = (count) => {
+    console.log('Setting question count:', count);
+    setConfig(prev => ({
+      ...prev,
+      questionCount: parseInt(count)
+    }));
+  };
+
+  const handleExplanationsToggle = () => {
+    console.log('Toggling explanations:', !config.showExplanations);
+    setConfig(prev => ({
+      ...prev,
+      showExplanations: !prev.showExplanations
+    }));
+  };
+
   const handleApply = () => {
+    console.log('Applying config:', config);
     onApply(config);
     onClose();
   };
 
   const handleReset = () => {
-    setConfig({
+    const resetConfig = {
       selectedPaper: 'paper1',
       selectedTopic: 'all',
       selectedYear: 'all', 
       questionCount: 20,
       showExplanations: true
-    });
+    };
+    console.log('Resetting to:', resetConfig);
+    setConfig(resetConfig);
   };
 
   const SectionHeader = ({ title, icon: Icon, section, count }) => (
@@ -180,7 +228,11 @@ export function QuizSelector({
                     {Object.values(PAPERS).map((paper) => (
                       <motion.button
                         key={paper.id}
-                        onClick={() => setConfig({...config, selectedPaper: paper.id})}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePaperSelect(paper.id);
+                        }}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className={`w-full p-4 rounded-2xl text-left transition-all duration-300 border-2 ${
@@ -231,7 +283,7 @@ export function QuizSelector({
                       </label>
                       <select
                         value={config.selectedTopic}
-                        onChange={(e) => setConfig({...config, selectedTopic: e.target.value})}
+                        onChange={(e) => handleTopicChange(e.target.value)}
                         className="w-full p-3 bg-white/70 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                       >
                         <option value="all">All Topics</option>
@@ -248,7 +300,7 @@ export function QuizSelector({
                       </label>
                       <select
                         value={config.selectedYear}
-                        onChange={(e) => setConfig({...config, selectedYear: e.target.value})}
+                        onChange={(e) => handleYearChange(e.target.value)}
                         className="w-full p-3 bg-white/70 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                       >
                         <option value="all">All Years</option>
@@ -288,7 +340,7 @@ export function QuizSelector({
                         max="50"
                         step="5"
                         value={config.questionCount}
-                        onChange={(e) => setConfig({...config, questionCount: parseInt(e.target.value)})}
+                        onChange={(e) => handleQuestionCountChange(e.target.value)}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                       />
                       <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -308,7 +360,7 @@ export function QuizSelector({
                         </div>
                       </div>
                       <button
-                        onClick={() => setConfig({...config, showExplanations: !config.showExplanations})}
+                        onClick={handleExplanationsToggle}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
                           config.showExplanations ? 'bg-indigo-600' : 'bg-gray-200'
                         }`}
@@ -331,7 +383,7 @@ export function QuizSelector({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-indigo-700">Paper:</span>
-                  <span className="text-indigo-900 font-medium">{PAPERS[config.selectedPaper]?.name}</span>
+                  <span className="text-indigo-900 font-medium">{PAPERS[config.selectedPaper]?.name || config.selectedPaper}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-indigo-700">Topic:</span>
@@ -344,6 +396,10 @@ export function QuizSelector({
                 <div className="flex justify-between">
                   <span className="text-indigo-700">Questions:</span>
                   <span className="text-indigo-900 font-medium">{config.questionCount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-indigo-700">Explanations:</span>
+                  <span className="text-indigo-900 font-medium">{config.showExplanations ? 'On' : 'Off'}</span>
                 </div>
               </div>
             </div>
