@@ -1,4 +1,4 @@
-// app/components/NCEHomepage.js - Redesigned with minimalist geometric style
+// app/components/NCEHomepage.js - Updated with dark mode support
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -68,7 +68,7 @@ export default function NCEHomepage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden transition-colors duration-300">
       {/* Animated geometric background */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -77,7 +77,7 @@ export default function NCEHomepage() {
             y: mousePosition.y * 0.1,
           }}
           transition={{ type: "spring", stiffness: 50, damping: 15 }}
-          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 opacity-60 blur-3xl"
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 opacity-60 blur-3xl"
         />
         <motion.div
           animate={{
@@ -85,7 +85,7 @@ export default function NCEHomepage() {
             y: -mousePosition.y * 0.05,
           }}
           transition={{ type: "spring", stiffness: 30, damping: 15 }}
-          className="absolute top-1/2 -left-32 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 opacity-40 blur-3xl"
+          className="absolute top-1/2 -left-32 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/20 dark:to-cyan-900/20 opacity-40 blur-3xl"
         />
         
         {/* Geometric shapes specific to NCE */}
@@ -93,44 +93,19 @@ export default function NCEHomepage() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="w-6 h-6 border-2 border-indigo-300 rounded-full opacity-70"
+            className="w-6 h-6 border-2 border-indigo-300 dark:border-indigo-500 rounded-full opacity-70"
           />
         </div>
         <div className="absolute bottom-32 right-40">
           <motion.div
             animate={{ rotate: -360, scale: [1, 1.2, 1] }}
             transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="w-4 h-4 bg-gradient-to-br from-emerald-300 to-cyan-300 rotate-45 opacity-60"
+            className="w-4 h-4 bg-gradient-to-br from-emerald-300 to-cyan-300 dark:from-emerald-600 dark:to-cyan-600 rotate-45 opacity-60"
           />
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="relative z-50 px-8 py-6 bg-white/30 backdrop-blur-sm border-b border-gray-200/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent cursor-pointer"
-            >
-              saduvbey
-            </motion.div>
-          </Link>
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center space-x-6"
-          >
-            <span className="text-sm text-gray-600 px-3 py-1 bg-white/50 rounded-full">NCE Preparation</span>
-            <Link href="/">
-              <button className="px-4 py-2 text-gray-700 hover:text-gray-900 transition-colors">
-                ← Home
-              </button>
-            </Link>
-          </motion.div>
-        </div>
-      </nav>
+      {/* Navigation - Remove this since NavBar is now in layout */}
 
       {/* Hero Section */}
       <section className="relative z-10 px-8 py-20">
@@ -144,14 +119,14 @@ export default function NCEHomepage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-5xl md:text-6xl font-light text-gray-900 mb-8 leading-tight"
+              className="text-5xl md:text-6xl font-light text-gray-900 dark:text-gray-100 mb-8 leading-tight"
             >
               Master Your{' '}
               <motion.span
                 initial={{ backgroundPosition: "0% 50%" }}
                 animate={{ backgroundPosition: "100% 50%" }}
                 transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
-                className="bg-gradient-to-r from-indigo-600 via-emerald-600 to-indigo-600 bg-clip-text text-transparent font-normal"
+                className="bg-gradient-to-r from-indigo-600 via-emerald-600 to-indigo-600 dark:from-indigo-400 dark:via-emerald-400 dark:to-indigo-400 bg-clip-text text-transparent font-normal"
                 style={{ backgroundSize: '300% 100%' }}
               >
                 NCE Journey
@@ -161,7 +136,7 @@ export default function NCEHomepage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed"
+              className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-12 leading-relaxed"
             >
               Comprehensive preparation platform for National Certification Examination for Energy Managers and Energy Auditors. 
               Clean, focused, and scientifically designed for optimal learning outcomes.
@@ -173,14 +148,14 @@ export default function NCEHomepage() {
               className="flex flex-col sm:flex-row gap-6 justify-center items-center"
             >
               <Link href="/nce/quiz">
-                <button className="group px-8 py-4 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all transform hover:scale-105 flex items-center gap-3">
+                <button className="group px-8 py-4 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all transform hover:scale-105 flex items-center gap-3">
                   <Brain className="h-5 w-5" />
                   Start Practice Quiz
                   <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
               <Link href="/nce/test">
-                <button className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-full hover:border-gray-400 transition-all">
+                <button className="px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full hover:border-gray-400 dark:hover:border-gray-500 transition-all">
                   Take Mock Test
                 </button>
               </Link>
@@ -205,11 +180,11 @@ export default function NCEHomepage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1 + index * 0.1 }}
-                className="text-center p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/80 transition-all"
+                className="text-center p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all"
               >
-                <stat.icon className="h-8 w-8 text-gray-700 mx-auto mb-3" />
-                <div className="text-2xl font-light text-gray-900 mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-600">{stat.label}</div>
+                <stat.icon className="h-8 w-8 text-gray-700 dark:text-gray-300 mx-auto mb-3" />
+                <div className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-1">{stat.value}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
               </motion.div>
             ))}
           </motion.div>
@@ -226,7 +201,7 @@ export default function NCEHomepage() {
                 className="group cursor-pointer"
               >
                 <Link href={feature.href}>
-                  <div className="h-full p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/90 hover:shadow-xl transition-all duration-300">
+                  <div className="h-full p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/90 hover:shadow-xl transition-all duration-300">
                     <div className="flex items-start gap-6">
                       <motion.div
                         whileHover={{ scale: 1.1, rotate: 5 }}
@@ -237,9 +212,9 @@ export default function NCEHomepage() {
                       </motion.div>
                       
                       <div className="flex-1">
-                        <div className="text-sm text-gray-500 mb-1">{feature.subtitle}</div>
-                        <h3 className="text-2xl font-light text-gray-900 mb-4">{feature.title}</h3>
-                        <p className="text-gray-600 mb-6 leading-relaxed">{feature.description}</p>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">{feature.subtitle}</div>
+                        <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-4">{feature.title}</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6 leading-relaxed">{feature.description}</p>
                         
                         <div className="space-y-2 mb-6">
                           {feature.features.map((item, idx) => (
@@ -248,7 +223,7 @@ export default function NCEHomepage() {
                               initial={{ opacity: 0, x: -20 }}
                               animate={{ opacity: 1, x: 0 }}
                               transition={{ delay: 1.4 + index * 0.1 + idx * 0.05 }}
-                              className="flex items-center gap-3 text-sm text-gray-600"
+                              className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400"
                             >
                               <div 
                                 className="w-2 h-2 rounded-full"
@@ -263,15 +238,15 @@ export default function NCEHomepage() {
                         <div className="flex gap-4 mb-6">
                           {Object.entries(feature.stats).map(([key, value], idx) => (
                             <div key={key} className="text-center">
-                              <div className="text-lg font-light text-gray-900">{value}</div>
-                              <div className="text-xs text-gray-500 capitalize">{key}</div>
+                              <div className="text-lg font-light text-gray-900 dark:text-gray-100">{value}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{key}</div>
                             </div>
                           ))}
                         </div>
                         
                         <motion.div
                           whileHover={{ x: 5 }}
-                          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium group-hover:translate-x-2 transition-all"
+                          className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 font-medium group-hover:translate-x-2 transition-all"
                         >
                           Get Started
                           <ChevronRight className="h-4 w-4" />
@@ -292,8 +267,8 @@ export default function NCEHomepage() {
             className="mb-24"
           >
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-light text-gray-900 mb-4">Examination Structure</h2>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              <h2 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">Examination Structure</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                 Complete coverage of all three papers with detailed topic-wise preparation
               </p>
             </div>
@@ -327,7 +302,7 @@ export default function NCEHomepage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 2.2 + index * 0.1 }}
-                  className="p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 hover:bg-white/90 transition-all group"
+                  className="p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all group"
                 >
                   <div 
                     className="inline-block px-4 py-2 rounded-full text-white text-sm font-medium mb-4"
@@ -335,11 +310,11 @@ export default function NCEHomepage() {
                   >
                     {paper.paper}
                   </div>
-                  <h3 className="text-xl font-light text-gray-900 mb-4">{paper.title}</h3>
+                  <h3 className="text-xl font-light text-gray-900 dark:text-gray-100 mb-4">{paper.title}</h3>
                   
                   <div className="space-y-2 mb-6">
                     {paper.topics.map((topic, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600">
+                      <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                         <div 
                           className="w-1.5 h-1.5 rounded-full"
                           style={{ backgroundColor: paper.color }}
@@ -350,8 +325,8 @@ export default function NCEHomepage() {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-light text-gray-900">{paper.questions}</span>
-                    <span className="text-sm text-gray-500">Questions</span>
+                    <span className="text-lg font-light text-gray-900 dark:text-gray-100">{paper.questions}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Questions</span>
                   </div>
                 </motion.div>
               ))}
@@ -366,21 +341,21 @@ export default function NCEHomepage() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 2.5 }}
-          className="max-w-4xl mx-auto text-center p-12 bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl text-white"
+          className="max-w-4xl mx-auto text-center p-12 bg-gradient-to-br from-gray-900 to-gray-800 dark:from-gray-100 dark:to-gray-200 rounded-3xl text-white dark:text-gray-900"
         >
           <h2 className="text-4xl font-light mb-6">Ready to Start Your Preparation?</h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-300 dark:text-gray-600 mb-8 max-w-2xl mx-auto">
             Join thousands of successful candidates who prepared with our comprehensive platform
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link href="/nce/quiz">
-              <button className="px-8 py-4 bg-white text-gray-900 rounded-full hover:bg-gray-100 transition-all transform hover:scale-105 font-medium flex items-center gap-3 justify-center">
+              <button className="px-8 py-4 bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-all transform hover:scale-105 font-medium flex items-center gap-3 justify-center">
                 <Brain className="h-5 w-5" />
                 Start Practice Quiz
               </button>
             </Link>
             <Link href="/nce/test">
-              <button className="px-8 py-4 border-2 border-gray-400 text-gray-300 rounded-full hover:border-gray-300 hover:text-white transition-all flex items-center gap-3 justify-center">
+              <button className="px-8 py-4 border-2 border-gray-400 dark:border-gray-600 text-gray-300 dark:text-gray-600 rounded-full hover:border-gray-300 dark:hover:border-gray-500 hover:text-white dark:hover:text-gray-500 transition-all flex items-center gap-3 justify-center">
                 <FileText className="h-5 w-5" />
                 Take Mock Test
               </button>
@@ -390,9 +365,9 @@ export default function NCEHomepage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 px-8 py-12 border-t border-gray-200/50 bg-white/30 backdrop-blur-sm">
+      <footer className="relative z-10 px-8 py-12 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto text-center">
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             © 2025 saduvbey. Comprehensive NCE preparation platform designed for success.
           </p>
         </div>
