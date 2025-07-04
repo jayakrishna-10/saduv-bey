@@ -1,4 +1,4 @@
-// app/components/QuizSelector.js
+// app/components/QuizSelector.js - Updated with dark mode support
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -156,13 +156,13 @@ export function QuizSelector({
   const SectionHeader = ({ title, icon: Icon, section, count }) => (
     <button
       onClick={() => toggleSection(section)}
-      className="w-full flex items-center justify-between p-4 bg-white/70 hover:bg-white/90 rounded-2xl border border-gray-200/50 transition-all duration-200 group"
+      className="w-full flex items-center justify-between p-4 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 transition-all duration-200 group"
     >
       <div className="flex items-center gap-3">
-        <Icon className="h-5 w-5 text-indigo-600" />
-        <span className="font-medium text-gray-900">{title}</span>
+        <Icon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <span className="font-medium text-gray-900 dark:text-gray-100">{title}</span>
         {count && (
-          <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+          <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-xs font-medium">
             {count}
           </span>
         )}
@@ -171,7 +171,7 @@ export function QuizSelector({
         animate={{ rotate: expandedSections[section] ? 180 : 0 }}
         transition={{ duration: 0.2 }}
       >
-        <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </motion.div>
@@ -193,24 +193,24 @@ export function QuizSelector({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl"
+          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200/50 bg-white/70">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-900/70">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl">
                 <Settings className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Quiz Configuration</h2>
-                <p className="text-gray-600 text-sm">Customize your practice session</p>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Quiz Configuration</h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">Customize your practice session</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
             >
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
 
@@ -245,8 +245,8 @@ export function QuizSelector({
                         whileTap={{ scale: 0.98 }}
                         className={`w-full p-4 rounded-2xl text-left transition-all duration-300 border-2 ${
                           config.selectedPaper === paper.id
-                            ? 'bg-white border-indigo-300 shadow-lg ring-2 ring-indigo-100'
-                            : 'bg-white/50 border-gray-200 hover:bg-white/70 hover:border-gray-300'
+                            ? 'bg-white dark:bg-gray-700 border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50'
+                            : 'bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-white/70 dark:hover:bg-gray-800/70 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                       >
                         <div className="flex items-center gap-4">
@@ -254,11 +254,11 @@ export function QuizSelector({
                             {paper.icon}
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 mb-1">{paper.name}</div>
-                            <div className="text-sm text-gray-600">{paper.description}</div>
+                            <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">{paper.name}</div>
+                            <div className="text-sm text-gray-600 dark:text-gray-400">{paper.description}</div>
                           </div>
                           {config.selectedPaper === paper.id && (
-                            <CheckCircle2 className="h-6 w-6 text-indigo-600" />
+                            <CheckCircle2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                           )}
                         </div>
                       </motion.button>
@@ -286,13 +286,13 @@ export function QuizSelector({
                   >
                     {/* Topic Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-3">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                         Filter by Topic
                       </label>
                       <select
                         value={config.selectedTopic}
                         onChange={(e) => handleTopicChange(e.target.value)}
-                        className="w-full p-3 bg-white/70 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full p-3 bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-gray-100"
                       >
                         <option value="all">All Topics</option>
                         {topics.map(topic => (
@@ -303,13 +303,13 @@ export function QuizSelector({
 
                     {/* Year Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-3">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                         Filter by Year
                       </label>
                       <select
                         value={config.selectedYear}
                         onChange={(e) => handleYearChange(e.target.value)}
-                        className="w-full p-3 bg-white/70 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full p-3 bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-gray-100"
                       >
                         <option value="all">All Years</option>
                         {years.map(year => (
@@ -339,7 +339,7 @@ export function QuizSelector({
                   >
                     {/* Question Count */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-3">
+                      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                         Number of Questions: {config.questionCount}
                       </label>
                       <input
@@ -349,9 +349,9 @@ export function QuizSelector({
                         step="5"
                         value={config.questionCount}
                         onChange={(e) => handleQuestionCountChange(e.target.value)}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                       />
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
                         <span>5</span>
                         <span>25</span>
                         <span>50</span>
@@ -359,18 +359,18 @@ export function QuizSelector({
                     </div>
 
                     {/* Show Explanations Toggle */}
-                    <div className="flex items-center justify-between p-4 bg-white/50 rounded-xl border border-gray-200">
+                    <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-3">
-                        <Info className="h-5 w-5 text-indigo-600" />
+                        <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                         <div>
-                          <span className="text-gray-900 font-medium">Show Explanations</span>
-                          <p className="text-gray-600 text-sm">Display detailed explanations after answering</p>
+                          <span className="text-gray-900 dark:text-gray-100 font-medium">Show Explanations</span>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm">Display detailed explanations after answering</p>
                         </div>
                       </div>
                       <button
                         onClick={handleExplanationsToggle}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
-                          config.showExplanations ? 'bg-indigo-600' : 'bg-gray-200'
+                          config.showExplanations ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                         }`}
                       >
                         <span
@@ -386,38 +386,38 @@ export function QuizSelector({
             </div>
 
             {/* Current Selection Summary */}
-            <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-200">
-              <h4 className="font-medium text-indigo-900 mb-3">Current Selection</h4>
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl border border-indigo-200 dark:border-indigo-700">
+              <h4 className="font-medium text-indigo-900 dark:text-indigo-100 mb-3">Current Selection</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-indigo-700">Paper:</span>
-                  <span className="text-indigo-900 font-medium">{PAPERS[config.selectedPaper]?.name || config.selectedPaper}</span>
+                  <span className="text-indigo-700 dark:text-indigo-300">Paper:</span>
+                  <span className="text-indigo-900 dark:text-indigo-100 font-medium">{PAPERS[config.selectedPaper]?.name || config.selectedPaper}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-indigo-700">Topic:</span>
-                  <span className="text-indigo-900 font-medium">{config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</span>
+                  <span className="text-indigo-700 dark:text-indigo-300">Topic:</span>
+                  <span className="text-indigo-900 dark:text-indigo-100 font-medium">{config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-indigo-700">Year:</span>
-                  <span className="text-indigo-900 font-medium">{config.selectedYear === 'all' ? 'All Years' : config.selectedYear}</span>
+                  <span className="text-indigo-700 dark:text-indigo-300">Year:</span>
+                  <span className="text-indigo-900 dark:text-indigo-100 font-medium">{config.selectedYear === 'all' ? 'All Years' : config.selectedYear}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-indigo-700">Questions:</span>
-                  <span className="text-indigo-900 font-medium">{config.questionCount}</span>
+                  <span className="text-indigo-700 dark:text-indigo-300">Questions:</span>
+                  <span className="text-indigo-900 dark:text-indigo-100 font-medium">{config.questionCount}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-indigo-700">Explanations:</span>
-                  <span className="text-indigo-900 font-medium">{config.showExplanations ? 'On' : 'Off'}</span>
+                  <span className="text-indigo-700 dark:text-indigo-300">Explanations:</span>
+                  <span className="text-indigo-900 dark:text-indigo-100 font-medium">{config.showExplanations ? 'On' : 'Off'}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200/50 bg-white/70">
+          <div className="flex items-center justify-between p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-900/70">
             <button
               onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
             >
               <RotateCcw className="h-4 w-4" />
               Reset
@@ -426,7 +426,7 @@ export function QuizSelector({
             <div className="flex items-center gap-3">
               <button
                 onClick={onClose}
-                className="px-6 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors font-medium"
+                className="px-6 py-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors font-medium"
               >
                 Cancel
               </button>
