@@ -315,7 +315,7 @@ export default function NCEHomepage() {
                                 style={{ backgroundColor: feature.color }}
                               />
                               {item}
-                            </div>
+                            </motion.div>
                           ))}
                         </div>
 
