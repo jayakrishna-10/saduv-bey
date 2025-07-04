@@ -1,8 +1,8 @@
-// app/components/NavBar.js - Updated with dark mode toggle
+// app/components/NavBar.js - Updated with dark mode toggle and fixed AnimatePresence import
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // Fixed: Added AnimatePresence import
 import { Home, BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
