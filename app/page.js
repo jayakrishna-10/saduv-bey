@@ -137,7 +137,7 @@ export default function HomePage() {
               <p className="text-xl text-gray-600 dark:text-gray-400">
                 Most students waste hours hunting through disorganized content with no proper explanations
               </p>
-            </div>
+            </motion.div>
 
             {/* Solution */}
             <motion.h1
