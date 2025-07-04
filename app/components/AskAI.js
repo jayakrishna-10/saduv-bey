@@ -1,4 +1,4 @@
-// app/components/AskAI.js
+// app/components/AskAI.js - Updated with dark mode support
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -281,10 +281,10 @@ export default function AskAI() {
               height: isMinimized ? '60px' : 'auto'
             }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 right-6 z-50 w-80 md:w-96 max-h-[80vh] backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl overflow-hidden shadow-2xl"
+            className="fixed bottom-6 right-6 z-50 w-80 md:w-96 max-h-[80vh] backdrop-blur-xl bg-white/10 dark:bg-gray-900/10 border border-white/20 dark:border-gray-700/30 rounded-2xl overflow-hidden shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/20 bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+            <div className="flex items-center justify-between p-4 border-b border-white/20 dark:border-gray-700/30 bg-gradient-to-r from-purple-500/20 to-pink-500/20">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
@@ -298,7 +298,7 @@ export default function AskAI() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  className="p-1 hover:bg-white/20 dark:hover:bg-gray-700/30 rounded transition-colors"
                 >
                   {isMinimized ? 
                     <Maximize2 className="h-4 w-4 text-white/70" /> : 
@@ -307,7 +307,7 @@ export default function AskAI() {
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  className="p-1 hover:bg-white/20 dark:hover:bg-gray-700/30 rounded transition-colors"
                 >
                   <X className="h-4 w-4 text-white/70" />
                 </button>
@@ -330,13 +330,13 @@ export default function AskAI() {
                           message.type === 'user'
                             ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
                             : message.isError
-                            ? 'bg-red-500/20 border border-red-400/50 text-red-200'
-                            : 'bg-white/10 border border-white/20 text-white'
+                            ? 'bg-red-500/20 dark:bg-red-900/30 border border-red-400/50 dark:border-red-600/50 text-red-200 dark:text-red-300'
+                            : 'bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/30 text-white dark:text-gray-100'
                         }`}
                       >
                         <p className="whitespace-pre-wrap leading-relaxed font-mono text-xs">{message.content}</p>
                         <p className={`text-xs mt-2 opacity-70 ${
-                          message.type === 'user' ? 'text-white/70' : 'text-white/50'
+                          message.type === 'user' ? 'text-white/70' : 'text-white/50 dark:text-gray-400'
                         }`}>
                           {formatTime(message.timestamp)}
                         </p>
@@ -350,7 +350,7 @@ export default function AskAI() {
                       animate={{ opacity: 1 }}
                       className="flex justify-start"
                     >
-                      <div className="bg-white/10 border border-white/20 text-white p-3 rounded-xl">
+                      <div className="bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/30 text-white dark:text-gray-100 p-3 rounded-xl">
                         <div className="flex items-center gap-2">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span className="text-sm">AskAI is thinking...</span>
@@ -365,13 +365,13 @@ export default function AskAI() {
                 {/* Quick Suggestions */}
                 {messages.length <= 1 && (
                   <div className="px-4 pb-2">
-                    <p className="text-white/60 text-xs mb-2">Quick suggestions:</p>
+                    <p className="text-white/60 dark:text-gray-400 text-xs mb-2">Quick suggestions:</p>
                     <div className="flex flex-wrap gap-2">
                       {getContextSuggestions().map((suggestion, index) => (
                         <button
                           key={index}
                           onClick={() => setInputMessage(suggestion)}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white/80 text-xs rounded-full border border-white/20 transition-colors"
+                          className="px-2 py-1 bg-white/10 dark:bg-gray-800/20 hover:bg-white/20 dark:hover:bg-gray-800/30 text-white/80 dark:text-gray-300 text-xs rounded-full border border-white/20 dark:border-gray-700/30 transition-colors"
                         >
                           {suggestion}
                         </button>
@@ -381,7 +381,7 @@ export default function AskAI() {
                 )}
 
                 {/* Input */}
-                <div className="p-4 border-t border-white/20">
+                <div className="p-4 border-t border-white/20 dark:border-gray-700/30">
                   <div className="flex gap-2">
                     <input
                       ref={inputRef}
@@ -390,7 +390,7 @@ export default function AskAI() {
                       onChange={(e) => setInputMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Ask about NCE topics..."
-                      className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="flex-1 bg-white/10 dark:bg-gray-800/20 border border-white/20 dark:border-gray-700/30 rounded-lg px-3 py-2 text-white dark:text-gray-100 text-sm placeholder-white/50 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-500"
                       disabled={isLoading}
                     />
                     <button
@@ -408,14 +408,14 @@ export default function AskAI() {
                   
                   {/* Context indicator */}
                   {context.currentPage && (
-                    <p className="text-white/40 text-xs mt-2">
+                    <p className="text-white/40 dark:text-gray-500 text-xs mt-2">
                       📍 Context: {context.currentPage.split('/').pop() || 'NCE Platform'}
                       {context.currentChapter && ` • ${context.currentChapter}`}
                     </p>
                   )}
                   
                   {/* Debug info */}
-                  <div className="mt-2 text-white/30 text-xs">
+                  <div className="mt-2 text-white/30 dark:text-gray-600 text-xs">
                     <p>🔧 Debug Mode: All errors will be shown for troubleshooting</p>
                   </div>
                 </div>
