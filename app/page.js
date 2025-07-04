@@ -313,7 +313,7 @@ export default function HomePage() {
                               style={{ backgroundColor: feature.color }}
                             />
                             {benefit}
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </div>
