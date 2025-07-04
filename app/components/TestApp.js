@@ -1,4 +1,4 @@
-// app/components/TestApp.js - Redesigned with minimalist geometric style
+// app/components/TestApp.js - Updated with dark mode support
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -308,17 +308,17 @@ export function TestApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden flex items-center justify-center">
-        <div className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50">
-          <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-4 animate-spin" />
-          <p className="text-gray-700 text-sm">Initializing test interface...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden flex items-center justify-center transition-colors duration-300">
+        <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50">
+          <div className="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full mx-auto mb-4 animate-spin" />
+          <p className="text-gray-700 dark:text-gray-300 text-sm">Initializing test interface...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden transition-colors duration-300">
       {/* Animated geometric background */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -327,7 +327,7 @@ export function TestApp() {
             y: mousePosition.y * 0.1,
           }}
           transition={{ type: "spring", stiffness: 50, damping: 15 }}
-          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 opacity-40 blur-3xl"
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 opacity-40 blur-3xl"
         />
         <motion.div
           animate={{
@@ -335,7 +335,7 @@ export function TestApp() {
             y: -mousePosition.y * 0.05,
           }}
           transition={{ type: "spring", stiffness: 30, damping: 15 }}
-          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 opacity-30 blur-3xl"
+          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/20 dark:to-cyan-900/20 opacity-30 blur-3xl"
         />
       </div>
 
@@ -392,18 +392,18 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
       <button
         onMouseEnter={() => setShowInfo({...showInfo, [id]: true})}
         onMouseLeave={() => setShowInfo({...showInfo, [id]: false})}
-        className="ml-2 p-1 rounded-full bg-white/50 hover:bg-white/70 transition-colors"
+        className="ml-2 p-1 rounded-full bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 transition-colors"
       >
-        <Info className="h-3 w-3 text-gray-600" />
+        <Info className="h-3 w-3 text-gray-600 dark:text-gray-400" />
       </button>
       {showInfo[id] && (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-2xl border border-gray-700 shadow-xl"
+          className="absolute z-50 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-2xl border border-gray-700 dark:border-gray-300 shadow-xl"
         >
           {content}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
         </motion.div>
       )}
     </div>
@@ -422,7 +422,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
           <div className="flex items-center justify-center gap-4 mb-6">
             <Link
               href="/nce"
-              className="flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 text-gray-700 text-sm rounded-full border border-gray-200/50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 text-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 transition-colors"
             >
               <Home className="h-4 w-4" />
               NCE Home
@@ -431,7 +431,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-light text-gray-900 mb-4"
+            className="text-4xl md:text-5xl font-light text-gray-900 dark:text-gray-100 mb-4"
           >
             Create Your Test
           </motion.h1>
@@ -439,13 +439,13 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-gray-600 max-w-2xl mx-auto"
+            className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
           >
             Configure your mock examination with precision timing and comprehensive analysis
           </motion.p>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 p-8 md:p-12 space-y-8">
+        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 md:p-12 space-y-8">
           
           {/* Test Mode Selection */}
           <motion.div
@@ -454,7 +454,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
             transition={{ delay: 0.2 }}
           >
             <div className="flex items-center mb-6">
-              <h3 className="text-2xl font-light text-gray-900">Test Mode</h3>
+              <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100">Test Mode</h3>
               <InfoTooltip 
                 id="mode"
                 content="Choose how you want to take the test. Mock Exam simulates real exam conditions with timer and no review during test. Practice allows unlimited time and review. Timed Practice combines both."
@@ -469,8 +469,8 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                   whileTap={{ scale: 0.98 }}
                   className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 relative ${
                     config.mode === mode.id
-                      ? 'bg-white border-gray-300 shadow-lg'
-                      : 'bg-white/50 border-gray-200 hover:bg-white/70'
+                      ? 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 shadow-lg'
+                      : 'bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-white/70 dark:hover:bg-gray-800/70'
                   }`}
                 >
                   {mode.recommended && (
@@ -479,8 +479,8 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                     </div>
                   )}
                   <div className="text-3xl mb-3">{mode.icon}</div>
-                  <div className="font-medium text-gray-900 mb-2">{mode.name}</div>
-                  <div className="text-sm text-gray-600 leading-relaxed">{mode.description}</div>
+                  <div className="font-medium text-gray-900 dark:text-gray-100 mb-2">{mode.name}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{mode.description}</div>
                 </motion.button>
               ))}
             </div>
@@ -493,7 +493,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
             transition={{ delay: 0.3 }}
           >
             <div className="flex items-center mb-6">
-              <h3 className="text-2xl font-light text-gray-900">Test Type</h3>
+              <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100">Test Type</h3>
               <InfoTooltip 
                 id="type"
                 content="Paper tests contain 50 questions from all topics of that paper. Topic-wise tests focus on specific areas. Custom tests let you mix different parameters."
@@ -512,17 +512,17 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                   whileTap={{ scale: 0.98 }}
                   className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
                     config.type === type.id
-                      ? 'bg-white border-gray-300 shadow-lg'
-                      : 'bg-white/50 border-gray-200 hover:bg-white/70'
+                      ? 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 shadow-lg'
+                      : 'bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-white/70 dark:hover:bg-gray-800/70'
                   }`}
                 >
                   <div 
                     className="w-4 h-4 rounded-full mb-3"
                     style={{ backgroundColor: type.color }}
                   />
-                  <div className="font-medium text-gray-900 mb-2">{type.name}</div>
-                  <div className="text-sm text-gray-600 mb-3 leading-relaxed">{type.description}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="font-medium text-gray-900 dark:text-gray-100 mb-2">{type.name}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">{type.description}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-500">
                     {type.fixed ? `${type.questionCount} questions (fixed)` : `${type.questionCount} questions (configurable)`}
                   </div>
                 </motion.button>
@@ -538,13 +538,13 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
               transition={{ delay: 0.4 }}
             >
               <div className="flex items-center mb-6">
-                <h3 className="text-2xl font-light text-gray-900">Select Topics</h3>
+                <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100">Select Topics</h3>
                 <InfoTooltip 
                   id="topics"
                   content="Choose specific topics to focus on. You must select at least one topic for topic-wise tests."
                 />
               </div>
-              <div className="max-h-48 overflow-y-auto space-y-3 p-4 bg-white/50 rounded-2xl border border-gray-200">
+              <div className="max-h-48 overflow-y-auto space-y-3 p-4 bg-white/50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
                 {topics.length > 0 ? (
                   topics.map(topic => (
                     <label key={topic} className="flex items-center gap-3 cursor-pointer group">
@@ -558,17 +558,17 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                             setConfig({...config, selectedTopics: config.selectedTopics.filter(t => t !== topic)});
                           }
                         }}
-                        className="w-4 h-4 rounded bg-white border-2 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="w-4 h-4 rounded bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                       />
-                      <span className="text-gray-700 text-sm group-hover:text-gray-900 transition-colors">{topic}</span>
+                      <span className="text-gray-700 dark:text-gray-300 text-sm group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">{topic}</span>
                     </label>
                   ))
                 ) : (
-                  <div className="text-gray-500 text-sm text-center py-4">Loading topics...</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-sm text-center py-4">Loading topics...</div>
                 )}
               </div>
               {config.selectedTopics.length > 0 && (
-                <div className="mt-3 text-gray-600 text-sm">
+                <div className="mt-3 text-gray-600 dark:text-gray-400 text-sm">
                   ✓ {config.selectedTopics.length} topic{config.selectedTopics.length !== 1 ? 's' : ''} selected
                 </div>
               )}
@@ -583,7 +583,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
               transition={{ delay: 0.5 }}
             >
               <div className="flex items-center mb-6">
-                <h3 className="text-2xl font-light text-gray-900">Filter by Years (Optional)</h3>
+                <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100">Filter by Years (Optional)</h3>
                 <InfoTooltip 
                   id="years"
                   content="Optionally filter questions by specific exam years. Leave empty to include all years."
@@ -603,17 +603,17 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                             setConfig({...config, selectedYears: config.selectedYears.filter(y => y !== year)});
                           }
                         }}
-                        className="w-4 h-4 rounded bg-white border-2 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        className="w-4 h-4 rounded bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
                       />
-                      <span className="text-gray-700 text-sm bg-white/70 px-3 py-1 rounded-full border border-gray-200">{year}</span>
+                      <span className="text-gray-700 dark:text-gray-300 text-sm bg-white/70 dark:bg-gray-800/70 px-3 py-1 rounded-full border border-gray-200 dark:border-gray-700">{year}</span>
                     </label>
                   ))
                 ) : (
-                  <div className="text-gray-500 text-sm">Loading years...</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-sm">Loading years...</div>
                 )}
               </div>
               {config.selectedYears.length > 0 && (
-                <div className="mt-3 text-gray-600 text-sm">
+                <div className="mt-3 text-gray-600 dark:text-gray-400 text-sm">
                   ✓ {config.selectedYears.length} year{config.selectedYears.length !== 1 ? 's' : ''} selected
                 </div>
               )}
@@ -628,7 +628,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
               transition={{ delay: 0.6 }}
             >
               <div className="flex items-center mb-6">
-                <h3 className="text-2xl font-light text-gray-900">Number of Questions</h3>
+                <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100">Number of Questions</h3>
                 <InfoTooltip 
                   id="count"
                   content="Choose how many questions you want in your test. More questions provide better assessment but take longer to complete."
@@ -642,11 +642,11 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                   step="5"
                   value={config.questionCount}
                   onChange={(e) => setConfig({...config, questionCount: parseInt(e.target.value)})}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                 />
-                <div className="flex justify-between text-gray-600 text-sm">
+                <div className="flex justify-between text-gray-600 dark:text-gray-400 text-sm">
                   <span>10</span>
-                  <span className="font-medium text-gray-900 text-lg">{config.questionCount} questions</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100 text-lg">{config.questionCount} questions</span>
                   <span>50</span>
                 </div>
               </div>
@@ -661,7 +661,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
               transition={{ delay: 0.7 }}
             >
               <div className="flex items-center mb-6">
-                <h3 className="text-2xl font-light text-gray-900">Time Limit</h3>
+                <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100">Time Limit</h3>
                 <InfoTooltip 
                   id="timer"
                   content="Set the time limit for your test. The test will auto-submit when time expires. Recommended: 1.5-2 minutes per question."
@@ -676,14 +676,14 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
                     step="15"
                     value={config.timeLimit}
                     onChange={(e) => setConfig({...config, timeLimit: parseInt(e.target.value)})}
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
                   />
                   <div className="flex items-center gap-2 min-w-[100px]">
-                    <Timer className="h-5 w-5 text-gray-600" />
-                    <span className="text-gray-900 font-medium text-lg">{config.timeLimit} min</span>
+                    <Timer className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                    <span className="text-gray-900 dark:text-gray-100 font-medium text-lg">{config.timeLimit} min</span>
                   </div>
                 </div>
-                <div className="text-gray-600 text-sm">
+                <div className="text-gray-600 dark:text-gray-400 text-sm">
                   ≈ {Math.round(config.timeLimit / config.questionCount * 60)} seconds per question
                 </div>
               </div>
@@ -704,8 +704,8 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
               whileTap={{ scale: (config.type === 'topic' && config.selectedTopics.length === 0) ? 1 : 0.95 }}
               className={`w-full py-4 font-medium rounded-2xl transition-all duration-200 flex items-center justify-center gap-3 text-lg ${
                 config.type === 'topic' && config.selectedTopics.length === 0
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-gray-900 hover:bg-gray-800 text-white shadow-lg'
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 shadow-lg'
               }`}
             >
               <Play className="h-6 w-6" />
@@ -720,10 +720,10 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-2xl flex items-center gap-3"
+                className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-2xl flex items-center gap-3"
               >
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                <span className="text-yellow-800 text-sm">Please select at least one topic for topic-wise test</span>
+                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                <span className="text-yellow-800 dark:text-yellow-200 text-sm">Please select at least one topic for topic-wise test</span>
               </motion.div>
             )}
           </motion.div>
@@ -791,7 +791,7 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
   if (!currentQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-gray-700">
+        <div className="text-center text-gray-700 dark:text-gray-300">
           <p>Loading questions...</p>
         </div>
       </div>
@@ -806,12 +806,12 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
       className="min-h-screen relative"
     >
       {/* Fixed Test Header */}
-      <div className="sticky top-0 z-40 bg-white/30 backdrop-blur-xl border-b border-gray-200/50 p-4 shadow-sm">
+      <div className="sticky top-0 z-40 bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 p-4 shadow-sm">
         <div className="max-w-6xl mx-auto">
           {/* Main header row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-light text-gray-900">
+              <h1 className="text-xl font-light text-gray-900 dark:text-gray-100">
                 {testType?.name} - {testMode?.name}
               </h1>
               {isTimerEnabled && (
@@ -823,16 +823,16 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
             
             {/* Action buttons */}
             <div className="flex items-center gap-3">
-              <div className="text-gray-600 text-sm whitespace-nowrap">
+              <div className="text-gray-600 dark:text-gray-400 text-sm whitespace-nowrap">
                 {answeredCount}/{testData.questions.length} answered
               </div>
               
               <button
                 onClick={() => setShowPalette(!showPalette)}
-                className="p-2 bg-white/70 hover:bg-white/90 rounded-lg transition-colors border border-gray-200/50"
+                className="p-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 rounded-lg transition-colors border border-gray-200/50 dark:border-gray-700/50"
                 title="Question Palette"
               >
-                <Grid3x3 className="h-5 w-5 text-gray-700" />
+                <Grid3x3 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </button>
               
               <motion.button
@@ -854,7 +854,7 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
           )}
           
           {/* Progress Bar */}
-          <div className="h-2 bg-gray-200/50 rounded-full overflow-hidden">
+          <div className="h-2 bg-gray-200/50 dark:bg-gray-700/50 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
               initial={{ width: 0 }}
@@ -866,16 +866,16 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
       </div>
 
       {/* Quick Actions Bar */}
-      <div className="sticky top-20 z-30 bg-white/20 backdrop-blur-md border-b border-gray-200/30 p-3">
+      <div className="sticky top-20 z-30 bg-white/20 dark:bg-gray-900/20 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-700/30 p-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-gray-600 text-sm">Quick Actions:</span>
+            <span className="text-gray-600 dark:text-gray-400 text-sm">Quick Actions:</span>
             <button
               onClick={toggleFlag}
               className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                 testData.flagged.has(testData.currentIndex)
-                  ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
-                  : 'bg-white/70 text-gray-700 hover:bg-white/90 border border-gray-200/50'
+                  ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-600'
+                  : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300 hover:bg-white/90 dark:hover:bg-gray-800/90 border border-gray-200/50 dark:border-gray-700/50'
               }`}
             >
               <Flag className="h-4 w-4 inline mr-1" />
@@ -889,14 +889,14 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
               disabled={testData.currentIndex === 0}
               className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                 testData.currentIndex === 0
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-white/70 hover:bg-white/90 text-gray-700 border border-gray-200/50'
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
               }`}
             >
               ← Prev
             </button>
             
-            <span className="text-gray-700 text-sm px-3">
+            <span className="text-gray-700 dark:text-gray-300 text-sm px-3">
               {testData.currentIndex + 1} / {testData.questions.length}
             </span>
             
@@ -905,8 +905,8 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
               disabled={testData.currentIndex === testData.questions.length - 1}
               className={`px-3 py-1 rounded-lg text-sm transition-colors ${
                 testData.currentIndex === testData.questions.length - 1
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-white/70 hover:bg-white/90 text-gray-700 border border-gray-200/50'
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
               }`}
             >
               Next →
@@ -938,22 +938,22 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
               key={testData.currentIndex}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50"
+              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 md:p-12 mb-12"
             >
               {/* Question Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <span className="px-3 py-1 bg-white/70 rounded-full text-gray-900 font-medium text-sm border border-gray-200/50">
+                  <span className="px-3 py-1 bg-white/70 dark:bg-gray-800/70 rounded-full text-gray-900 dark:text-gray-100 font-medium text-sm border border-gray-200/50 dark:border-gray-700/50">
                     Q{testData.currentIndex + 1}
                   </span>
-                  <span className="text-gray-600 text-sm">
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
                     {normalizeChapterName(currentQuestion?.tag)} • {currentQuestion?.year}
                   </span>
                 </div>
               </div>
 
               {/* Question */}
-              <h2 className="text-xl md:text-2xl font-light text-gray-900 mb-8 leading-relaxed">
+              <h2 className="text-xl md:text-2xl font-light text-gray-900 dark:text-gray-100 mb-8 leading-relaxed">
                 {currentQuestion?.question_text}
               </h2>
 
@@ -967,19 +967,19 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                     whileTap={{ scale: 0.99 }}
                     className={`w-full p-4 rounded-2xl border-2 transition-all duration-300 text-left ${
                       testData.answers[testData.currentIndex] === option
-                        ? 'bg-white border-indigo-300 shadow-lg'
-                        : 'bg-white/50 border-gray-200 hover:bg-white/70'
+                        ? 'bg-white dark:bg-gray-700 border-indigo-300 dark:border-indigo-600 shadow-lg'
+                        : 'bg-white/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 hover:bg-white/70 dark:hover:bg-gray-800/70'
                     }`}
                   >
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all duration-300 ${
                         testData.answers[testData.currentIndex] === option
                           ? 'bg-indigo-500 text-white'
-                          : 'bg-gray-200 text-gray-700'
+                          : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                       }`}>
                         {option.toUpperCase()}
                       </div>
-                      <span className="text-gray-900 flex-1">{currentQuestion?.[`option_${option}`]}</span>
+                      <span className="text-gray-900 dark:text-gray-100 flex-1">{currentQuestion?.[`option_${option}`]}</span>
                     </div>
                   </motion.button>
                 ))}
@@ -992,15 +992,15 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                   disabled={testData.currentIndex === 0}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                     testData.currentIndex === 0
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-white/70 hover:bg-white/90 text-gray-700 border border-gray-200/50'
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
                   }`}
                 >
                   <ArrowLeft className="h-4 w-4" />
                   Previous
                 </button>
 
-                <div className="text-gray-700 text-sm">
+                <div className="text-gray-700 dark:text-gray-300 text-sm">
                   {testData.currentIndex + 1} of {testData.questions.length}
                 </div>
 
@@ -1009,8 +1009,8 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                   disabled={testData.currentIndex === testData.questions.length - 1}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                     testData.currentIndex === testData.questions.length - 1
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-white/70 hover:bg-white/90 text-gray-700 border border-gray-200/50'
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
                   }`}
                 >
                   Next
@@ -1037,7 +1037,7 @@ function TestTimer({ timeRemaining, totalTime }) {
       <div className="relative w-12 h-12">
         <svg className="w-12 h-12 -rotate-90" viewBox="0 0 36 36">
           <path
-            className="text-gray-200"
+            className="text-gray-200 dark:text-gray-700"
             stroke="currentColor"
             strokeWidth="3"
             fill="none"
@@ -1058,16 +1058,16 @@ function TestTimer({ timeRemaining, totalTime }) {
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <Clock className="h-4 w-4 text-gray-700" />
+          <Clock className="h-4 w-4 text-gray-700 dark:text-gray-300" />
         </div>
       </div>
       
       {/* Time Display */}
-      <div className="text-gray-900">
+      <div className="text-gray-900 dark:text-gray-100">
         <div className="text-sm font-medium">
           {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </div>
-        <div className="text-xs text-gray-600">remaining</div>
+        <div className="text-xs text-gray-600 dark:text-gray-400">remaining</div>
       </div>
     </div>
   );
@@ -1077,10 +1077,10 @@ function TestTimer({ timeRemaining, totalTime }) {
 function QuestionPalette({ questions, currentIndex, answers, flagged, visited, onNavigate, onClose }) {
   const getStatusColor = (index) => {
     if (index === currentIndex) return 'bg-indigo-500 border-indigo-400 text-white';
-    if (answers[index]) return 'bg-emerald-100 border-emerald-300 text-emerald-800';
-    if (flagged.has(index)) return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-    if (visited.has(index)) return 'bg-blue-100 border-blue-300 text-blue-800';
-    return 'bg-white/70 border-gray-200 text-gray-700';
+    if (answers[index]) return 'bg-emerald-100 dark:bg-emerald-900/50 border-emerald-300 dark:border-emerald-600 text-emerald-800 dark:text-emerald-200';
+    if (flagged.has(index)) return 'bg-yellow-100 dark:bg-yellow-900/50 border-yellow-300 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200';
+    if (visited.has(index)) return 'bg-blue-100 dark:bg-blue-900/50 border-blue-300 dark:border-blue-600 text-blue-800 dark:text-blue-200';
+    return 'bg-white/70 dark:bg-gray-800/70 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300';
   };
 
   return (
@@ -1088,15 +1088,15 @@ function QuestionPalette({ questions, currentIndex, answers, flagged, visited, o
       initial={{ x: -300, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: -300, opacity: 0 }}
-      className="fixed top-32 left-0 h-[calc(100vh-128px)] w-80 bg-white/70 backdrop-blur-xl border-r border-gray-200/50 p-4 overflow-y-auto z-30"
+      className="fixed top-32 left-0 h-[calc(100vh-128px)] w-80 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 p-4 overflow-y-auto z-30"
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Questions</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Questions</h3>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-white/70 rounded-lg transition-colors"
+          className="p-2 hover:bg-white/70 dark:hover:bg-gray-700/70 rounded-lg transition-colors"
         >
-          <ArrowLeft className="h-4 w-4 text-gray-700" />
+          <ArrowLeft className="h-4 w-4 text-gray-700 dark:text-gray-300" />
         </button>
       </div>
 
@@ -1116,19 +1116,19 @@ function QuestionPalette({ questions, currentIndex, answers, flagged, visited, o
 
       {/* Legend */}
       <div className="space-y-3 text-sm">
-        <div className="flex items-center gap-3 text-gray-700">
+        <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
           <CheckCircle className="h-4 w-4 text-emerald-500" />
           <span>Answered ({Object.keys(answers).length})</span>
         </div>
-        <div className="flex items-center gap-3 text-gray-700">
+        <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
           <Flag className="h-4 w-4 text-yellow-500" />
           <span>Flagged ({flagged.size})</span>
         </div>
-        <div className="flex items-center gap-3 text-gray-700">
+        <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
           <Circle className="h-4 w-4 text-blue-500" />
           <span>Visited ({visited.size})</span>
         </div>
-        <div className="flex items-center gap-3 text-gray-700">
+        <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
           <Circle className="h-4 w-4 text-gray-400" />
           <span>Not visited</span>
         </div>
@@ -1193,8 +1193,8 @@ function TestResults({ config, testData, onReview, onRestart }) {
             <span className="text-4xl font-light text-white">{results.score}%</span>
           </motion.div>
           
-          <h1 className="text-4xl font-light text-gray-900 mb-4">Test Complete! 🎉</h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <h1 className="text-4xl font-light text-gray-900 dark:text-gray-100 mb-4">Test Complete! 🎉</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
             You scored {results.correct} out of {results.answered} attempted questions
           </p>
         </div>
@@ -1204,40 +1204,40 @@ function TestResults({ config, testData, onReview, onRestart }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 text-center"
+            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 text-center"
           >
-            <div className="text-4xl font-light text-emerald-600 mb-2">{results.correct}</div>
-            <div className="text-gray-700 text-sm">Correct</div>
+            <div className="text-4xl font-light text-emerald-600 dark:text-emerald-400 mb-2">{results.correct}</div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">Correct</div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 text-center"
+            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 text-center"
           >
-            <div className="text-4xl font-light text-red-500 mb-2">{results.incorrect}</div>
-            <div className="text-gray-700 text-sm">Incorrect</div>
+            <div className="text-4xl font-light text-red-500 dark:text-red-400 mb-2">{results.incorrect}</div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">Incorrect</div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 text-center"
+            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 text-center"
           >
-            <div className="text-4xl font-light text-yellow-500 mb-2">{results.unanswered}</div>
-            <div className="text-gray-700 text-sm">Unanswered</div>
+            <div className="text-4xl font-light text-yellow-500 dark:text-yellow-400 mb-2">{results.unanswered}</div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">Unanswered</div>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 text-center"
+            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 text-center"
           >
-            <div className="text-4xl font-light text-blue-500 mb-2">{formatTime(results.timeTaken)}</div>
-            <div className="text-gray-700 text-sm">Time Taken</div>
+            <div className="text-4xl font-light text-blue-500 dark:text-blue-400 mb-2">{formatTime(results.timeTaken)}</div>
+            <div className="text-gray-700 dark:text-gray-300 text-sm">Time Taken</div>
           </motion.div>
         </div>
 
@@ -1256,7 +1256,7 @@ function TestResults({ config, testData, onReview, onRestart }) {
             onClick={onRestart}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-2xl transition-all duration-200 flex items-center justify-center gap-3"
+            className="px-8 py-4 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 font-medium rounded-2xl transition-all duration-200 flex items-center justify-center gap-3"
           >
             <Home className="h-5 w-5" />
             New Test
@@ -1279,12 +1279,12 @@ function TestReview({ config, testData, onBack }) {
     const isOptionCorrect = isCorrectAnswer(option, currentQuestion?.correct_answer);
 
     if (isOptionCorrect) {
-      return "bg-emerald-100 border-emerald-300 text-emerald-800";
+      return "bg-emerald-100 dark:bg-emerald-900/50 border-emerald-300 dark:border-emerald-600 text-emerald-800 dark:text-emerald-200";
     }
     if (isUserAnswer && !isOptionCorrect) {
-      return "bg-red-100 border-red-300 text-red-800";
+      return "bg-red-100 dark:bg-red-900/50 border-red-300 dark:border-red-600 text-red-800 dark:text-red-200";
     }
-    return "bg-white/70 border-gray-200 text-gray-700";
+    return "bg-white/70 dark:bg-gray-800/70 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300";
   };
 
   const getResultIcon = () => {
@@ -1295,7 +1295,7 @@ function TestReview({ config, testData, onBack }) {
   if (!currentQuestion) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-gray-700">
+        <div className="text-center text-gray-700 dark:text-gray-300">
           <p>Loading review...</p>
         </div>
       </div>
@@ -1314,15 +1314,15 @@ function TestReview({ config, testData, onBack }) {
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-white/70 hover:bg-white/90 text-gray-700 rounded-lg transition-colors border border-gray-200/50"
+            className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-lg transition-colors border border-gray-200/50 dark:border-gray-700/50"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Results
           </button>
           
-          <div className="text-gray-900 text-center">
+          <div className="text-gray-900 dark:text-gray-100 text-center">
             <h1 className="text-2xl font-light">Review Answers</h1>
-            <p className="text-gray-600">Question {currentIndex + 1} of {testData.questions.length}</p>
+            <p className="text-gray-600 dark:text-gray-400">Question {currentIndex + 1} of {testData.questions.length}</p>
           </div>
           
           <div className="w-32" />
@@ -1332,17 +1332,17 @@ function TestReview({ config, testData, onBack }) {
           key={currentIndex}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-white/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 mb-8"
+          className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-8 border border-gray-200/50 dark:border-gray-700/50 mb-8"
         >
           {/* Question Status */}
           <div className="flex items-center gap-4 mb-6">
             {getResultIcon()}
             <div>
-              <span className="text-gray-900 font-medium text-lg">
+              <span className="text-gray-900 dark:text-gray-100 font-medium text-lg">
                 {!userAnswer ? 'Not Attempted' : isCorrect ? 'Correct' : 'Incorrect'}
               </span>
               {userAnswer && (
-                <div className="text-gray-600 text-sm mt-1">
+                <div className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                   Your answer: {userAnswer?.toUpperCase()} | Correct answer: {currentQuestion?.correct_answer?.toUpperCase()}
                 </div>
               )}
@@ -1350,7 +1350,7 @@ function TestReview({ config, testData, onBack }) {
           </div>
 
           {/* Question */}
-          <h2 className="text-xl font-light text-gray-900 mb-8 leading-relaxed">
+          <h2 className="text-xl font-light text-gray-900 dark:text-gray-100 mb-8 leading-relaxed">
             {currentQuestion?.question_text}
           </h2>
 
@@ -1362,11 +1362,11 @@ function TestReview({ config, testData, onBack }) {
                 className={`p-4 rounded-2xl border-2 transition-all duration-300 ${getOptionClass(option)}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-medium bg-white/50">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-medium bg-white/50 dark:bg-gray-700/50">
                     {option.toUpperCase()}
                   </div>
                   <span className="flex-1">{currentQuestion?.[`option_${option}`]}</span>
-                  {userAnswer === option && <span className="text-xs bg-white/70 px-2 py-1 rounded">Your Answer</span>}
+                  {userAnswer === option && <span className="text-xs bg-white/70 dark:bg-gray-700/70 px-2 py-1 rounded">Your Answer</span>}
                   {isCorrectAnswer(option, currentQuestion?.correct_answer) && <span className="text-xs bg-emerald-500 px-2 py-1 rounded text-white">Correct</span>}
                 </div>
               </div>
@@ -1380,15 +1380,15 @@ function TestReview({ config, testData, onBack }) {
               disabled={currentIndex === 0}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                 currentIndex === 0
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-white/70 hover:bg-white/90 text-gray-700 border border-gray-200/50'
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
               }`}
             >
               <ArrowLeft className="h-4 w-4" />
               Previous
             </button>
 
-            <div className="text-gray-600 text-sm">
+            <div className="text-gray-600 dark:text-gray-400 text-sm">
               {currentIndex + 1} of {testData.questions.length}
             </div>
 
@@ -1397,8 +1397,8 @@ function TestReview({ config, testData, onBack }) {
               disabled={currentIndex === testData.questions.length - 1}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                 currentIndex === testData.questions.length - 1
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                  : 'bg-white/70 hover:bg-white/90 text-gray-700 border border-gray-200/50'
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
               }`}
             >
               Next

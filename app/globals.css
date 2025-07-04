@@ -1,3 +1,4 @@
+/* app/globals.css - Updated with dark mode support */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,16 +7,33 @@
   --radio-dot-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(17,21,23)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3ccircle cx=%278%27 cy=%278%27 r=%273%27/%3e%3c/svg%3e');
 }
 
-body {
-  font-family: Lexend, "Noto Sans", sans-serif;
+/* Dark mode color scheme variables */
+.dark {
+  --radio-dot-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(243,244,246)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3ccircle cx=%278%27 cy=%278%27 r=%273%27/%3e%3c/svg%3e');
 }
 
+/* Base styles with dark mode support */
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  font-family: Lexend, "Noto Sans", sans-serif;
+  @apply transition-colors duration-300;
+}
+
+/* KaTeX styling with dark mode support */
 .katex-display {
   margin: 1.5rem 0 !important;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
+.dark .katex-display {
+  @apply text-gray-200;
+}
+
+/* Explanation content styling */
 .explanation-content {
   font-size: 0.875rem;
   line-height: 1.5;
@@ -45,14 +63,23 @@ body {
   margin-bottom: 0.5rem;
 }
 
-/* Test Interface Styles */
-
-/* Ensure test interface works with fixed navigation */
-.test-interface {
-  padding-top: 64px; /* Account for fixed navbar */
+/* Dark mode support for explanation content */
+.dark .explanation-content {
+  @apply text-gray-300;
 }
 
-/* Improve visibility of test controls on all screen sizes */
+.dark .explanation-content h1,
+.dark .explanation-content h2,
+.dark .explanation-content h3,
+.dark .explanation-content h4 {
+  @apply text-gray-100;
+}
+
+/* Test Interface Styles with Dark Mode */
+.test-interface {
+  padding-top: 64px;
+}
+
 .test-header {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -64,7 +91,13 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-/* Ensure submit button is always visible and prominent */
+.dark .test-header {
+  background: rgba(17, 24, 39, 0.1);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Submit button styling */
 .submit-button {
   min-width: fit-content;
   white-space: nowrap;
@@ -82,6 +115,10 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
   background: linear-gradient(45deg, #059669, #047857);
+}
+
+.dark .submit-button:hover {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
 }
 
 .submit-button:active {
@@ -105,7 +142,7 @@ body {
   }
 }
 
-/* Question palette improvements */
+/* Question palette with dark mode */
 .question-palette {
   position: fixed;
   top: 160px;
@@ -118,12 +155,21 @@ body {
   border-right: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Progress bar container */
+.dark .question-palette {
+  background: rgba(17, 24, 39, 0.1);
+  border-right: 1px solid rgba(75, 85, 99, 0.2);
+}
+
+/* Progress bar styling */
 .progress-container {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 9999px;
   height: 8px;
   overflow: hidden;
+}
+
+.dark .progress-container {
+  background: rgba(75, 85, 99, 0.3);
 }
 
 .progress-bar {
@@ -133,7 +179,7 @@ body {
   transition: width 0.5s ease;
 }
 
-/* Timer component improvements */
+/* Timer component with dark mode */
 .timer-component {
   display: flex;
   align-items: center;
@@ -144,7 +190,12 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* Flag button states */
+.dark .timer-component {
+  background: rgba(17, 24, 39, 0.2);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Button states with dark mode */
 .flag-button {
   transition: all 0.2s ease;
   cursor: pointer;
@@ -156,16 +207,30 @@ body {
   border: 1px solid rgba(234, 179, 8, 0.5);
 }
 
+.dark .flag-button.flagged {
+  background: rgba(234, 179, 8, 0.3);
+  color: #fbbf24;
+}
+
 .flag-button:not(.flagged) {
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.7);
+}
+
+.dark .flag-button:not(.flagged) {
+  background: rgba(75, 85, 99, 0.2);
+  color: rgba(209, 213, 219, 0.7);
 }
 
 .flag-button:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Navigation button improvements */
+.dark .flag-button:hover {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+/* Navigation buttons */
 .nav-button {
   transition: all 0.2s ease;
   cursor: pointer;
@@ -181,6 +246,10 @@ body {
   transform: translateY(-1px);
 }
 
+.dark .nav-button:not(:disabled):hover {
+  background: rgba(75, 85, 99, 0.3);
+}
+
 /* Question option improvements */
 .question-option {
   transition: all 0.3s ease;
@@ -192,12 +261,21 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.dark .question-option:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
 .question-option.selected {
   background: rgba(139, 92, 246, 0.2);
   border-color: rgba(139, 92, 246, 0.4);
 }
 
-/* Palette question button states */
+.dark .question-option.selected {
+  background: rgba(139, 92, 246, 0.3);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Palette question states */
 .palette-question {
   transition: all 0.2s ease;
   cursor: pointer;
@@ -221,9 +299,17 @@ body {
   border-color: rgba(34, 197, 94, 0.5);
 }
 
+.dark .palette-question.answered {
+  background: rgba(34, 197, 94, 0.3);
+}
+
 .palette-question.flagged {
   background: rgba(234, 179, 8, 0.2);
   border-color: rgba(234, 179, 8, 0.5);
+}
+
+.dark .palette-question.flagged {
+  background: rgba(234, 179, 8, 0.3);
 }
 
 .palette-question.visited {
@@ -231,9 +317,18 @@ body {
   border-color: rgba(59, 130, 246, 0.5);
 }
 
+.dark .palette-question.visited {
+  background: rgba(59, 130, 246, 0.3);
+}
+
 .palette-question.not-visited {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark .palette-question.not-visited {
+  background: rgba(75, 85, 99, 0.2);
+  border-color: rgba(75, 85, 99, 0.3);
 }
 
 /* Quick actions bar */
@@ -244,32 +339,12 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Sticky positioning improvements */
-.sticky-header {
-  position: sticky;
-  top: 64px;
-  z-index: 40;
+.dark .quick-actions {
+  background: rgba(17, 24, 39, 0.05);
+  border-bottom: 1px solid rgba(75, 85, 99, 0.1);
 }
 
-@media (max-width: 768px) {
-  .sticky-header {
-    top: 56px;
-  }
-}
-
-.sticky-actions {
-  position: sticky;
-  top: 128px;
-  z-index: 30;
-}
-
-@media (max-width: 768px) {
-  .sticky-actions {
-    top: 112px;
-  }
-}
-
-/* Backdrop blur support */
+/* Backdrop blur support with dark mode */
 @supports (backdrop-filter: blur(20px)) {
   .backdrop-blur-support {
     backdrop-filter: blur(20px);
@@ -281,23 +356,13 @@ body {
   .backdrop-blur-support {
     background: rgba(0, 0, 0, 0.8);
   }
+  
+  .dark .backdrop-blur-support {
+    background: rgba(17, 24, 39, 0.9);
+  }
 }
 
-/* Question text improvements */
-.question-text {
-  line-height: 1.6;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Option text improvements */
-.option-text {
-  line-height: 1.5;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Results page improvements */
+/* Results and config cards */
 .results-card {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -306,12 +371,20 @@ body {
   transition: all 0.3s ease;
 }
 
+.dark .results-card {
+  background: rgba(17, 24, 39, 0.2);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
 .results-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-/* Configuration page improvements */
+.dark .results-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
 .config-card {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -320,8 +393,17 @@ body {
   transition: all 0.3s ease;
 }
 
+.dark .config-card {
+  background: rgba(17, 24, 39, 0.2);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
 .config-card:hover {
   background: rgba(255, 255, 255, 0.15);
+}
+
+.dark .config-card:hover {
+  background: rgba(17, 24, 39, 0.3);
 }
 
 .config-card.selected {
@@ -329,7 +411,12 @@ body {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* Scrollbar styling */
+.dark .config-card.selected {
+  background: rgba(17, 24, 39, 0.4);
+  border-color: rgba(75, 85, 99, 0.5);
+}
+
+/* Scrollbar styling with dark mode */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -339,21 +426,39 @@ body {
   border-radius: 3px;
 }
 
+.dark ::-webkit-scrollbar-track {
+  background: rgba(75, 85, 99, 0.2);
+}
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.3);
   border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
 
-/* Focus states for accessibility */
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+}
+
+/* Focus states with dark mode */
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
   outline: 2px solid rgba(139, 92, 246, 0.5);
   outline-offset: 2px;
+}
+
+.dark button:focus-visible,
+.dark input:focus-visible,
+.dark select:focus-visible {
+  outline: 2px solid rgba(167, 139, 250, 0.6);
 }
 
 /* Animation improvements */
@@ -408,9 +513,20 @@ select:focus-visible {
     border-color: rgba(255, 255, 255, 0.8);
   }
   
+  .dark .test-header {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.8);
+  }
+  
   .submit-button {
     background: #000;
     border: 2px solid #fff;
+  }
+  
+  .dark .submit-button {
+    background: #fff;
+    color: #000;
+    border: 2px solid #000;
   }
   
   .question-option {
@@ -430,7 +546,7 @@ select:focus-visible {
   }
 }
 
-/* Print styles */
+/* Print styles (disable dark mode for printing) */
 @media print {
   .test-header,
   .sticky-actions,
@@ -441,6 +557,21 @@ select:focus-visible {
   .test-interface {
     padding-top: 0 !important;
   }
+  
+  /* Force light colors for printing */
+  * {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Custom selection colors */
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+}
+
+.dark ::selection {
+  background: rgba(167, 139, 250, 0.4);
 }
 
 /* Ensure proper link styling */
@@ -453,7 +584,7 @@ a:hover {
   text-decoration: none;
 }
 
-/* Ensure buttons and links are clickable */
+/* Interactive elements */
 button, 
 a,
 [role="button"] {
@@ -474,4 +605,11 @@ a,
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+/* Smooth theme transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
