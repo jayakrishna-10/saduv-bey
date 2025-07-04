@@ -1,4 +1,4 @@
-// app/components/TestApp.js - Complete updated version with mobile optimizations
+// app/components/TestApp.js - Updated with consistent navigation across platforms
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -736,7 +736,7 @@ function TestConfig({ config, setConfig, onStart, topics, years }) {
   );
 }
 
-// Test Interface Component with mobile optimizations
+// Test Interface Component with consistent navigation across platforms
 function TestInterface({ config, testData, setTestData, onSubmit, showPalette, setShowPalette, showMobileStats, setShowMobileStats }) {
   const currentQuestion = testData.questions[testData.currentIndex];
   const testMode = getTestMode(config.mode);
@@ -976,26 +976,54 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                   <span className="text-gray-600 dark:text-gray-400 text-sm">
                     {normalizeChapterName(currentQuestion?.tag)} • {currentQuestion?.year}
                   </span>
-                  {testData.flagged.has(testData.currentIndex) && (
-                    <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full text-xs">
-                      <Flag className="h-3 w-3" />
-                      Flagged
-                    </div>
-                  )}
                 </div>
-                
-                {/* Desktop Flag Button */}
+              </div>
+
+              {/* Desktop Navigation and Flag Controls */}
+              <div className="hidden md:flex items-center justify-between mb-6">
                 <button
                   onClick={toggleFlag}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
                     testData.flagged.has(testData.currentIndex)
-                      ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300'
+                      ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-600'
                       : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
                   }`}
-                  title={testData.flagged.has(testData.currentIndex) ? "Remove flag" : "Flag question"}
                 >
-                  <Flag className="h-5 w-5" />
+                  <Flag className="h-4 w-4" />
+                  {testData.flagged.has(testData.currentIndex) ? 'Flagged' : 'Flag Question'}
                 </button>
+                
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => navigateToQuestion(Math.max(0, testData.currentIndex - 1))}
+                    disabled={testData.currentIndex === 0}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                      testData.currentIndex === 0
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
+                    }`}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                  
+                  <span className="text-gray-600 dark:text-gray-400 text-sm px-3">
+                    {testData.currentIndex + 1} of {testData.questions.length}
+                  </span>
+                  
+                  <button
+                    onClick={() => navigateToQuestion(Math.min(testData.questions.length - 1, testData.currentIndex + 1))}
+                    disabled={testData.currentIndex === testData.questions.length - 1}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                      testData.currentIndex === testData.questions.length - 1
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
+                    }`}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Question */}
