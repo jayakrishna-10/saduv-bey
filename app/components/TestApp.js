@@ -976,7 +976,26 @@ function TestInterface({ config, testData, setTestData, onSubmit, showPalette, s
                   <span className="text-gray-600 dark:text-gray-400 text-sm">
                     {normalizeChapterName(currentQuestion?.tag)} • {currentQuestion?.year}
                   </span>
+                  {testData.flagged.has(testData.currentIndex) && (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 rounded-full text-xs">
+                      <Flag className="h-3 w-3" />
+                      Flagged
+                    </div>
+                  )}
                 </div>
+                
+                {/* Desktop Flag Button */}
+                <button
+                  onClick={toggleFlag}
+                  className={`p-2 rounded-lg transition-colors ${
+                    testData.flagged.has(testData.currentIndex)
+                      ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300'
+                      : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
+                  }`}
+                  title={testData.flagged.has(testData.currentIndex) ? "Remove flag" : "Flag question"}
+                >
+                  <Flag className="h-5 w-5" />
+                </button>
               </div>
 
               {/* Question */}
