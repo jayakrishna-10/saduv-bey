@@ -1,4 +1,4 @@
-// app/components/ChapterLoader.js - Redesigned with minimalist geometric style
+// app/components/ChapterLoader.js - Updated with dark mode support
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -79,7 +79,7 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden transition-colors duration-300">
       {/* Animated geometric background */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -88,7 +88,7 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
             y: mousePosition.y * 0.1,
           }}
           transition={{ type: "spring", stiffness: 50, damping: 15 }}
-          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 opacity-40 blur-3xl"
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/30 dark:to-cyan-900/30 opacity-40 blur-3xl"
         />
         <motion.div
           animate={{
@@ -96,12 +96,12 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
             y: -mousePosition.y * 0.05,
           }}
           transition={{ type: "spring", stiffness: 30, damping: 15 }}
-          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 opacity-30 blur-3xl"
+          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/20 dark:to-purple-900/20 opacity-30 blur-3xl"
         />
       </div>
 
       {/* Navigation Header */}
-      <header className="relative z-50 bg-white/30 backdrop-blur-xl border-b border-gray-200/50 px-8 py-6">
+      <header className="relative z-50 bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 px-8 py-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between">
             {/* Breadcrumb Navigation */}
@@ -110,17 +110,17 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <Link href="/nce" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+              <Link href="/nce" className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                 <Home className="h-4 w-4" />
                 <span className="text-sm font-medium">NCE</span>
               </Link>
-              <ChevronRight className="h-4 w-4 text-gray-400" />
-              <Link href="/nce/notes" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+              <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              <Link href="/nce/notes" className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
                 <BookOpen className="h-4 w-4" />
                 <span className="text-sm font-medium">Notes</span>
               </Link>
-              <ChevronRight className="h-4 w-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-900">{book?.title}</span>
+              <ChevronRight className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{book?.title}</span>
             </motion.div>
 
             {/* Chapter Navigation */}
@@ -134,7 +134,7 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-3 py-2 bg-white/70 hover:bg-white/90 text-gray-700 rounded-lg transition-colors border border-gray-200/50"
+                    className="flex items-center gap-2 px-3 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-lg transition-colors border border-gray-200/50 dark:border-gray-700/50"
                   >
                     <ChevronLeft className="h-4 w-4" />
                     <span className="text-sm hidden sm:block">Previous</span>
@@ -147,7 +147,7 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-3 py-2 bg-white/70 hover:bg-white/90 text-gray-700 rounded-lg transition-colors border border-gray-200/50"
+                    className="flex items-center gap-2 px-3 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-lg transition-colors border border-gray-200/50 dark:border-gray-700/50"
                   >
                     <span className="text-sm hidden sm:block">Next</span>
                     <ChevronRight className="h-4 w-4" />
@@ -165,8 +165,8 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
           <ChapterHeader book={book} chapter={chapter} />
           
           {/* Main Content Area */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 p-8 md:p-12 mb-12">
-            <div className="prose prose-lg prose-gray max-w-none">
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 md:p-12 mb-12">
+            <div className="prose prose-lg prose-gray dark:prose-invert max-w-none">
               <Component />
             </div>
           </div>
@@ -195,7 +195,7 @@ function ChapterHeader({ book, chapter }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="inline-block px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-gray-200/50 text-gray-600 text-sm font-medium mb-4"
+          className="inline-block px-4 py-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 text-gray-600 dark:text-gray-400 text-sm font-medium mb-4"
         >
           {book?.title}
         </motion.div>
@@ -204,7 +204,7 @@ function ChapterHeader({ book, chapter }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-tight"
+          className="text-4xl md:text-5xl font-light text-gray-900 dark:text-gray-100 mb-6 leading-tight"
         >
           {chapter?.title}
         </motion.h1>
@@ -213,7 +213,7 @@ function ChapterHeader({ book, chapter }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed"
+          className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-8 leading-relaxed"
         >
           {chapter?.description}
         </motion.p>
@@ -226,9 +226,9 @@ function ChapterHeader({ book, chapter }) {
         transition={{ delay: 0.4 }}
         className="flex flex-wrap items-center justify-center gap-6 mb-8"
       >
-        <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-gray-200/50">
-          <Timer className="h-4 w-4 text-gray-600" />
-          <span className="text-sm text-gray-700">{chapter?.readingTime} read</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50">
+          <Timer className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+          <span className="text-sm text-gray-700 dark:text-gray-300">{chapter?.readingTime} read</span>
         </div>
         
         {chapter?.topics && (
@@ -239,7 +239,7 @@ function ChapterHeader({ book, chapter }) {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + index * 0.1 }}
-                className="inline-block px-3 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-full border border-indigo-200"
+                className="inline-block px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/50 rounded-full border border-indigo-200 dark:border-indigo-700"
               >
                 {topic}
               </motion.span>
@@ -253,15 +253,15 @@ function ChapterHeader({ book, chapter }) {
 
 function ChapterLoadingIndicator() {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden flex items-center justify-center transition-colors duration-300">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50"
+        className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50"
       >
-        <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
-        <p className="text-gray-700 text-lg font-light">Loading chapter content...</p>
-        <p className="text-gray-500 text-sm mt-2">Preparing your study materials</p>
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600 dark:text-indigo-400 mx-auto mb-4" />
+        <p className="text-gray-700 dark:text-gray-300 text-lg font-light">Loading chapter content...</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Preparing your study materials</p>
       </motion.div>
     </div>
   );
@@ -269,25 +269,25 @@ function ChapterLoadingIndicator() {
 
 function ChapterErrorState({ error, bookSlug }) {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden flex items-center justify-center px-4 transition-colors duration-300">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="text-center max-w-lg p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50"
+        className="text-center max-w-lg p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50"
       >
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: "spring" }}
-          className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center"
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center"
         >
-          <AlertCircle className="h-10 w-10 text-red-500" />
+          <AlertCircle className="h-10 w-10 text-red-500 dark:text-red-400" />
         </motion.div>
         
-        <h1 className="text-2xl font-light text-gray-900 mb-4">
+        <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-4">
           {error.message || 'Failed to load chapter'}
         </h1>
-        <p className="text-gray-600 mb-8 leading-relaxed">
+        <p className="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
           {error.message === 'This chapter is coming soon'
             ? 'This chapter is currently being prepared and will be available soon. Thank you for your patience.'
             : 'An unexpected error occurred while loading the chapter content. Please try again or contact support if the issue persists.'}
@@ -297,14 +297,14 @@ function ChapterErrorState({ error, bookSlug }) {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-2xl transition-all duration-200"
+              className="px-6 py-3 bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900 font-medium rounded-2xl transition-all duration-200"
             >
               Return to Notes
             </motion.button>
           </Link>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-white/70 hover:bg-white/90 text-gray-700 font-medium rounded-2xl border border-gray-200/50 transition-all duration-200"
+            className="px-6 py-3 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 font-medium rounded-2xl border border-gray-200/50 dark:border-gray-700/50 transition-all duration-200"
           >
             Try Again
           </button>
@@ -320,7 +320,7 @@ function ChapterNavigation({ prevChapter, nextChapter, bookSlug }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
-      className="bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 p-8"
+      className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8"
     >
       <div className="flex justify-between items-center">
         {prevChapter ? (
@@ -328,14 +328,14 @@ function ChapterNavigation({ prevChapter, nextChapter, bookSlug }) {
             <motion.div
               whileHover={{ scale: 1.02, x: -4 }}
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/70 transition-all duration-300 cursor-pointer group max-w-sm"
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-all duration-300 cursor-pointer group max-w-sm"
             >
-              <div className="p-3 bg-white/70 rounded-full group-hover:bg-white transition-colors">
-                <ChevronLeft className="h-5 w-5 text-gray-700" />
+              <div className="p-3 bg-white/70 dark:bg-gray-700/70 rounded-full group-hover:bg-white dark:group-hover:bg-gray-700 transition-colors">
+                <ChevronLeft className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </div>
               <div>
-                <div className="text-sm text-gray-500 mb-1">Previous Chapter</div>
-                <div className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Previous Chapter</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {prevChapter.title}
                 </div>
               </div>
@@ -350,16 +350,16 @@ function ChapterNavigation({ prevChapter, nextChapter, bookSlug }) {
             <motion.div
               whileHover={{ scale: 1.02, x: 4 }}
               whileTap={{ scale: 0.98 }}
-              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/70 transition-all duration-300 cursor-pointer group max-w-sm text-right"
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/70 dark:hover:bg-gray-700/70 transition-all duration-300 cursor-pointer group max-w-sm text-right"
             >
               <div>
-                <div className="text-sm text-gray-500 mb-1">Next Chapter</div>
-                <div className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Next Chapter</div>
+                <div className="font-medium text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {nextChapter.title}
                 </div>
               </div>
-              <div className="p-3 bg-white/70 rounded-full group-hover:bg-white transition-colors">
-                <ChevronRight className="h-5 w-5 text-gray-700" />
+              <div className="p-3 bg-white/70 dark:bg-gray-700/70 rounded-full group-hover:bg-white dark:group-hover:bg-gray-700 transition-colors">
+                <ChevronRight className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               </div>
             </motion.div>
           </Link>
