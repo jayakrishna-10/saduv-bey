@@ -1,22 +1,36 @@
-// app/components/ChapterLoader.js
+// app/components/ChapterLoader.js - Redesigned with minimalist geometric style
 'use client';
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Book, Clock, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Book, Clock, AlertCircle, ChevronLeft, ChevronRight, Loader2, Home, ArrowLeft, BookOpen, Timer } from 'lucide-react';
 import { getBookBySlug, getChapterBySlug, getNextChapter, getPreviousChapter, getChapterStatus } from '@/config/chapters';
 
 export function ChapterLoader({ bookSlug, chapterSlug }) {
   const [Component, setComponent] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const book = getBookBySlug(bookSlug);
   const chapter = getChapterBySlug(bookSlug, chapterSlug);
   const nextChapter = getNextChapter(bookSlug, chapterSlug);
   const prevChapter = getPreviousChapter(bookSlug, chapterSlug);
   const chapterStatus = getChapterStatus(bookSlug, chapterSlug);
+
+  // Mouse tracking for animations
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth) * 100,
+        y: (e.clientY / window.innerHeight) * 100
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   useEffect(() => {
     async function loadChapter() {
@@ -65,130 +79,294 @@ export function ChapterLoader({ bookSlug, chapterSlug }) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <ChapterHeader book={book} chapter={chapter} />
-      <div className="prose prose-lg max-w-none">
-        <Component />
+    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+      {/* Animated geometric background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          animate={{
+            x: mousePosition.x * 0.1,
+            y: mousePosition.y * 0.1,
+          }}
+          transition={{ type: "spring", stiffness: 50, damping: 15 }}
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 opacity-40 blur-3xl"
+        />
+        <motion.div
+          animate={{
+            x: -mousePosition.x * 0.05,
+            y: -mousePosition.y * 0.05,
+          }}
+          transition={{ type: "spring", stiffness: 30, damping: 15 }}
+          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 opacity-30 blur-3xl"
+        />
       </div>
-      <ChapterNavigation 
-        prevChapter={prevChapter} 
-        nextChapter={nextChapter} 
-        bookSlug={bookSlug} 
-      />
+
+      {/* Navigation Header */}
+      <header className="relative z-50 bg-white/30 backdrop-blur-xl border-b border-gray-200/50 px-8 py-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between">
+            {/* Breadcrumb Navigation */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3"
+            >
+              <Link href="/nce" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <Home className="h-4 w-4" />
+                <span className="text-sm font-medium">NCE</span>
+              </Link>
+              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <Link href="/nce/notes" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <BookOpen className="h-4 w-4" />
+                <span className="text-sm font-medium">Notes</span>
+              </Link>
+              <ChevronRight className="h-4 w-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-900">{book?.title}</span>
+            </motion.div>
+
+            {/* Chapter Navigation */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2"
+            >
+              {prevChapter && (
+                <Link href={`/nce/notes/${bookSlug}/${prevChapter.slug}`}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/70 hover:bg-white/90 text-gray-700 rounded-lg transition-colors border border-gray-200/50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="text-sm hidden sm:block">Previous</span>
+                  </motion.button>
+                </Link>
+              )}
+              
+              {nextChapter && (
+                <Link href={`/nce/notes/${bookSlug}/${nextChapter.slug}`}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/70 hover:bg-white/90 text-gray-700 rounded-lg transition-colors border border-gray-200/50"
+                  >
+                    <span className="text-sm hidden sm:block">Next</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </motion.button>
+                </Link>
+              )}
+            </motion.div>
+          </div>
+        </div>
+      </header>
+
+      {/* Chapter Content */}
+      <main className="relative z-10 px-8 py-12">
+        <div className="max-w-6xl mx-auto">
+          <ChapterHeader book={book} chapter={chapter} />
+          
+          {/* Main Content Area */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 p-8 md:p-12 mb-12">
+            <div className="prose prose-lg prose-gray max-w-none">
+              <Component />
+            </div>
+          </div>
+
+          <ChapterNavigation 
+            prevChapter={prevChapter} 
+            nextChapter={nextChapter} 
+            bookSlug={bookSlug} 
+          />
+        </div>
+      </main>
     </div>
   );
 }
 
 function ChapterHeader({ book, chapter }) {
   return (
-    <div className="mb-12">
-      <div className="flex items-center gap-2 text-blue-600 mb-2">
-        <Book className="h-5 w-5" />
-        <Link href={`/nce/notes`} className="text-sm font-medium hover:text-blue-700">
-          Notes
-        </Link>
-        <span className="text-gray-400">/</span>
-        <span className="text-sm font-medium">{book.title}</span>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-12"
+    >
+      {/* Chapter Title Section */}
+      <div className="text-center mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="inline-block px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-gray-200/50 text-gray-600 text-sm font-medium mb-4"
+        >
+          {book?.title}
+        </motion.div>
+        
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-4xl md:text-5xl font-light text-gray-900 mb-6 leading-tight"
+        >
+          {chapter?.title}
+        </motion.h1>
+        
+        <motion.p 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed"
+        >
+          {chapter?.description}
+        </motion.p>
       </div>
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        {chapter.title}
-      </h1>
-      <p className="text-xl text-gray-600 mb-6">
-        {chapter.description}
-      </p>
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 text-gray-500">
-          <Clock className="h-4 w-4" />
-          <span className="text-sm">{chapter.readingTime} read</span>
+
+      {/* Chapter Meta Information */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="flex flex-wrap items-center justify-center gap-6 mb-8"
+      >
+        <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-gray-200/50">
+          <Timer className="h-4 w-4 text-gray-600" />
+          <span className="text-sm text-gray-700">{chapter?.readingTime} read</span>
         </div>
-        {chapter.topics && (
-          <div className="flex gap-2 flex-wrap">
+        
+        {chapter?.topics && (
+          <div className="flex flex-wrap gap-2">
             {chapter.topics.map((topic, index) => (
-              <span
+              <motion.span
                 key={index}
-                className="inline-block px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-full"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5 + index * 0.1 }}
+                className="inline-block px-3 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-full border border-indigo-200"
               >
                 {topic}
-              </span>
+              </motion.span>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
 function ChapterLoadingIndicator() {
   return (
-    <div className="min-h-[50vh] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        <p className="text-gray-600">Loading chapter content...</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50"
+      >
+        <Loader2 className="h-12 w-12 animate-spin text-indigo-600 mx-auto mb-4" />
+        <p className="text-gray-700 text-lg font-light">Loading chapter content...</p>
+        <p className="text-gray-500 text-sm mt-2">Preparing your study materials</p>
+      </motion.div>
     </div>
   );
 }
 
 function ChapterErrorState({ error, bookSlug }) {
   return (
-    <div className="min-h-[50vh] flex items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden flex items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center max-w-lg p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: "spring" }}
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-100 flex items-center justify-center"
+        >
+          <AlertCircle className="h-10 w-10 text-red-500" />
+        </motion.div>
+        
+        <h1 className="text-2xl font-light text-gray-900 mb-4">
           {error.message || 'Failed to load chapter'}
         </h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-gray-600 mb-8 leading-relaxed">
           {error.message === 'This chapter is coming soon'
-            ? 'This chapter is currently being prepared and will be available soon.'
-            : 'An unexpected error occurred while loading the chapter content.'}
+            ? 'This chapter is currently being prepared and will be available soon. Thank you for your patience.'
+            : 'An unexpected error occurred while loading the chapter content. Please try again or contact support if the issue persists.'}
         </p>
-        <div className="flex justify-center gap-4">
-          <Link
-            href="/nce/notes"
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Return to Notes
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link href="/nce/notes">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-2xl transition-all duration-200"
+            >
+              Return to Notes
+            </motion.button>
           </Link>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-white/70 hover:bg-white/90 text-gray-700 font-medium rounded-2xl border border-gray-200/50 transition-all duration-200"
+          >
+            Try Again
+          </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
 function ChapterNavigation({ prevChapter, nextChapter, bookSlug }) {
   return (
-    <div className="mt-12 border-t pt-8">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5 }}
+      className="bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 p-8"
+    >
       <div className="flex justify-between items-center">
         {prevChapter ? (
-          <Link
-            href={`/nce/notes/${bookSlug}/${prevChapter.slug}`}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <div>
-              <div className="text-sm text-gray-500">Previous</div>
-              <div className="font-medium">{prevChapter.title}</div>
-            </div>
+          <Link href={`/nce/notes/${bookSlug}/${prevChapter.slug}`}>
+            <motion.div
+              whileHover={{ scale: 1.02, x: -4 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/70 transition-all duration-300 cursor-pointer group max-w-sm"
+            >
+              <div className="p-3 bg-white/70 rounded-full group-hover:bg-white transition-colors">
+                <ChevronLeft className="h-5 w-5 text-gray-700" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Previous Chapter</div>
+                <div className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                  {prevChapter.title}
+                </div>
+              </div>
+            </motion.div>
           </Link>
         ) : (
           <div /> // Empty div for spacing
         )}
         
         {nextChapter ? (
-          <Link
-            href={`/nce/notes/${bookSlug}/${nextChapter.slug}`}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Next</div>
-              <div className="font-medium">{nextChapter.title}</div>
-            </div>
-            <ChevronRight className="h-4 w-4" />
+          <Link href={`/nce/notes/${bookSlug}/${nextChapter.slug}`}>
+            <motion.div
+              whileHover={{ scale: 1.02, x: 4 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-4 p-4 rounded-2xl hover:bg-white/70 transition-all duration-300 cursor-pointer group max-w-sm text-right"
+            >
+              <div>
+                <div className="text-sm text-gray-500 mb-1">Next Chapter</div>
+                <div className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                  {nextChapter.title}
+                </div>
+              </div>
+              <div className="p-3 bg-white/70 rounded-full group-hover:bg-white transition-colors">
+                <ChevronRight className="h-5 w-5 text-gray-700" />
+              </div>
+            </motion.div>
           </Link>
         ) : (
           <div /> // Empty div for spacing
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
