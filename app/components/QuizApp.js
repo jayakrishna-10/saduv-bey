@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Updated with working quiz selector
+// app/components/QuizApp.js - Updated with dark mode support
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -426,19 +426,19 @@ export function QuizApp() {
 
   const getOptionClass = (option) => {
     if (!showFeedback && !showAnswer) {
-      return "bg-white/70 hover:bg-white/90 border-gray-200/50 hover:border-gray-300/50 text-gray-700 hover:text-gray-900";
+      return "bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 border-gray-200/50 dark:border-gray-700/50 hover:border-gray-300/50 dark:hover:border-gray-600/50 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100";
     }
 
     const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     const isSelected = selectedOption === option;
 
     if (isCorrect) {
-      return "bg-emerald-100 border-emerald-300 text-emerald-800";
+      return "bg-emerald-100 dark:bg-emerald-900/50 border-emerald-300 dark:border-emerald-600 text-emerald-800 dark:text-emerald-200";
     }
     if (isSelected && !isCorrect) {
-      return "bg-red-100 border-red-300 text-red-800";
+      return "bg-red-100 dark:bg-red-900/50 border-red-300 dark:border-red-600 text-red-800 dark:text-red-200";
     }
-    return "bg-gray-100 border-gray-200 text-gray-600";
+    return "bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400";
   };
 
   const generateSummary = () => {
@@ -481,17 +481,17 @@ export function QuizApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden flex items-center justify-center">
-        <div className="text-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50">
-          <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-4 animate-spin" />
-          <p className="text-gray-700 text-sm">Loading quiz questions...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden flex items-center justify-center transition-colors duration-300">
+        <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50">
+          <div className="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full mx-auto mb-4 animate-spin" />
+          <p className="text-gray-700 dark:text-gray-300 text-sm">Loading quiz questions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden transition-colors duration-300">
       {/* Animated geometric background */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -500,7 +500,7 @@ export function QuizApp() {
             y: mousePosition.y * 0.1,
           }}
           transition={{ type: "spring", stiffness: 50, damping: 15 }}
-          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 opacity-40 blur-3xl"
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 opacity-40 blur-3xl"
         />
         <motion.div
           animate={{
@@ -508,27 +508,27 @@ export function QuizApp() {
             y: -mousePosition.y * 0.05,
           }}
           transition={{ type: "spring", stiffness: 30, damping: 15 }}
-          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 opacity-30 blur-3xl"
+          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/20 dark:to-cyan-900/20 opacity-30 blur-3xl"
         />
       </div>
 
       {/* Header */}
-      <header className="relative z-50 px-8 py-6 bg-white/30 backdrop-blur-xl border-b border-gray-200/50">
+      <header className="relative z-50 px-8 py-6 bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/nce" className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <Link href="/nce" className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
               <Home className="h-5 w-5" />
               <span className="font-medium">NCE Home</span>
             </Link>
-            <div className="h-4 w-px bg-gray-300" />
-            <h1 className="text-xl font-light text-gray-900">Practice Quiz</h1>
-            <span className="px-3 py-1 bg-white/50 text-gray-600 text-sm rounded-full">
+            <div className="h-4 w-px bg-gray-300 dark:bg-gray-600" />
+            <h1 className="text-xl font-light text-gray-900 dark:text-gray-100">Practice Quiz</h1>
+            <span className="px-3 py-1 bg-white/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 text-sm rounded-full">
               {PAPERS[selectedPaper]?.name}
             </span>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-gray-600 text-sm">
+            <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm">
               <Target className="h-4 w-4" />
               Progress: {questionProgress.attempted}/{questionProgress.total}
             </div>
@@ -536,9 +536,9 @@ export function QuizApp() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowModifyQuiz(true)}
-              className="p-2 bg-white/70 hover:bg-white/90 rounded-lg border border-gray-200/50 transition-all"
+              className="p-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 rounded-lg border border-gray-200/50 dark:border-gray-700/50 transition-all"
             >
-              <BarChart3 className="h-5 w-5 text-gray-700" />
+              <BarChart3 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             </motion.button>
           </div>
         </div>
@@ -547,7 +547,7 @@ export function QuizApp() {
       {/* Progress Bar */}
       <div className="relative z-40 px-8">
         <div className="max-w-4xl mx-auto">
-          <div className="h-2 bg-gray-200/50 rounded-full overflow-hidden">
+          <div className="h-2 bg-gray-200/50 dark:bg-gray-700/50 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
               initial={{ width: 0 }}
@@ -567,13 +567,13 @@ export function QuizApp() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 p-8 md:p-12 mb-8"
+              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 md:p-12 mb-8"
             >
               {/* Question */}
               {isTransitioning ? (
                 <div className="text-center py-12">
-                  <div className="w-8 h-8 border-4 border-gray-300 border-t-gray-900 rounded-full mx-auto mb-4 animate-spin" />
-                  <p className="text-gray-600 text-sm">Loading next question...</p>
+                  <div className="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full mx-auto mb-4 animate-spin" />
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">Loading next question...</p>
                 </div>
               ) : (
                 <>
@@ -583,10 +583,10 @@ export function QuizApp() {
                     transition={{ delay: 0.1 }}
                     className="mb-8"
                   >
-                    <h2 className="text-2xl md:text-3xl font-light text-gray-900 leading-relaxed mb-4">
+                    <h2 className="text-2xl md:text-3xl font-light text-gray-900 dark:text-gray-100 leading-relaxed mb-4">
                       {currentQuestion.question_text}
                     </h2>
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span>Chapter: {normalizeChapterName(currentQuestion.tag)}</span>
                       <span>Year: {currentQuestion.year}</span>
                     </div>
@@ -637,10 +637,10 @@ export function QuizApp() {
                     className="mb-8"
                   >
                     {isLoadingExplanation ? (
-                      <div className="p-6 bg-indigo-50 border border-indigo-200 rounded-2xl">
+                      <div className="p-6 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 rounded-2xl">
                         <div className="flex items-center gap-3">
-                          <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
-                          <span className="text-indigo-800 text-sm">Loading comprehensive explanation...</span>
+                          <div className="w-4 h-4 border-2 border-indigo-300 dark:border-indigo-400 border-t-indigo-600 dark:border-t-indigo-200 rounded-full animate-spin" />
+                          <span className="text-indigo-800 dark:text-indigo-200 text-sm">Loading comprehensive explanation...</span>
                         </div>
                       </div>
                     ) : currentExplanation ? (
@@ -657,10 +657,10 @@ export function QuizApp() {
                         userAnswer={selectedOption}
                       />
                     ) : (
-                      <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-2xl">
+                      <div className="p-6 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-2xl">
                         <div className="flex items-center gap-3">
-                          <Lightbulb className="h-5 w-5 text-yellow-600" />
-                          <span className="text-yellow-800 text-sm">Explanation is being generated. Please try again later.</span>
+                          <Lightbulb className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                          <span className="text-yellow-800 dark:text-yellow-200 text-sm">Explanation is being generated. Please try again later.</span>
                         </div>
                       </div>
                     )}
@@ -675,7 +675,7 @@ export function QuizApp() {
                     onClick={() => setShowSummary(true)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-6 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-full transition-all font-medium"
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-900/70 text-emerald-700 dark:text-emerald-300 rounded-full transition-all font-medium"
                   >
                     <BarChart3 className="h-4 w-4" />
                     View Summary
@@ -690,8 +690,8 @@ export function QuizApp() {
                     whileTap={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 0.95 }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all font-medium ${
                       (showFeedback || showAnswer || isTransitioning)
-                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-700'
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300'
                     }`}
                   >
                     <Lightbulb className="h-4 w-4" />
@@ -705,8 +705,8 @@ export function QuizApp() {
                     whileTap={{ scale: isTransitioning ? 1 : 0.95 }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all font-medium ${
                       isTransitioning 
-                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        : 'bg-gray-900 hover:bg-gray-800 text-white'
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-900 dark:bg-gray-100 hover:bg-gray-800 dark:hover:bg-gray-200 text-white dark:text-gray-900'
                     }`}
                   >
                     {isTransitioning ? 'Loading...' : 'Next Question'}
@@ -724,24 +724,24 @@ export function QuizApp() {
             transition={{ delay: 0.5 }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            <div className="p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 text-center">
-              <Target className="h-8 w-8 text-indigo-600 mx-auto mb-3" />
-              <div className="text-2xl font-light text-gray-900 mb-1">{questionProgress.attempted}/{questionProgress.total}</div>
-              <div className="text-sm text-gray-600">Progress</div>
+            <div className="p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 text-center">
+              <Target className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mx-auto mb-3" />
+              <div className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-1">{questionProgress.attempted}/{questionProgress.total}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Progress</div>
             </div>
             
-            <div className="p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 text-center">
-              <Clock className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-              <div className="text-2xl font-light text-gray-900 mb-1">{answeredQuestions.filter(q => q.isCorrect).length}</div>
-              <div className="text-sm text-gray-600">Correct</div>
+            <div className="p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 text-center">
+              <Clock className="h-8 w-8 text-purple-600 dark:text-purple-400 mx-auto mb-3" />
+              <div className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-1">{answeredQuestions.filter(q => q.isCorrect).length}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Correct</div>
             </div>
             
-            <div className="p-6 bg-white/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 text-center">
-              <TrendingUp className="h-8 w-8 text-emerald-600 mx-auto mb-3" />
-              <div className="text-2xl font-light text-gray-900 mb-1">
+            <div className="p-6 bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 text-center">
+              <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400 mx-auto mb-3" />
+              <div className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-1">
                 {answeredQuestions.length > 0 ? Math.round((answeredQuestions.filter(q => q.isCorrect).length / answeredQuestions.length) * 100) : 0}%
               </div>
-              <div className="text-sm text-gray-600">Accuracy</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Accuracy</div>
             </div>
           </motion.div>
         </div>
@@ -778,17 +778,17 @@ export function QuizApp() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl"
+              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl"
             >
               {/* Summary content */}
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-light text-gray-900">Quiz Summary</h2>
+                  <h2 className="text-2xl font-light text-gray-900 dark:text-gray-100">Quiz Summary</h2>
                   <button
                     onClick={() => setShowSummary(false)}
-                    className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
                   >
-                    <X className="h-5 w-5 text-gray-500" />
+                    <ArrowRight className="h-5 w-5 text-gray-500 dark:text-gray-400 rotate-45" />
                   </button>
                 </div>
 
@@ -798,42 +798,42 @@ export function QuizApp() {
                     <div className="space-y-8">
                       {/* Overall Stats */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div className="text-center p-6 bg-emerald-50 rounded-2xl">
-                          <div className="text-3xl font-light text-emerald-600 mb-2">{summary.correctAnswers}</div>
-                          <div className="text-emerald-800 text-sm">Correct</div>
+                        <div className="text-center p-6 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl">
+                          <div className="text-3xl font-light text-emerald-600 dark:text-emerald-400 mb-2">{summary.correctAnswers}</div>
+                          <div className="text-emerald-800 dark:text-emerald-200 text-sm">Correct</div>
                         </div>
-                        <div className="text-center p-6 bg-red-50 rounded-2xl">
-                          <div className="text-3xl font-light text-red-600 mb-2">{summary.incorrectAnswers}</div>
-                          <div className="text-red-800 text-sm">Incorrect</div>
+                        <div className="text-center p-6 bg-red-50 dark:bg-red-900/30 rounded-2xl">
+                          <div className="text-3xl font-light text-red-600 dark:text-red-400 mb-2">{summary.incorrectAnswers}</div>
+                          <div className="text-red-800 dark:text-red-200 text-sm">Incorrect</div>
                         </div>
-                        <div className="text-center p-6 bg-blue-50 rounded-2xl">
-                          <div className="text-3xl font-light text-blue-600 mb-2">{summary.score}%</div>
-                          <div className="text-blue-800 text-sm">Score</div>
+                        <div className="text-center p-6 bg-blue-50 dark:bg-blue-900/30 rounded-2xl">
+                          <div className="text-3xl font-light text-blue-600 dark:text-blue-400 mb-2">{summary.score}%</div>
+                          <div className="text-blue-800 dark:text-blue-200 text-sm">Score</div>
                         </div>
-                        <div className="text-center p-6 bg-purple-50 rounded-2xl">
-                          <div className="text-3xl font-light text-purple-600 mb-2">{formatTime(summary.timeTaken)}</div>
-                          <div className="text-purple-800 text-sm">Time</div>
+                        <div className="text-center p-6 bg-purple-50 dark:bg-purple-900/30 rounded-2xl">
+                          <div className="text-3xl font-light text-purple-600 dark:text-purple-400 mb-2">{formatTime(summary.timeTaken)}</div>
+                          <div className="text-purple-800 dark:text-purple-200 text-sm">Time</div>
                         </div>
                       </div>
 
                       {/* Chapter Performance */}
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">Chapter Performance</h3>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Chapter Performance</h3>
                         <div className="space-y-3">
                           {Object.entries(summary.chapterPerformance).map(([chapter, performance]) => (
-                            <div key={chapter} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                              <span className="text-gray-900 font-medium">{chapter}</span>
+                            <div key={chapter} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-2xl">
+                              <span className="text-gray-900 dark:text-gray-100 font-medium">{chapter}</span>
                               <div className="flex items-center gap-4">
-                                <span className="text-gray-600 text-sm">
+                                <span className="text-gray-600 dark:text-gray-400 text-sm">
                                   {performance.correct}/{performance.total}
                                 </span>
-                                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-32 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                                   <div 
                                     className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full"
                                     style={{ width: `${(performance.correct / performance.total) * 100}%` }}
                                   />
                                 </div>
-                                <span className="text-gray-900 text-sm font-medium w-12">
+                                <span className="text-gray-900 dark:text-gray-100 text-sm font-medium w-12">
                                   {Math.round((performance.correct / performance.total) * 100)}%
                                 </span>
                               </div>
@@ -863,14 +863,14 @@ export function QuizApp() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 w-full max-w-lg p-8 shadow-2xl text-center"
+              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-lg p-8 shadow-2xl text-center"
             >
               <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="h-10 w-10 text-white" />
               </div>
               
-              <h2 className="text-2xl font-light text-gray-900 mb-4">Quiz Complete! 🎉</h2>
-              <p className="text-gray-600 mb-8">
+              <h2 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-4">Quiz Complete! 🎉</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8">
                 You've completed all available questions. Great job!
               </p>
               
@@ -887,7 +887,7 @@ export function QuizApp() {
                   onClick={resetFilters}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex-1 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-2xl transition-all duration-200"
+                  className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-2xl transition-all duration-200"
                 >
                   Start New Quiz
                 </motion.button>
