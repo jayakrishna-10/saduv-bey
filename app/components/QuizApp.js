@@ -1,6 +1,6 @@
-// app/components/QuizApp.js - Updated with mobile optimizations
+// app/components/QuizApp.js - Fixed mobile explanation layering issue
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, ArrowRight, CheckCircle, Clock, Target, TrendingUp, RotateCcw, Play, Home, BarChart3, ChevronDown, ChevronRight, Calculator, Eye, Layers, BookOpen, MoreHorizontal, Timer, Flag, ChevronLeft, Grid3x3 } from 'lucide-react';
 import Link from 'next/link';
@@ -78,6 +78,12 @@ export function QuizApp() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [startTime, setStartTime] = useState(null);
 
+  // NEW: State to track if explanations are visible for mobile padding adjustment
+  const [isExplanationVisible, setIsExplanationVisible] = useState(false);
+  
+  // NEW: Ref for explanation container to measure height
+  const explanationRef = useRef(null);
+
   // Mouse tracking for subtle animations
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -100,6 +106,24 @@ export function QuizApp() {
       updateProgress();
     }
   }, [questions, completedQuestionIds]);
+
+  // NEW: Update explanation visibility state
+  useEffect(() => {
+    setIsExplanationVisible(showFeedback || showAnswer);
+  }, [showFeedback, showAnswer]);
+
+  // NEW: Scroll to explanation when it appears on mobile
+  useEffect(() => {
+    if (isExplanationVisible && explanationRef.current && window.innerWidth < 768) {
+      setTimeout(() => {
+        explanationRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }, 300); // Small delay to allow animation to start
+    }
+  }, [isExplanationVisible]);
 
   const fetchTopicsAndYears = async () => {
     try {
@@ -182,7 +206,7 @@ export function QuizApp() {
       setSelectedOption(null);
       setShowFeedback(false);
       setShowAnswer(false);
-      setCurrentExplanation(null); // UPDATED: Reset explanation
+      setCurrentExplanation(null);
       setIsLoading(false);
     } catch (err) {
       console.error('Fetch questions error:', err);
@@ -333,7 +357,7 @@ export function QuizApp() {
     
     setShowAnswer(true);
     setShowFeedback(true);
-    loadExplanation(questionId); // UPDATED: Load comprehensive explanation
+    loadExplanation(questionId);
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
     setAnsweredQuestions(prev => [...prev, {
       questionId: questionId,
@@ -367,7 +391,7 @@ export function QuizApp() {
 
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
 
-    await loadExplanation(questionId); // UPDATED: Load comprehensive explanation
+    await loadExplanation(questionId);
   };
 
   const handleNextQuestion = () => {
@@ -375,7 +399,7 @@ export function QuizApp() {
     setSelectedOption(null);
     setShowFeedback(false);
     setShowAnswer(false);
-    setCurrentExplanation(null); // UPDATED: Reset explanation
+    setCurrentExplanation(null);
     
     setTimeout(() => {
       const availableQuestions = questions.filter(q => 
@@ -613,8 +637,10 @@ export function QuizApp() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative z-10 px-4 md:px-8 py-6 md:py-12 pb-20 md:pb-12">
+      {/* Main Content - UPDATED: Dynamic padding based on explanation visibility */}
+      <main className={`relative z-10 px-4 md:px-8 py-6 md:py-12 transition-all duration-300 ${
+        isExplanationVisible ? 'pb-32 md:pb-12' : 'pb-20 md:pb-12'
+      }`}>
         <div className="max-w-4xl mx-auto">
           <AnimatePresence mode="wait">
             <motion.div
@@ -700,10 +726,11 @@ export function QuizApp() {
                 </>
               )}
 
-              {/* UPDATED: Use comprehensive ExplanationDisplay component */}
+              {/* UPDATED: Use comprehensive ExplanationDisplay component with ref */}
               <AnimatePresence>
                 {(showFeedback || showAnswer) && (
                   <motion.div
+                    ref={explanationRef}
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
@@ -820,8 +847,8 @@ export function QuizApp() {
         </div>
       </main>
 
-      {/* Mobile Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 md:hidden">
+      {/* Mobile Bottom Action Bar - UPDATED: Higher z-index to ensure it's always on top */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 md:hidden z-[60]">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Left Actions */}
           <div className="flex items-center gap-2">
