@@ -1,4 +1,4 @@
-/* app/globals.css - Updated with dark mode support */
+/* app/globals.css - Fixed z-index hierarchy and mobile bottom bar accessibility */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -22,6 +22,58 @@ body {
   @apply transition-colors duration-300;
 }
 
+/* UPDATED: Z-index hierarchy to prevent layering issues */
+/* Higher z-index values for critical UI elements */
+.mobile-bottom-bar {
+  z-index: 60 !important; /* Highest priority for mobile action bar */
+}
+
+.sticky-header {
+  z-index: 50 !important; /* Header should be below mobile bar but above content */
+}
+
+.modal-overlay {
+  z-index: 55 !important; /* Modals should be above everything except mobile bar */
+}
+
+.explanation-content {
+  z-index: 10 !important; /* Explanation content should be below fixed elements */
+  position: relative;
+}
+
+/* Ensure explanation content doesn't interfere with fixed elements */
+.explanation-container {
+  max-height: calc(100vh - 200px); /* Account for header and mobile bar */
+  overflow-y: auto;
+  position: relative;
+  z-index: 10;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+  .explanation-container {
+    max-height: calc(100vh - 160px); /* Adjusted for mobile header and action bar */
+  }
+  
+  /* Ensure mobile bottom bar is always accessible */
+  .mobile-bottom-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 60 !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Prevent any content from overlaying the mobile bottom bar */
+  .explanation-content,
+  .explanation-container,
+  .quiz-content {
+    z-index: 10 !important;
+    position: relative;
+  }
+}
+
 /* KaTeX styling with dark mode support */
 .katex-display {
   margin: 1.5rem 0 !important;
@@ -33,10 +85,12 @@ body {
   @apply text-gray-200;
 }
 
-/* Explanation content styling */
+/* Explanation content styling with improved z-index handling */
 .explanation-content {
   font-size: 0.875rem;
   line-height: 1.5;
+  position: relative;
+  z-index: 10;
 }
 
 .explanation-content p {
@@ -75,7 +129,7 @@ body {
   @apply text-gray-100;
 }
 
-/* Test Interface Styles with Dark Mode */
+/* Test Interface Styles with Dark Mode and Fixed Z-index */
 .test-interface {
   padding-top: 64px;
 }
@@ -109,6 +163,8 @@ body {
   border-radius: 8px;
   transition: all 0.2s ease;
   cursor: pointer;
+  z-index: 20;
+  position: relative;
 }
 
 .submit-button:hover {
@@ -125,7 +181,7 @@ body {
   transform: translateY(0);
 }
 
-/* Mobile responsive improvements */
+/* Mobile responsive improvements with z-index fixes */
 @media (max-width: 768px) {
   .test-interface {
     padding-top: 56px;
@@ -134,21 +190,27 @@ body {
   .test-header {
     top: 56px;
     padding: 12px 16px;
+    z-index: 50;
   }
   
   .submit-button {
     padding: 6px 12px;
     font-size: 14px;
   }
+  
+  /* Ensure mobile bottom bar is above all content */
+  .fixed.bottom-0 {
+    z-index: 60 !important;
+  }
 }
 
-/* Question palette with dark mode */
+/* Question palette with dark mode and proper z-index */
 .question-palette {
   position: fixed;
   top: 160px;
   left: 0;
   height: calc(100vh - 160px);
-  z-index: 30;
+  z-index: 45; /* Below mobile bar and header, above content */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.1);
@@ -188,6 +250,8 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 20;
+  position: relative;
 }
 
 .dark .timer-component {
@@ -195,10 +259,12 @@ body {
   border: 1px solid rgba(75, 85, 99, 0.3);
 }
 
-/* Button states with dark mode */
+/* Button states with dark mode and improved z-index */
 .flag-button {
   transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
+  z-index: 20;
 }
 
 .flag-button.flagged {
@@ -230,10 +296,12 @@ body {
   background: rgba(75, 85, 99, 0.3);
 }
 
-/* Navigation buttons */
+/* Navigation buttons with proper z-index */
 .nav-button {
   transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
+  z-index: 20;
 }
 
 .nav-button:disabled {
@@ -250,10 +318,12 @@ body {
   background: rgba(75, 85, 99, 0.3);
 }
 
-/* Question option improvements */
+/* Question option improvements with z-index */
 .question-option {
   transition: all 0.3s ease;
   cursor: pointer;
+  position: relative;
+  z-index: 10;
 }
 
 .question-option:hover {
@@ -275,10 +345,12 @@ body {
   border-color: rgba(139, 92, 246, 0.5);
 }
 
-/* Palette question states */
+/* Palette question states with proper z-index */
 .palette-question {
   transition: all 0.2s ease;
   cursor: pointer;
+  position: relative;
+  z-index: 15;
 }
 
 .palette-question:hover {
@@ -331,12 +403,14 @@ body {
   border-color: rgba(75, 85, 99, 0.3);
 }
 
-/* Quick actions bar */
+/* Quick actions bar with proper z-index */
 .quick-actions {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   background: rgba(255, 255, 255, 0.05);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 40;
+  position: relative;
 }
 
 .dark .quick-actions {
@@ -344,7 +418,7 @@ body {
   border-bottom: 1px solid rgba(75, 85, 99, 0.1);
 }
 
-/* Backdrop blur support with dark mode */
+/* Backdrop blur support with dark mode and z-index */
 @supports (backdrop-filter: blur(20px)) {
   .backdrop-blur-support {
     backdrop-filter: blur(20px);
@@ -362,13 +436,15 @@ body {
   }
 }
 
-/* Results and config cards */
+/* Results and config cards with proper z-index */
 .results-card {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .dark .results-card {
@@ -391,6 +467,8 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .dark .config-card {
@@ -550,7 +628,8 @@ select:focus-visible {
 @media print {
   .test-header,
   .sticky-actions,
-  .question-palette {
+  .question-palette,
+  .mobile-bottom-bar {
     display: none !important;
   }
   
@@ -584,7 +663,7 @@ a:hover {
   text-decoration: none;
 }
 
-/* Interactive elements */
+/* Interactive elements with proper z-index */
 button, 
 a,
 [role="button"] {
@@ -595,6 +674,8 @@ a,
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  position: relative;
+  z-index: 15;
 }
 
 /* Prevent text selection on interactive elements */
@@ -612,4 +693,34 @@ a,
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+/* CRITICAL FIX: Ensure mobile bottom bar is always on top */
+@media (max-width: 768px) {
+  /* Force mobile bottom bar to be the highest z-index */
+  .fixed.bottom-0.left-0.right-0 {
+    z-index: 9999 !important;
+    position: fixed !important;
+    pointer-events: auto !important;
+  }
+  
+  /* Ensure no other elements can overlay the mobile bar */
+  .explanation-content,
+  .explanation-container,
+  .quiz-content,
+  .main-content,
+  .content-wrapper {
+    z-index: 10 !important;
+    position: relative;
+    max-height: calc(100vh - 200px);
+  }
+  
+  /* Create proper padding for mobile bottom bar */
+  .mobile-safe-area {
+    padding-bottom: 80px; /* Enough space for mobile bottom bar */
+  }
+  
+  .mobile-safe-area.with-explanation {
+    padding-bottom: 100px; /* Extra space when explanations are visible */
+  }
 }
