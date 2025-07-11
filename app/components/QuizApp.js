@@ -1,8 +1,18 @@
-// app/components/QuizApp.js - Refactored into smaller components
+// app/components/QuizApp.js - Fixed with navigation controls, finish button, and modal issues
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb } from 'lucide-react';
+import { 
+  Lightbulb, 
+  ChevronLeft, 
+  ChevronRight, 
+  Flag, 
+  Target, 
+  MoreHorizontal,
+  Grid3x3,
+  CheckSquare,
+  BarChart3
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { AnalyticsService } from '@/lib/analytics';
 
@@ -55,6 +65,8 @@ export function QuizApp() {
   
   // Quiz progress
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
+  const [flaggedQuestions, setFlaggedQuestions] = useState(new Set());
+  const [visitedQuestions, setVisitedQuestions] = useState(new Set([0]));
   const [showSummary, setShowSummary] = useState(false);
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -110,11 +122,19 @@ export function QuizApp() {
 
   const fetchTopicsAndYears = async () => {
     try {
-      const { topics: fetchedTopics, years: fetchedYears } = await fetchTopicsAndYears(selectedPaper);
-      setTopics(fetchedTopics);
-      setYears(fetchedYears);
+      const result = await fetchTopicsAndYears(selectedPaper);
+      // Handle the case where result might be undefined or have unexpected structure
+      if (result && typeof result === 'object') {
+        setTopics(result.topics || []);
+        setYears(result.years || []);
+      } else {
+        setTopics([]);
+        setYears([]);
+      }
     } catch (error) {
       console.error('Error fetching topics and years:', error);
+      setTopics([]);
+      setYears([]);
     }
   };
 
@@ -198,6 +218,8 @@ export function QuizApp() {
       setQuestions(fetchedQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
+      setFlaggedQuestions(new Set());
+      setVisitedQuestions(new Set([0]));
       
       setCurrentQuestionIndex(0);
       setSelectedOption(null);
@@ -285,6 +307,8 @@ export function QuizApp() {
     // Reset quiz state
     setCompletedQuestionIds(new Set());
     setAnsweredQuestions([]);
+    setFlaggedQuestions(new Set());
+    setVisitedQuestions(new Set([0]));
     setSelectedOption(null);
     setShowFeedback(false);
     setShowAnswer(false);
@@ -356,7 +380,9 @@ export function QuizApp() {
     await loadExplanation(questionId);
   };
 
-  const handleNextQuestion = () => {
+  const navigateToQuestion = (index) => {
+    if (index < 0 || index >= questions.length) return;
+    
     setIsTransitioning(true);
     setSelectedOption(null);
     setShowFeedback(false);
@@ -364,44 +390,72 @@ export function QuizApp() {
     setCurrentExplanation(null);
     
     setTimeout(() => {
-      const availableQuestions = questions.filter(q => 
-        !completedQuestionIds.has(q.main_id || q.id)
+      setCurrentQuestionIndex(index);
+      setVisitedQuestions(prev => new Set([...prev, index]));
+      setIsTransitioning(false);
+    }, 100);
+  };
+
+  const handleNextQuestion = () => {
+    const nextIndex = currentQuestionIndex + 1;
+    if (nextIndex < questions.length) {
+      navigateToQuestion(nextIndex);
+    } else {
+      // If we're at the last question, find first unvisited question
+      const availableQuestions = questions.filter((_, index) => 
+        !completedQuestionIds.has(questions[index].main_id || questions[index].id)
       );
       
       if (availableQuestions.length === 0) {
         setShowCompletionModal(true);
-        setIsTransitioning(false);
         return;
       }
 
-      let nextQuestion = null;
-      let nextIndex = -1;
-      
-      for (let i = 1; i <= questions.length; i++) {
-        const checkIndex = (currentQuestionIndex + i) % questions.length;
-        const question = questions[checkIndex];
-        
+      // Find next unvisited question
+      for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
         if (!completedQuestionIds.has(question.main_id || question.id)) {
-          nextQuestion = question;
-          nextIndex = checkIndex;
+          navigateToQuestion(i);
           break;
         }
       }
-      
-      if (nextQuestion) {
-        setCurrentQuestionIndex(nextIndex);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    const prevIndex = currentQuestionIndex - 1;
+    if (prevIndex >= 0) {
+      navigateToQuestion(prevIndex);
+    }
+  };
+
+  const toggleFlag = () => {
+    setFlaggedQuestions(prev => {
+      const newFlagged = new Set(prev);
+      if (newFlagged.has(currentQuestionIndex)) {
+        newFlagged.delete(currentQuestionIndex);
       } else {
-        setShowCompletionModal(true);
+        newFlagged.add(currentQuestionIndex);
       }
-      
-      setIsTransitioning(false);
-    }, 100);
+      return newFlagged;
+    });
+  };
+
+  const handleFinishQuiz = () => {
+    setShowCompletionModal(true);
+    recordQuizAttempt();
+  };
+
+  const handleViewSummary = () => {
+    setShowCompletionModal(false); // Close completion modal first
+    setShowSummary(true);
   };
 
   const resetFilters = () => {
     setSelectedTopic('all');
     setSelectedYear('all');
     setShowCompletionModal(false);
+    setShowSummary(false);
     fetchQuestions();
   };
 
@@ -463,6 +517,63 @@ export function QuizApp() {
               exit={{ opacity: 0, y: -20 }}
               className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-6 md:p-12 mb-8"
             >
+              {/* Desktop Navigation and Controls */}
+              <div className="hidden md:flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={toggleFlag}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
+                      flaggedQuestions.has(currentQuestionIndex)
+                        ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-600'
+                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
+                    }`}
+                  >
+                    <Flag className="h-4 w-4" />
+                    {flaggedQuestions.has(currentQuestionIndex) ? 'Flagged' : 'Flag Question'}
+                  </button>
+                  
+                  <span className="text-gray-600 dark:text-gray-400 text-sm px-3">
+                    Question {currentQuestionIndex + 1} of {questions.length}
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handlePreviousQuestion}
+                    disabled={currentQuestionIndex === 0}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                      currentQuestionIndex === 0
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
+                    }`}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </button>
+                  
+                  <button
+                    onClick={handleNextQuestion}
+                    disabled={currentQuestionIndex === questions.length - 1 && completedQuestionIds.size === questions.length}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                      (currentQuestionIndex === questions.length - 1 && completedQuestionIds.size === questions.length)
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
+                    }`}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    onClick={handleFinishQuiz}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors font-medium"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                    Finish Quiz
+                  </button>
+                </div>
+              </div>
+
               {/* Question */}
               <QuizQuestion
                 question={currentQuestion}
@@ -517,16 +628,86 @@ export function QuizApp() {
                 )}
               </AnimatePresence>
 
-              {/* Action Buttons */}
-              <QuizActions
-                answeredQuestions={answeredQuestions}
-                showFeedback={showFeedback}
-                showAnswer={showAnswer}
-                isTransitioning={isTransitioning}
-                onGetAnswer={handleGetAnswer}
-                onNextQuestion={handleNextQuestion}
-                onViewSummary={() => setShowSummary(true)}
-              />
+              {/* Desktop Action Buttons */}
+              <div className="hidden md:flex flex-col sm:flex-row gap-4 justify-between">
+                {answeredQuestions.length > 0 && (
+                  <motion.button
+                    onClick={() => setShowSummary(true)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-900/70 text-emerald-700 dark:text-emerald-300 rounded-full transition-all font-medium"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    View Summary
+                  </motion.button>
+                )}
+                
+                <div className="flex gap-3">
+                  <motion.button
+                    onClick={handleGetAnswer}
+                    disabled={showFeedback || showAnswer || isTransitioning}
+                    whileHover={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 1.05 }}
+                    whileTap={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 0.95 }}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full transition-all font-medium ${
+                      (showFeedback || showAnswer || isTransitioning)
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                        : 'bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300'
+                    }`}
+                  >
+                    <Lightbulb className="h-4 w-4" />
+                    Show Answer
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Mobile Navigation at Bottom */}
+              <div className="flex md:hidden items-center justify-between mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                <button
+                  onClick={handlePreviousQuestion}
+                  disabled={currentQuestionIndex === 0}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-sm ${
+                    currentQuestionIndex === 0
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Prev
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleFlag}
+                    className={`p-2 rounded-xl transition-colors ${
+                      flaggedQuestions.has(currentQuestionIndex)
+                        ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Flag className="h-4 w-4" />
+                  </button>
+
+                  <button
+                    onClick={handleFinishQuiz}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors text-sm font-medium"
+                  >
+                    Finish
+                  </button>
+                </div>
+                
+                <button
+                  onClick={handleNextQuestion}
+                  disabled={currentQuestionIndex === questions.length - 1 && completedQuestionIds.size === questions.length}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all text-sm ${
+                    (currentQuestionIndex === questions.length - 1 && completedQuestionIds.size === questions.length)
+                      ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                      : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </motion.div>
           </AnimatePresence>
 
@@ -537,6 +718,45 @@ export function QuizApp() {
           />
         </div>
       </main>
+
+      {/* Mobile Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50 md:hidden z-[60]">
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Left Actions */}
+          <div className="flex items-center gap-2">
+            {answeredQuestions.length > 0 && (
+              <button
+                onClick={() => setShowSummary(true)}
+                className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                title="View Summary"
+              >
+                <BarChart3 className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+              </button>
+            )}
+          </div>
+
+          {/* Center Actions */}
+          <div className="flex items-center gap-3">
+            <motion.button
+              onClick={handleGetAnswer}
+              disabled={showFeedback || showAnswer || isTransitioning}
+              whileHover={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 1.05 }}
+              whileTap={{ scale: (showFeedback || showAnswer || isTransitioning) ? 1 : 0.95 }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all text-sm font-medium ${
+                (showFeedback || showAnswer || isTransitioning)
+                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300'
+              }`}
+            >
+              <Lightbulb className="h-4 w-4" />
+              Answer
+            </motion.button>
+          </div>
+
+          {/* Right Space for balance */}
+          <div className="w-12" />
+        </div>
+      </div>
 
       {/* Quiz Selector Modal */}
       <QuizSelector
@@ -565,7 +785,7 @@ export function QuizApp() {
       {/* Completion Modal */}
       <QuizCompletion
         isOpen={showCompletionModal}
-        onViewSummary={() => setShowSummary(true)}
+        onViewSummary={handleViewSummary}
         onStartNewQuiz={resetFilters}
       />
     </div>
