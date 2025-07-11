@@ -1,9 +1,10 @@
-// app/profile/page.js - Updated to use API endpoints
+// app/profile/page.js - Fixed avatar display and improved error handling
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import Image from 'next/image';
 import { 
   User, 
   Trophy, 
@@ -18,6 +19,62 @@ import {
   Settings,
   Download
 } from 'lucide-react';
+
+// Avatar component with fallback to initials
+const UserAvatar = ({ user, size = 80 }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const sizeClasses = {
+    20: 'w-5 h-5 text-xs',
+    32: 'w-8 h-8 text-sm',
+    40: 'w-10 h-10 text-base',
+    48: 'w-12 h-12 text-lg',
+    80: 'w-20 h-20 text-2xl',
+    96: 'w-24 h-24 text-3xl'
+  };
+
+  if (!user?.image || imageError) {
+    return (
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold flex-shrink-0`}>
+        {getInitials(user?.name)}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${sizeClasses[size]} rounded-full overflow-hidden flex-shrink-0 relative`}>
+      {imageLoading && (
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold">
+          {getInitials(user?.name)}
+        </div>
+      )}
+      <Image
+        src={user.image}
+        alt={user.name || 'User avatar'}
+        width={size}
+        height={size}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+        onLoad={() => setImageLoading(false)}
+        onError={() => {
+          setImageError(true);
+          setImageLoading(false);
+        }}
+        unoptimized // Add this to handle external URLs better
+      />
+    </div>
+  );
+};
 
 export default function ProfilePage() {
   const { data: session } = useSession();
@@ -198,9 +255,7 @@ export default function ProfilePage() {
         <div className="bg-white/30 dark:bg-gray-800/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                {session?.user?.name?.charAt(0) || 'U'}
-              </div>
+              <UserAvatar user={session?.user} size={80} />
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   {session?.user?.name || 'User'}
