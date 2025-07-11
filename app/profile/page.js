@@ -1,10 +1,9 @@
-// app/profile/page.js
+// app/profile/page.js - Updated to use API endpoints
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { AnalyticsService } from '@/lib/analytics';
 import { 
   User, 
   Trophy, 
@@ -26,33 +25,87 @@ export default function ProfilePage() {
   const [userStats, setUserStats] = useState(null);
   const [achievements, setAchievements] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  const [progressData, setProgressData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Fetch user statistics when component mounts or session changes
   useEffect(() => {
-    if (session?.user?.id) {
+    if (session?.user) {
       fetchUserData();
     }
-  }, [session?.user?.id]);
+  }, [session?.user]);
 
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const [stats, achievementsData, recommendationsData] = await Promise.all([
-        AnalyticsService.getUserStats(session.user.id),
-        AnalyticsService.getAchievementProgress(session.user.id),
-        AnalyticsService.getRecommendations(session.user.id)
+      // Use API endpoints instead of direct analytics service
+      const [statsRes, progressRes, achievementsRes, recommendationsRes] = await Promise.all([
+        fetch('/api/analytics?action=stats'),
+        fetch('/api/analytics?action=progress'),
+        fetch('/api/analytics?action=achievements'),
+        fetch('/api/analytics?action=recommendations')
       ]);
 
-      setUserStats(stats);
+      // Handle each response
+      const stats = statsRes.ok ? await statsRes.json() : { quizzes: {}, tests: {}, overall: {} };
+      const progress = progressRes.ok ? await progressRes.json() : { strongAreas: [], weakAreas: [], allProgress: [] };
+      const achievementsData = achievementsRes.ok ? await achievementsRes.json() : [];
+      const recommendationsData = recommendationsRes.ok ? await recommendationsRes.json() : [];
+
+      // Set default values for missing data
+      setUserStats({
+        quizzes: {
+          totalAttempts: 0,
+          averageScore: 0,
+          bestScore: 0,
+          totalTime: 0,
+          recentAttempts: [],
+          ...stats.quizzes
+        },
+        tests: {
+          totalAttempts: 0,
+          averageScore: 0,
+          bestScore: 0,
+          totalTime: 0,
+          recentAttempts: [],
+          ...stats.tests
+        },
+        overall: {
+          totalAttempts: 0,
+          averageScore: 0,
+          studyTime: 0,
+          studyStreak: 0,
+          ...stats.overall
+        }
+      });
+      
+      setProgressData({
+        totalChapters: 0,
+        completedChapters: 0,
+        strongAreas: [],
+        weakAreas: [],
+        allProgress: [],
+        ...progress
+      });
+      
       setAchievements(achievementsData);
       setRecommendations(recommendationsData);
     } catch (error) {
       console.error('Error fetching user data:', error);
       setError('Failed to load profile data');
+      
+      // Set empty defaults on error
+      setUserStats({
+        quizzes: { totalAttempts: 0, averageScore: 0, bestScore: 0, totalTime: 0, recentAttempts: [] },
+        tests: { totalAttempts: 0, averageScore: 0, bestScore: 0, totalTime: 0, recentAttempts: [] },
+        overall: { totalAttempts: 0, averageScore: 0, studyTime: 0, studyStreak: 0 }
+      });
+      setProgressData({ totalChapters: 0, completedChapters: 0, strongAreas: [], weakAreas: [], allProgress: [] });
+      setAchievements([]);
+      setRecommendations([]);
     } finally {
       setIsLoading(false);
     }
@@ -100,11 +153,20 @@ export default function ProfilePage() {
 
   // Handle data export
   const handleExportData = async () => {
-    if (!session?.user?.id) return;
-    
     try {
-      const userData = await AnalyticsService.exportUserData(session.user.id);
-      const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
+      const exportData = {
+        user: {
+          name: session?.user?.name,
+          email: session?.user?.email,
+        },
+        stats: userStats,
+        progress: progressData,
+        achievements,
+        recommendations,
+        exportDate: new Date().toISOString()
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -123,24 +185,6 @@ export default function ProfilePage() {
           <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50">
             <div className="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full mx-auto mb-4 animate-spin" />
             <p className="text-gray-700 dark:text-gray-300 text-sm">Loading your profile...</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
-
-  if (error) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 flex items-center justify-center">
-          <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50">
-            <p className="text-red-600 dark:text-red-400 mb-4">{error}</p>
-            <button
-              onClick={fetchUserData}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
-            >
-              Retry
-            </button>
           </div>
         </div>
       </ProtectedRoute>
@@ -209,6 +253,15 @@ export default function ProfilePage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           {activeTab === 'overview' && (
             <div className="space-y-8">
+              {/* Error Message */}
+              {error && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <p className="text-yellow-800 dark:text-yellow-200 text-sm">
+                    {error} - Showing default values. Start taking quizzes to see your actual progress!
+                  </p>
+                </div>
+              )}
+
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
@@ -235,8 +288,8 @@ export default function ProfilePage() {
                 <StatCard
                   icon={Award}
                   title="Chapter Progress"
-                  value={`${userStats?.progress?.completedChapters || 0}/${userStats?.progress?.totalChapters || 0}`}
-                  subtitle={`${Math.round(((userStats?.progress?.completedChapters || 0) / Math.max(userStats?.progress?.totalChapters || 1, 1)) * 100)}% complete`}
+                  value={`${progressData?.completedChapters || 0}/${progressData?.totalChapters || 0}`}
+                  subtitle={`${Math.round(((progressData?.completedChapters || 0) / Math.max(progressData?.totalChapters || 1, 1)) * 100)}% complete`}
                   color="purple"
                 />
               </div>
@@ -278,7 +331,7 @@ export default function ProfilePage() {
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 dark:text-gray-100 capitalize">
-                              {activity.type} - {activity.chapter || activity.chapters?.[0] || 'Mixed'}
+                              {activity.type} - {activity.selected_topic || activity.test_type || 'Mixed'}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                               {formatDate(activity.date)}
@@ -310,24 +363,24 @@ export default function ProfilePage() {
                 <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Areas for Improvement</h3>
                   <div className="space-y-3">
-                    {userStats?.progress?.weakAreas?.map((area, index) => (
+                    {progressData?.weakAreas?.map((area, index) => (
                       <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                         <div className="flex justify-between items-center mb-2">
                           <span className="font-medium text-gray-900 dark:text-gray-100">{area.chapter}</span>
-                          <span className="text-sm text-red-600 dark:text-red-400 font-medium">{area.average_score}%</span>
+                          <span className="text-sm text-red-600 dark:text-red-400 font-medium">{area.accuracy}%</span>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <div 
                             className="bg-red-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${area.average_score}%` }}
+                            style={{ width: `${area.accuracy}%` }}
                           />
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          {area.attempts} attempts • {area.mastery_level}
+                          {area.total_questions_attempted} attempts
                         </p>
                       </div>
                     ))}
-                    {(!userStats?.progress?.weakAreas?.length) && (
+                    {(!progressData?.weakAreas?.length) && (
                       <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
                         <p>No weak areas identified yet</p>
@@ -345,24 +398,24 @@ export default function ProfilePage() {
               <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Strong Areas</h3>
                 <div className="space-y-3">
-                  {userStats?.progress?.strongAreas?.map((area, index) => (
+                  {progressData?.strongAreas?.map((area, index) => (
                     <div key={index} className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-medium text-gray-900 dark:text-gray-100">{area.chapter}</span>
-                        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{area.average_score}%</span>
+                        <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{area.accuracy}%</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div 
                           className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${area.average_score}%` }}
+                          style={{ width: `${area.accuracy}%` }}
                         />
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {area.attempts} attempts • {area.mastery_level}
+                        {area.total_questions_attempted} attempts
                       </p>
                     </div>
                   ))}
-                  {(!userStats?.progress?.strongAreas?.length) && (
+                  {(!progressData?.strongAreas?.length) && (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <Star className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p>No strong areas identified yet</p>
@@ -463,7 +516,8 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       defaultValue={session?.user?.name}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
                     />
                   </div>
                   <div>
