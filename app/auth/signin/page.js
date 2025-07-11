@@ -1,7 +1,7 @@
 // app/auth/signin/page.js
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LoginButton } from '@/app/components/auth/LoginButton';
+import { LoginButton } from '@/components/auth/LoginButton';
 import Link from 'next/link';
 import { Home, ArrowLeft } from 'lucide-react';
 
