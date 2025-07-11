@@ -1,3 +1,4 @@
+// app/lib/quiz-utils.js - Fixed with better error handling for topics and years
 // Common utility functions for quiz and test components
 
 export const normalizeChapterName = (chapter) => {
@@ -93,33 +94,76 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
 
 export const fetchTopicsAndYears = async (selectedPaper) => {
   try {
-    const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=1000`);
-    if (response.ok) {
-      const result = await response.json();
-      const sampleQuestions = result.questions || [];
-      
-      const uniqueTopics = [...new Set(sampleQuestions.map(q => normalizeChapterName(q.tag)))].filter(Boolean).sort();
-      const uniqueYears = [...new Set(sampleQuestions.map(q => Number(q.year)))].filter(year => !isNaN(year)).sort((a, b) => a - b);
-      
-      return { topics: uniqueTopics, years: uniqueYears };
+    if (!selectedPaper) {
+      return { topics: [], years: [] };
     }
+
+    const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=1000`);
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch topics and years: ${response.status}`);
+      return { topics: [], years: [] };
+    }
+    
+    const result = await response.json();
+    
+    // Safely extract questions array
+    const sampleQuestions = Array.isArray(result.questions) ? result.questions : [];
+    
+    if (sampleQuestions.length === 0) {
+      console.warn('No questions found for topics/years extraction');
+      return { topics: [], years: [] };
+    }
+    
+    // Extract unique topics with safe handling
+    const uniqueTopics = [...new Set(
+      sampleQuestions
+        .map(q => q && q.tag ? normalizeChapterName(q.tag) : null)
+        .filter(Boolean)
+    )].sort();
+    
+    // Extract unique years with safe handling
+    const uniqueYears = [...new Set(
+      sampleQuestions
+        .map(q => {
+          const year = q && q.year ? Number(q.year) : null;
+          return (!isNaN(year) && year > 1900 && year < 2100) ? year : null;
+        })
+        .filter(year => year !== null)
+    )].sort((a, b) => a - b);
+    
+    return { 
+      topics: uniqueTopics, 
+      years: uniqueYears 
+    };
   } catch (error) {
     console.error('Error fetching topics and years:', error);
+    return { topics: [], years: [] };
   }
-  return { topics: [], years: [] };
 };
 
 export const generateQuizSummary = (answeredQuestions, startTime) => {
+  if (!Array.isArray(answeredQuestions) || answeredQuestions.length === 0) {
+    return {
+      timeTaken: 0,
+      totalAnswered: 0,
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      score: 0,
+      chapterPerformance: {}
+    };
+  }
+
   const endTime = new Date();
-  const timeTaken = Math.floor((endTime - startTime) / 1000);
+  const timeTaken = startTime ? Math.floor((endTime - startTime) / 1000) : 0;
 
   const totalAnswered = answeredQuestions.length;
   const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
   const incorrectAnswers = totalAnswered - correctAnswers;
-  const score = Math.round((correctAnswers / totalAnswered) * 100);
+  const score = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
 
   const chapterPerformance = answeredQuestions.reduce((acc, q) => {
-    const normalizedChapter = normalizeChapterName(q.chapter);
+    const normalizedChapter = normalizeChapterName(q.chapter) || 'Unknown';
     
     if (!acc[normalizedChapter]) {
       acc[normalizedChapter] = { total: 0, correct: 0 };
