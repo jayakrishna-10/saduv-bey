@@ -2,6 +2,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
+import { AnalyticsService } from '@/lib/analytics';
 
 // Import the new split components
 import { TestConfig } from './test/TestConfig';
@@ -19,6 +21,9 @@ import {
 import { fetchTopicsAndYears } from '@/lib/quiz-utils';
 
 export function TestApp() {
+  // Authentication
+  const { data: session } = useSession();
+  
   const [currentView, setCurrentView] = useState('config');
   const [testConfig, setTestConfig] = useState({
     mode: 'mock',
@@ -105,11 +110,75 @@ export function TestApp() {
   };
 
   const submitTest = () => {
+    const endTime = new Date();
     setTestData(prev => ({
       ...prev,
-      endTime: new Date()
+      endTime
     }));
     setCurrentView('results');
+    
+    // Record test attempt analytics
+    recordTestAttempt(endTime);
+  };
+
+  const recordTestAttempt = async (endTime) => {
+    if (!session?.user?.id) return;
+
+    try {
+      const { questions, answers, startTime } = testData;
+      
+      // Calculate results
+      const correctAnswers = Object.entries(answers).filter(([questionId, answer]) => {
+        const question = questions.find(q => (q.main_id || q.id) === questionId);
+        return question && question.correct_answer?.toLowerCase() === answer?.toLowerCase();
+      }).length;
+      
+      const totalQuestions = questions.length;
+      const score = Math.round((correctAnswers / totalQuestions) * 100);
+      const timeTaken = Math.round((endTime - startTime) / 1000 / 60); // in minutes
+      
+      // Get chapters covered in the test
+      const chapters = [...new Set(questions.map(q => normalizeChapterName(q.tag) || 'mixed'))];
+      
+      // Create questions data for analytics
+      const questionsData = questions.map(q => {
+        const questionId = q.main_id || q.id;
+        const userAnswer = answers[questionId];
+        const isCorrect = userAnswer?.toLowerCase() === q.correct_answer?.toLowerCase();
+        
+        return {
+          questionId,
+          question: q.question_text,
+          selectedOption: userAnswer,
+          correctOption: q.correct_answer,
+          isCorrect,
+          chapter: normalizeChapterName(q.tag) || 'mixed',
+          timestamp: endTime
+        };
+      });
+
+      const testData = {
+        testType: testConfig.mode,
+        chapters,
+        totalQuestions,
+        correctAnswers,
+        score,
+        timeTaken,
+        questionsData
+      };
+
+      await AnalyticsService.recordTestAttempt(session.user.id, testData);
+      
+      // Record study session
+      await AnalyticsService.recordStudySession(session.user.id, {
+        duration: timeTaken,
+        questionsAnswered: totalQuestions
+      });
+      
+      console.log('Test attempt recorded successfully');
+    } catch (error) {
+      console.error('Error recording test attempt:', error);
+    }
   };
 
   if (isLoading) {

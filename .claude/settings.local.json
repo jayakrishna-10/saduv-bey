@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm audit:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(git checkout:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }

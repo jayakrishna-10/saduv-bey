@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { AnalyticsService } from '@/lib/analytics';
 
 // Import the new split components
 import { QuizHeader } from './quiz/QuizHeader';
@@ -25,6 +27,9 @@ import {
 } from '@/lib/quiz-utils';
 
 export function QuizApp() {
+  // Authentication
+  const { data: session } = useSession();
+  
   // State management
   const [selectedPaper, setSelectedPaper] = useState('paper1');
   const [questions, setQuestions] = useState([]);
@@ -129,6 +134,59 @@ export function QuizApp() {
 
     if (attemptedQuestions === totalQuestions && totalQuestions > 0) {
       setShowCompletionModal(true);
+      // Record quiz completion analytics
+      recordQuizAttempt();
+    }
+  };
+
+  const recordQuizAttempt = async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
+      const totalQuestions = answeredQuestions.length;
+      const score = Math.round((correctAnswers / totalQuestions) * 100);
+      const timeTaken = startTime ? Math.round((new Date() - startTime) / 1000 / 60) : 0; // in minutes
+      
+      // Determine the primary chapter (most common in the quiz)
+      const chapterCounts = {};
+      answeredQuestions.forEach(q => {
+        const chapter = q.chapter || 'mixed';
+        chapterCounts[chapter] = (chapterCounts[chapter] || 0) + 1;
+      });
+      
+      const primaryChapter = Object.keys(chapterCounts).reduce((a, b) => 
+        chapterCounts[a] > chapterCounts[b] ? a : b
+      ) || 'mixed';
+
+      const quizData = {
+        chapter: primaryChapter,
+        totalQuestions,
+        correctAnswers,
+        score,
+        timeTaken,
+        questionsData: answeredQuestions.map(q => ({
+          questionId: q.questionId,
+          question: q.question,
+          selectedOption: q.selectedOption,
+          correctOption: q.correctOption,
+          isCorrect: q.isCorrect,
+          chapter: q.chapter,
+          timestamp: q.timestamp
+        }))
+      };
+
+      await AnalyticsService.recordQuizAttempt(session.user.id, quizData);
+      
+      // Record study session
+      await AnalyticsService.recordStudySession(session.user.id, {
+        duration: timeTaken,
+        questionsAnswered: totalQuestions
+      });
+      
+      console.log('Quiz attempt recorded successfully');
+    } catch (error) {
+      console.error('Error recording quiz attempt:', error);
     }
   };
 

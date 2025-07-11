@@ -1,130 +1,167 @@
 
-# Interactive Quiz Application
+# NCE Quiz Application
 
-This project is an interactive quiz application built using Next.js, React, Supabase, and Tailwind CSS. The application allows users to take quizzes on various topics and provides immediate feedback on their answers. It also generates a summary of the user's performance at the end of the quiz.
+A comprehensive exam preparation platform for National Certification Examination (NCE) with user authentication and performance tracking.
 
-## Table of Contents
+## Features
 
-- [Project Structure](#project-structure)
-- [Technologies Used](#technologies-used)
-- [Setup and Installation](#setup-and-installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
+### Core Features
+- **Interactive Quizzes**: Practice questions with immediate feedback and explanations
+- **Mock Tests**: Full-length practice exams with timer and comprehensive scoring
+- **Study Notes**: Organized chapter-wise study materials
+- **Dark Mode**: Toggle between light and dark themes
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+
+### User Profile System
+- **Google OAuth Authentication**: Secure login with Google accounts
+- **Performance Tracking**: Detailed analytics of quiz and test performance
+- **Progress Monitoring**: Track your improvement over time
+- **Achievement System**: Unlock achievements as you study
+- **Study Streaks**: Maintain consistent study habits
+- **Personalized Recommendations**: Get suggestions based on your weak areas
+- **Data Export**: Export your study data for external analysis
+
+### Analytics Dashboard
+- **Overview Statistics**: Total quizzes, tests, average scores, and study time
+- **Recent Activity**: View your latest quiz and test attempts
+- **Strong/Weak Areas**: Identify chapters where you excel or need improvement
+- **Achievement Progress**: Track your progress toward various goals
+- **Chapter-wise Performance**: Detailed breakdown by study topics
+
+## Tech Stack
+
+- **Frontend**: Next.js 14 with App Router, React, Tailwind CSS
+- **Authentication**: NextAuth.js with Google OAuth
+- **Database**: Supabase (PostgreSQL)
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Styling**: Tailwind CSS with custom components
+- **Math Rendering**: KaTeX for mathematical expressions
+- **Markdown**: React-markdown for rich text content
 
 ## Project Structure
 
-The project follows the standard Next.js project structure:
-
-- `app/`: Contains the main application components and pages.
-  - `components/`: Contains reusable components used in the application.
-    - `QuizApp.js`: The main component that handles the quiz functionality.
-  - `globals.css`: Global CSS styles for the application.
-  - `layout.js`: Defines the overall layout of the application.
-  - `page.js`: The main page component that renders the quiz application.
-- `public/`: Contains public assets such as images and fonts.
-- `package.json`: Defines the project dependencies and scripts.
-- `postcss.config.js`: Configuration file for PostCSS.
-- `tailwind.config.js`: Configuration file for Tailwind CSS.
-
-## Technologies Used
-
-The project utilizes the following technologies and libraries:
-
-- **Next.js**: A React framework for building server-side rendered and statically generated web applications.
-- **React**: A JavaScript library for building user interfaces.
-- **Supabase**: An open-source alternative to Firebase that provides a backend as a service.
-- **Tailwind CSS**: A utility-first CSS framework for rapidly building custom user interfaces.
-- **react-markdown**: A React component for rendering Markdown content.
-- **remark-math**: A remark plugin for parsing math equations in Markdown.
-- **rehype-katex**: A rehype plugin for rendering math equations using KaTeX.
-- **KaTeX**: A fast and easy-to-use JavaScript library for typesetting math equations.
-
-## Setup and Installation
-
-To set up the project locally, follow these steps:
-
-1. Clone the repository:
-
-   ```shell
-   git clone https://github.com/your-username/quiz-app.git
-   ```
-
-2. Navigate to the project directory:
-
-   ```shell
-   cd quiz-app
-   ```
-
-3. Install the project dependencies:
-
-   ```shell
-   npm install
-   ```
-
-4. Set up the environment variables (see the [Configuration](#configuration) section for more details).
-
-## Configuration
-
-The project requires certain environment variables to be set up. Create a `.env.local` file in the root directory of the project and add the following variables:
-
-```plaintext
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+app/
+├── api/                 # API routes
+│   ├── auth/           # NextAuth.js authentication
+│   ├── quiz/           # Quiz data endpoints
+│   └── ask-ai/         # AI assistance endpoints
+├── auth/               # Authentication pages
+├── components/         # React components
+│   ├── auth/          # Authentication components
+│   ├── quiz/          # Quiz-related components
+│   ├── test/          # Test-related components
+│   └── ui/            # UI components
+├── config/            # Configuration files
+├── context/           # React context providers
+├── lib/               # Utility functions and services
+├── nce/               # Main application pages
+└── profile/           # User profile pages
 ```
 
-Replace `your-supabase-url` and `your-supabase-anon-key` with the appropriate values from your Supabase project.
+## Getting Started
 
-## Running the Application
+### Prerequisites
+- Node.js 18.0 or higher
+- npm or yarn package manager
+- A Supabase account and project
+- Google OAuth credentials
 
-To run the application locally, use the following command:
+### Installation
 
-```shell
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd saduv-bey
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.local.example .env.local
+```
+
+4. Configure your environment variables in `.env.local`:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# NextAuth.js
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# Gemini API (for explanations)
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+5. Set up the database:
+```bash
+# Run the database schema setup (found in database/schema.sql)
+```
+
+6. Start the development server:
+```bash
 npm run dev
 ```
 
-This will start the development server, and you can access the application at `http://localhost:3000`.
+Visit `http://localhost:3000` to see the application.
 
-## Deployment
+## Database Schema
 
-The application can be easily deployed to Vercel, a platform for deploying Next.js applications. To deploy the application, follow these steps:
+The application uses the following main tables:
 
-1. Sign up for a Vercel account at https://vercel.com.
-2. Install the Vercel CLI:
+- **users**: User profiles and authentication data
+- **quiz_attempts**: Individual quiz attempt records
+- **test_attempts**: Full test attempt records
+- **user_progress**: Chapter-wise progress tracking
+- **study_sessions**: Daily study session tracking
+- **user_achievements**: Achievement progress
+- **user_preferences**: User settings and preferences
 
-   ```shell
-   npm install -g vercel
-   ```
+## API Routes
 
-3. Login to your Vercel account:
+- `/api/auth/[...nextauth]` - NextAuth.js authentication endpoints
+- `/api/quiz` - Quiz questions and explanations
+- `/api/ask-ai` - AI-powered question assistance
 
-   ```shell
-   vercel login
-   ```
+## Authentication Flow
 
-4. Deploy the application:
+1. Users click "Sign in with Google"
+2. NextAuth.js handles OAuth flow with Google
+3. User profile is created/updated in Supabase
+4. JWT tokens manage session state
+5. Middleware protects authenticated routes
 
-   ```shell
-   vercel
-   ```
+## Performance Tracking
 
-   Follow the prompts to configure your deployment settings.
-
-5. Once the deployment is complete, you will receive a URL where your application is accessible.
+The application automatically tracks:
+- Quiz completion times and scores
+- Test performance across chapters
+- Study session duration
+- Daily study streaks
+- Chapter-wise mastery levels
 
 ## Contributing
 
-If you would like to contribute to this project, please follow these steps:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and commit them with descriptive commit messages.
-4. Push your changes to your forked repository.
-5. Submit a pull request to the main repository, explaining your changes in detail.
+## License
 
-Please ensure that your code follows the project's coding conventions and that you have tested your changes thoroughly before submitting a pull request.
+This project is licensed under the MIT License.
 
-If you have any questions or need further assistance, feel free to reach out to the project maintainers.
+## Support
 
-Happy quizzing!!!
+For support or questions, please open an issue in the GitHub repository.

@@ -1,17 +1,21 @@
-// app/components/NavBar.js - Updated with dark mode toggle and fixed AnimatePresence import
+// app/components/NavBar.js - Updated with dark mode toggle and authentication
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion'; // Fixed: Added AnimatePresence import
+import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { useTheme } from '@/context/ThemeContext';
+import { LoginButton } from './auth/LoginButton';
+import { UserMenu } from './auth/UserMenu';
 
 export default function NavBar() {
   const pathname = usePathname();
   const isNCESection = pathname.startsWith('/nce');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isDark, toggleTheme, isLoading } = useTheme();
+  const { data: session, status } = useSession();
 
   return (
     <>
@@ -127,16 +131,27 @@ export default function NavBar() {
                     </div>
                   </div>
                   
-                  <Link href="/">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                    >
-                      <Home className="h-4 w-4" />
-                      Home
-                    </motion.button>
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link href="/">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
+                      >
+                        <Home className="h-4 w-4" />
+                        Home
+                      </motion.button>
+                    </Link>
+                    
+                    {/* Authentication */}
+                    {status === 'loading' ? (
+                      <div className="w-8 h-8 border-2 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin" />
+                    ) : session ? (
+                      <UserMenu user={session.user} />
+                    ) : (
+                      <LoginButton className="text-sm" />
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
@@ -153,15 +168,26 @@ export default function NavBar() {
                     </a>
                   </div>
                   
-                  <Link href="/nce">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all font-medium"
-                    >
-                      NCE Exam
-                    </motion.button>
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <Link href="/nce">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all font-medium"
+                      >
+                        NCE Exam
+                      </motion.button>
+                    </Link>
+                    
+                    {/* Authentication */}
+                    {status === 'loading' ? (
+                      <div className="w-8 h-8 border-2 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin" />
+                    ) : session ? (
+                      <UserMenu user={session.user} />
+                    ) : (
+                      <LoginButton className="text-sm" />
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -224,13 +250,33 @@ export default function NavBar() {
                   </Link>
                 </div>
                 
-                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
                   <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
                     <div className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all">
                       <Home className="h-4 w-4" />
                       Back to Home
                     </div>
                   </Link>
+                  
+                  {/* Mobile Authentication */}
+                  {status === 'loading' ? (
+                    <div className="flex justify-center py-2">
+                      <div className="w-6 h-6 border-2 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full animate-spin" />
+                    </div>
+                  ) : session ? (
+                    <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                      <div className="flex items-center gap-2 px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all">
+                        <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs">
+                          {session.user.name?.charAt(0) || 'U'}
+                        </div>
+                        Profile
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="px-3 py-2">
+                      <LoginButton className="w-full justify-center text-sm" />
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
