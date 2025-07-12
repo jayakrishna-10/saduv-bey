@@ -17,20 +17,34 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('Analytics API: Session user:', session.user); // Debug log
+
+    // Get the Google ID from the session - this is the key fix
+    const googleId = session.user.googleId;
+    
+    if (!googleId) {
+      console.error('Analytics API: No Google ID found in session');
+      return NextResponse.json({ error: 'Google ID not found in session' }, { status: 400 });
+    }
+
+    console.log('Analytics API: Using Google ID:', googleId); // Debug log
+
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
     
-    // Get user's internal ID
+    // Get user's internal ID using Google ID
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id')
-      .eq('google_id', session.user.googleId)
+      .eq('google_id', googleId)
       .single();
 
     if (userError || !user) {
+      console.error('Analytics API: User not found for Google ID:', googleId, userError);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    console.log('Analytics API: Found user with internal ID:', user.id); // Debug log
     const userId = user.id;
 
     switch (action) {
@@ -53,6 +67,8 @@ export async function GET(request) {
 
 async function getStats(userId) {
   try {
+    console.log('getStats: Fetching for user ID:', userId); // Debug log
+    
     // Get quiz attempts
     const { data: quizzes, error: quizError } = await supabase
       .from('quiz_attempts')
@@ -60,7 +76,10 @@ async function getStats(userId) {
       .eq('user_id', userId)
       .order('completed_at', { ascending: false });
 
-    if (quizError) throw quizError;
+    if (quizError) {
+      console.error('getStats: Quiz error:', quizError);
+      throw quizError;
+    }
 
     // Get test attempts
     const { data: tests, error: testError } = await supabase
@@ -69,7 +88,12 @@ async function getStats(userId) {
       .eq('user_id', userId)
       .order('completed_at', { ascending: false });
 
-    if (testError) throw testError;
+    if (testError) {
+      console.error('getStats: Test error:', testError);
+      throw testError;
+    }
+
+    console.log('getStats: Found', quizzes?.length || 0, 'quizzes and', tests?.length || 0, 'tests'); // Debug log
 
     // Calculate quiz stats
     const quizStats = {
@@ -92,7 +116,9 @@ async function getStats(userId) {
     // Calculate overall stats
     const overallStats = {
       totalAttempts: quizStats.totalAttempts + testStats.totalAttempts,
-      averageScore: Math.round((quizStats.averageScore + testStats.averageScore) / 2),
+      averageScore: quizStats.totalAttempts + testStats.totalAttempts > 0 
+        ? Math.round((quizStats.averageScore + testStats.averageScore) / 2) 
+        : 0,
       studyTime: quizStats.totalTime + testStats.totalTime,
       studyStreak: await getStudyStreak(userId)
     };
@@ -110,13 +136,20 @@ async function getStats(userId) {
 
 async function getProgress(userId) {
   try {
+    console.log('getProgress: Fetching for user ID:', userId); // Debug log
+    
     const { data: progress, error } = await supabase
       .from('user_progress')
       .select('*')
       .eq('user_id', userId)
       .order('accuracy', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('getProgress: Error:', error);
+      throw error;
+    }
+
+    console.log('getProgress: Found', progress?.length || 0, 'progress records'); // Debug log
 
     const progressData = progress || [];
     const strongAreas = progressData.filter(p => p.accuracy >= 80);
@@ -286,14 +319,23 @@ export async function POST(request) {
 
     const { action, data } = await request.json();
 
-    // Get user's internal ID
+    // Get the Google ID from the session
+    const googleId = session.user.googleId;
+    
+    if (!googleId) {
+      console.error('Analytics POST: No Google ID found in session');
+      return NextResponse.json({ error: 'Google ID not found in session' }, { status: 400 });
+    }
+
+    // Get user's internal ID using Google ID
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id')
-      .eq('google_id', session.user.googleId)
+      .eq('google_id', googleId)
       .single();
 
     if (userError || !user) {
+      console.error('Analytics POST: User not found for Google ID:', googleId, userError);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
