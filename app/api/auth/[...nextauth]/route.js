@@ -19,6 +19,8 @@ export const authOptions = {
     async signIn({ user, account, profile }) {
       if (account.provider === 'google') {
         try {
+          console.log('SignIn - Google ID:', user.id); // Debug log
+          
           // Check if user exists in our database
           const { data: existingUser, error: fetchError } = await supabase
             .from('users')
@@ -33,6 +35,7 @@ export const authOptions = {
 
           // If user doesn't exist, create new user
           if (!existingUser) {
+            console.log('Creating new user with Google ID:', user.id);
             const { error: insertError } = await supabase
               .from('users')
               .insert({
@@ -49,6 +52,7 @@ export const authOptions = {
               return false;
             }
           } else {
+            console.log('Updating existing user login time');
             // Update last login
             const { error: updateError } = await supabase
               .from('users')
@@ -69,14 +73,18 @@ export const authOptions = {
       return true;
     },
     async jwt({ token, user, account }) {
+      // Store the Google ID in the token
       if (account && user) {
-        token.googleId = user.id;
+        console.log('JWT - Setting Google ID:', user.id); // Debug log
+        token.googleId = user.id; // This is the actual Google ID from OAuth
       }
       return token;
     },
     async session({ session, token }) {
       if (token.googleId) {
-        // Fetch user data from our database
+        console.log('Session - Looking up user with Google ID:', token.googleId); // Debug log
+        
+        // Fetch user data from our database using the Google ID
         const { data: userData, error } = await supabase
           .from('users')
           .select('*')
@@ -84,9 +92,15 @@ export const authOptions = {
           .single();
 
         if (!error && userData) {
-          session.user.id = userData.id;
-          session.user.googleId = userData.google_id;
+          console.log('Session - User found:', userData.id); // Debug log
+          // Set both the internal database ID and the Google ID
+          session.user.id = userData.id; // Internal database UUID
+          session.user.googleId = userData.google_id; // Actual Google ID
           session.user.createdAt = userData.created_at;
+        } else {
+          console.error('Session - User lookup error:', error);
+          // Even if lookup fails, ensure we have the Google ID
+          session.user.googleId = token.googleId;
         }
       }
       return session;
