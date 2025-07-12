@@ -1,4 +1,4 @@
-// app/api/analytics/route.js
+// app/api/analytics/route.js - Fixed with strict Google ID validation
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/api/auth/[...nextauth]/route';
@@ -9,6 +9,35 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Helper function to validate Google ID format
+const validateGoogleId = (googleId) => {
+  if (!googleId) {
+    console.warn('validateGoogleId: No Google ID provided');
+    return false;
+  }
+  
+  if (typeof googleId !== 'string') {
+    console.warn('validateGoogleId: Google ID is not a string:', typeof googleId, googleId);
+    return false;
+  }
+  
+  // Google IDs should be numeric strings, typically 18-21 digits
+  const googleIdPattern = /^\d{18,21}$/;
+  if (!googleIdPattern.test(googleId)) {
+    console.warn('validateGoogleId: Invalid Google ID format. Expected numeric string, got:', googleId);
+    return false;
+  }
+  
+  // Check if it looks like a UUID (which would be wrong)
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidPattern.test(googleId)) {
+    console.error('validateGoogleId: Received UUID instead of Google ID:', googleId);
+    return false;
+  }
+  
+  return true;
+};
+
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,17 +46,22 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Analytics API: Session user:', session.user); // Debug log
+    console.log('Analytics API GET: Session user:', session.user);
 
-    // Get the Google ID from the session - this is the key fix
+    // CRITICAL: Get the Google ID from the session and validate it
     const googleId = session.user.googleId;
     
     if (!googleId) {
-      console.error('Analytics API: No Google ID found in session');
+      console.error('Analytics API GET: No Google ID found in session');
       return NextResponse.json({ error: 'Google ID not found in session' }, { status: 400 });
     }
 
-    console.log('Analytics API: Using Google ID:', googleId); // Debug log
+    if (!validateGoogleId(googleId)) {
+      console.error('Analytics API GET: Invalid Google ID format:', googleId);
+      return NextResponse.json({ error: 'Invalid Google ID format' }, { status: 400 });
+    }
+
+    console.log('Analytics API GET: Using validated Google ID:', googleId);
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -35,16 +69,22 @@ export async function GET(request) {
     // Get user's internal ID using Google ID
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, google_id')
       .eq('google_id', googleId)
       .single();
 
     if (userError || !user) {
-      console.error('Analytics API: User not found for Google ID:', googleId, userError);
+      console.error('Analytics API GET: User not found for Google ID:', googleId, userError);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    console.log('Analytics API: Found user with internal ID:', user.id); // Debug log
+    // Double-check that the returned Google ID matches what we searched for
+    if (user.google_id !== googleId) {
+      console.error('Analytics API GET: Google ID mismatch! Searched for:', googleId, 'Found:', user.google_id);
+      return NextResponse.json({ error: 'Google ID mismatch in database' }, { status: 500 });
+    }
+
+    console.log('Analytics API GET: Found user with internal ID:', user.id);
     const userId = user.id;
 
     switch (action) {
@@ -60,14 +100,21 @@ export async function GET(request) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Analytics API error:', error);
+    console.error('Analytics API GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 async function getStats(userId) {
   try {
-    console.log('getStats: Fetching for user ID:', userId); // Debug log
+    console.log('getStats: Fetching for internal user ID:', userId);
+    
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('getStats: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
     
     // Get quiz attempts
     const { data: quizzes, error: quizError } = await supabase
@@ -93,7 +140,7 @@ async function getStats(userId) {
       throw testError;
     }
 
-    console.log('getStats: Found', quizzes?.length || 0, 'quizzes and', tests?.length || 0, 'tests'); // Debug log
+    console.log('getStats: Found', quizzes?.length || 0, 'quizzes and', tests?.length || 0, 'tests');
 
     // Calculate quiz stats
     const quizStats = {
@@ -136,7 +183,14 @@ async function getStats(userId) {
 
 async function getProgress(userId) {
   try {
-    console.log('getProgress: Fetching for user ID:', userId); // Debug log
+    console.log('getProgress: Fetching for internal user ID:', userId);
+    
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('getProgress: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
     
     const { data: progress, error } = await supabase
       .from('user_progress')
@@ -149,7 +203,7 @@ async function getProgress(userId) {
       throw error;
     }
 
-    console.log('getProgress: Found', progress?.length || 0, 'progress records'); // Debug log
+    console.log('getProgress: Found', progress?.length || 0, 'progress records');
 
     const progressData = progress || [];
     const strongAreas = progressData.filter(p => p.accuracy >= 80);
@@ -170,6 +224,13 @@ async function getProgress(userId) {
 
 async function getAchievements(userId) {
   try {
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('getAchievements: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
+
     // Get basic stats for achievement calculation
     const statsResponse = await getStats(userId);
     const stats = await statsResponse.json();
@@ -226,6 +287,13 @@ async function getAchievements(userId) {
 
 async function getRecommendations(userId) {
   try {
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('getRecommendations: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
+
     const progressResponse = await getProgress(userId);
     const progress = await progressResponse.json();
     
@@ -273,6 +341,13 @@ async function getRecommendations(userId) {
 
 async function getStudyStreak(userId) {
   try {
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('getStudyStreak: Invalid internal user ID format:', userId);
+      return 0;
+    }
+
     const { data: sessions, error } = await supabase
       .from('study_sessions')
       .select('session_date')
@@ -319,24 +394,35 @@ export async function POST(request) {
 
     const { action, data } = await request.json();
 
-    // Get the Google ID from the session
+    // CRITICAL: Get the Google ID from the session and validate it
     const googleId = session.user.googleId;
     
     if (!googleId) {
-      console.error('Analytics POST: No Google ID found in session');
+      console.error('Analytics API POST: No Google ID found in session');
       return NextResponse.json({ error: 'Google ID not found in session' }, { status: 400 });
+    }
+
+    if (!validateGoogleId(googleId)) {
+      console.error('Analytics API POST: Invalid Google ID format:', googleId);
+      return NextResponse.json({ error: 'Invalid Google ID format' }, { status: 400 });
     }
 
     // Get user's internal ID using Google ID
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id')
+      .select('id, google_id')
       .eq('google_id', googleId)
       .single();
 
     if (userError || !user) {
-      console.error('Analytics POST: User not found for Google ID:', googleId, userError);
+      console.error('Analytics API POST: User not found for Google ID:', googleId, userError);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Double-check that the returned Google ID matches what we searched for
+    if (user.google_id !== googleId) {
+      console.error('Analytics API POST: Google ID mismatch! Searched for:', googleId, 'Found:', user.google_id);
+      return NextResponse.json({ error: 'Google ID mismatch in database' }, { status: 500 });
     }
 
     switch (action) {
@@ -357,6 +443,13 @@ export async function POST(request) {
 
 async function recordQuizAttempt(userId, quizData) {
   try {
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('recordQuizAttempt: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
+
     const { data, error } = await supabase
       .from('quiz_attempts')
       .insert({
@@ -387,6 +480,13 @@ async function recordQuizAttempt(userId, quizData) {
 
 async function recordTestAttempt(userId, testData) {
   try {
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('recordTestAttempt: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
+
     const { data, error } = await supabase
       .from('test_attempts')
       .insert({
@@ -418,6 +518,13 @@ async function recordTestAttempt(userId, testData) {
 
 async function recordStudySession(userId, sessionData) {
   try {
+    // Validate that userId is a proper UUID (internal database ID)
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(userId)) {
+      console.error('recordStudySession: Invalid internal user ID format:', userId);
+      throw new Error('Invalid internal user ID format');
+    }
+
     const today = new Date().toISOString().split('T')[0];
     
     const { data: existingSession, error: fetchError } = await supabase
