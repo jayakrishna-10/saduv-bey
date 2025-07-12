@@ -1,4 +1,4 @@
-// app/components/quiz/QuizInterface.js - Fixed to prevent infinite loops
+// app/components/quiz/QuizInterface.js - Fixed to prevent infinite loops and validate Google ID
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
@@ -13,7 +13,7 @@ import { AnalyticsService } from '@/lib/analytics';
 
 export default function QuizInterface() {
   // Session and user data
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   
   // Core quiz state
   const [questions, setQuestions] = useState([]);
@@ -32,7 +32,7 @@ export default function QuizInterface() {
   
   // Config state
   const [selectedPaper, setSelectedPaper] = useState('paper1');
-  const [selectedTopics, setSelectedTopics] = useState([]);
+  const [selectedTopics, setSelectedTopics] = useState(['Energy Management Basics']);
   const [selectedYears, setSelectedYears] = useState([]);
   const [questionCount, setQuestionCount] = useState(10);
   
@@ -43,56 +43,87 @@ export default function QuizInterface() {
   // Tracking state
   const [startTime, setStartTime] = useState(null);
   
-  // Refs to prevent infinite loops
+  // Refs to prevent infinite loops and track state
   const analyticsRecorded = useRef(false);
   const questionsLoaded = useRef(false);
-  const currentSession = useRef(session?.user?.googleId);
+  const currentGoogleId = useRef(null);
+  const initializationComplete = useRef(false);
 
-  // Safe effect for session changes
+  // Helper function to validate Google ID
+  const validateGoogleId = useCallback((googleId) => {
+    if (!googleId || typeof googleId !== 'string') return false;
+    const googleIdPattern = /^\d{18,21}$/;
+    return googleIdPattern.test(googleId);
+  }, []);
+
+  // Safe effect for session changes - only run when Google ID actually changes
   useEffect(() => {
-    if (session?.user?.googleId && session.user.googleId !== currentSession.current) {
-      console.log('Quiz: Session changed, updating current session ref');
-      currentSession.current = session.user.googleId;
-      analyticsRecorded.current = false; // Reset analytics flag for new user
+    if (status === 'loading') return;
+
+    const googleId = session?.user?.googleId;
+    
+    // Only update if the Google ID actually changed
+    if (googleId !== currentGoogleId.current) {
+      console.log('Quiz: Google ID changed from', currentGoogleId.current, 'to', googleId);
+      
+      if (googleId && validateGoogleId(googleId)) {
+        currentGoogleId.current = googleId;
+        analyticsRecorded.current = false; // Reset analytics flag for new user
+        console.log('Quiz: Valid Google ID set:', googleId);
+      } else if (googleId) {
+        console.error('Quiz: Invalid Google ID format:', googleId);
+        setError(`Invalid Google ID format: ${googleId}`);
+      } else {
+        currentGoogleId.current = null;
+        console.log('Quiz: No Google ID available');
+      }
     }
-  }, [session?.user?.googleId]);
+  }, [session?.user?.googleId, status, validateGoogleId]);
 
-  // Safe effect for initial quiz load
+  // Safe effect for initial quiz load - only run once when properly configured
   useEffect(() => {
-    if (!questionsLoaded.current && selectedPaper && selectedTopics.length > 0) {
-      console.log('Quiz: Loading initial questions');
+    if (initializationComplete.current) return;
+    
+    if (selectedPaper && selectedTopics.length > 0 && !questionsLoaded.current) {
+      console.log('Quiz: Initializing with config:', { selectedPaper, selectedTopics });
       questionsLoaded.current = true;
+      initializationComplete.current = true;
       loadQuestions();
     }
-  }, [selectedPaper, selectedTopics]); // Remove loadQuestions from deps to prevent infinite loop
+  }, [selectedPaper, selectedTopics]); // Stable dependencies
 
-  // Memoized functions to prevent recreation
+  // Mock question loading function - replace with actual API call
   const loadQuestions = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Mock question loading - replace with actual API call
-      const mockQuestions = [
-        {
-          id: 1,
-          question_text: "What is energy management?",
-          option_a: "Managing energy consumption",
-          option_b: "Producing energy",
-          option_c: "Storing energy",
-          option_d: "Selling energy",
-          correct_answer: "a",
-          tag: "Energy Management Basics",
+      console.log('Quiz: Loading questions for topics:', selectedTopics);
+      
+      // Generate mock questions based on configuration
+      const mockQuestions = selectedTopics.flatMap((topic, topicIndex) => {
+        return Array.from({ length: Math.ceil(questionCount / selectedTopics.length) }, (_, index) => ({
+          id: `q_${topicIndex}_${index}`,
+          question_text: `Sample question ${index + 1} about ${topic}?`,
+          option_a: "Option A",
+          option_b: "Option B", 
+          option_c: "Option C",
+          option_d: "Option D",
+          correct_answer: ["a", "b", "c", "d"][Math.floor(Math.random() * 4)],
+          tag: topic,
           year: 2023,
           paper: selectedPaper
-        }
-        // Add more mock questions as needed
-      ];
+        }));
+      }).slice(0, questionCount);
+      
+      console.log('Quiz: Generated', mockQuestions.length, 'questions');
       
       setQuestions(mockQuestions);
       setCurrentQuestionIndex(0);
       setSelectedOption(null);
       setAnsweredQuestions([]);
+      setShowFeedback(false);
+      setShowAnswer(false);
       setStartTime(Date.now());
       
     } catch (error) {
@@ -101,7 +132,7 @@ export default function QuizInterface() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedPaper, selectedTopics, selectedYears, questionCount]); // Only include necessary dependencies
+  }, [selectedPaper, selectedTopics, questionCount]);
 
   const handleOptionSelect = useCallback((option) => {
     if (showAnswer || isTransitioning) return;
@@ -158,8 +189,14 @@ export default function QuizInterface() {
   }, [isTransitioning, selectedOption, questions, currentQuestionIndex, startTime]);
 
   const recordQuizCompletion = useCallback(async () => {
-    // Prevent multiple recordings
-    if (analyticsRecorded.current || !session?.user?.googleId) {
+    // Prevent multiple recordings and validate authentication
+    if (analyticsRecorded.current || !currentGoogleId.current) {
+      console.log('Quiz: Skipping analytics recording - already recorded or no Google ID');
+      return;
+    }
+    
+    if (!validateGoogleId(currentGoogleId.current)) {
+      console.error('Quiz: Cannot record analytics - invalid Google ID:', currentGoogleId.current);
       return;
     }
     
@@ -181,25 +218,30 @@ export default function QuizInterface() {
         questionsData: answeredQuestions
       };
       
-      console.log('Quiz: Recording completion with data:', quizData);
+      console.log('Quiz: Recording completion with Google ID:', currentGoogleId.current);
+      console.log('Quiz: Quiz data:', quizData);
       
       // Record quiz attempt
-      await AnalyticsService.recordQuizAttempt(session.user.googleId, quizData);
+      const quizResult = await AnalyticsService.recordQuizAttempt(currentGoogleId.current, quizData);
       
       // Record study session
-      await AnalyticsService.recordStudySession(session.user.googleId, {
+      const sessionResult = await AnalyticsService.recordStudySession(currentGoogleId.current, {
         questionsAnswered: totalQuestions,
         quiz_attempts: 1,
         duration: Math.floor(timeTaken / 60), // Convert to minutes
         topics_studied: selectedTopics
       });
       
-      console.log('Quiz: Analytics recorded successfully');
+      if (quizResult && sessionResult) {
+        console.log('Quiz: Analytics recorded successfully');
+      } else {
+        console.warn('Quiz: Some analytics recording failed, but continuing');
+      }
     } catch (error) {
       console.error('Error recording quiz analytics:', error);
       // Don't show error to user for analytics failures
     }
-  }, [session?.user?.googleId, answeredQuestions, startTime, selectedPaper, selectedTopics]);
+  }, [answeredQuestions, startTime, selectedPaper, selectedTopics, validateGoogleId]);
 
   const handleViewSummary = useCallback(() => {
     setShowSummary(true);
@@ -222,6 +264,7 @@ export default function QuizInterface() {
     // Reset flags
     analyticsRecorded.current = false;
     questionsLoaded.current = false;
+    initializationComplete.current = false;
   }, []);
 
   // Calculate progress
@@ -233,17 +276,21 @@ export default function QuizInterface() {
 
   const currentQuestion = questions[currentQuestionIndex];
 
-  if (isLoading) {
+  // Show loading state
+  if (status === 'loading' || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-gray-300 dark:border-gray-600 border-t-gray-900 dark:border-t-gray-100 rounded-full mx-auto mb-4 animate-spin" />
-          <p className="text-gray-700 dark:text-gray-300">Loading quiz questions...</p>
+          <p className="text-gray-700 dark:text-gray-300">
+            {status === 'loading' ? 'Loading session...' : 'Loading quiz questions...'}
+          </p>
         </div>
       </div>
     );
   }
 
+  // Show error state
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -253,6 +300,7 @@ export default function QuizInterface() {
             onClick={() => {
               setError(null);
               questionsLoaded.current = false;
+              initializationComplete.current = false;
               loadQuestions();
             }}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors"
@@ -264,7 +312,8 @@ export default function QuizInterface() {
     );
   }
 
-  if (!currentQuestion) {
+  // Show configuration needed state
+  if (!currentQuestion && !showModifyQuiz) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50">
@@ -301,31 +350,33 @@ export default function QuizInterface() {
         />
 
         {/* Question */}
-        <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 md:p-12 mb-8 shadow-lg">
-          <AnimatePresence mode="wait">
-            <QuizQuestion
-              key={currentQuestionIndex}
-              question={currentQuestion}
-              questionIndex={currentQuestionIndex}
-              totalQuestions={questions.length}
-              selectedOption={selectedOption}
+        {currentQuestion && (
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-8 md:p-12 mb-8 shadow-lg">
+            <AnimatePresence mode="wait">
+              <QuizQuestion
+                key={currentQuestionIndex}
+                question={currentQuestion}
+                questionIndex={currentQuestionIndex}
+                totalQuestions={questions.length}
+                selectedOption={selectedOption}
+                showFeedback={showFeedback}
+                showAnswer={showAnswer}
+                onOptionSelect={handleOptionSelect}
+                isTransitioning={isTransitioning}
+              />
+            </AnimatePresence>
+
+            <QuizActions
+              answeredQuestions={answeredQuestions}
               showFeedback={showFeedback}
               showAnswer={showAnswer}
-              onOptionSelect={handleOptionSelect}
               isTransitioning={isTransitioning}
+              onGetAnswer={handleGetAnswer}
+              onNextQuestion={handleNextQuestion}
+              onViewSummary={handleViewSummary}
             />
-          </AnimatePresence>
-
-          <QuizActions
-            answeredQuestions={answeredQuestions}
-            showFeedback={showFeedback}
-            showAnswer={showAnswer}
-            isTransitioning={isTransitioning}
-            onGetAnswer={handleGetAnswer}
-            onNextQuestion={handleNextQuestion}
-            onViewSummary={handleViewSummary}
-          />
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
