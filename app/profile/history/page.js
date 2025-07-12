@@ -35,24 +35,32 @@ export default function HistoryPage() {
   const [selectedDateRange, setSelectedDateRange] = useState('30');
 
   useEffect(() => {
-    if (session?.user?.googleId || session?.user?.id) {
+    if (session?.user?.googleId) {
+      console.log('History: Fetching data for Google ID:', session.user.googleId); // Debug log
       fetchHistory();
+    } else if (session?.user) {
+      console.warn('History: No Google ID found in session:', session.user); // Debug log
+      setError('Authentication error: Google ID not found');
+      setIsLoading(false);
     }
-  }, [session?.user?.googleId, session?.user?.id, selectedDateRange]);
+  }, [session?.user?.googleId, selectedDateRange]);
 
   const fetchHistory = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Use googleId if available, otherwise fallback to id
-      const userId = session.user.googleId || session.user.id;
+      // Use only the Google ID - this is the fix
+      const googleId = session.user.googleId;
+      console.log('History: Using Google ID for database queries:', googleId); // Debug log
       
       const [quizzes, tests, sessions] = await Promise.all([
-        getUserQuizAttempts(userId, 50),
-        getUserTestAttempts(userId, 50),
-        getUserStudySessions(userId, parseInt(selectedDateRange))
+        getUserQuizAttempts(googleId, 50),
+        getUserTestAttempts(googleId, 50),
+        getUserStudySessions(googleId, parseInt(selectedDateRange))
       ]);
+
+      console.log('History: Fetched data:', { quizzes: quizzes?.length, tests: tests?.length, sessions: sessions?.length }); // Debug log
 
       setQuizHistory(quizzes || []);
       setTestHistory(tests || []);
@@ -184,6 +192,12 @@ export default function HistoryPage() {
                 <p className="text-gray-600 dark:text-gray-400">
                   Track your learning journey and review past performance
                 </p>
+                {/* Debug Info */}
+                {session?.user?.googleId && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    Google ID: {session.user.googleId}
+                  </div>
+                )}
               </div>
               <button
                 onClick={exportHistory}
@@ -194,6 +208,13 @@ export default function HistoryPage() {
               </button>
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Filters */}
           <div className="mb-6 space-y-4">
@@ -285,6 +306,7 @@ export default function HistoryPage() {
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>No study sessions found</p>
+                  <p className="text-sm">Start studying to build your session history!</p>
                 </div>
               )}
             </div>
