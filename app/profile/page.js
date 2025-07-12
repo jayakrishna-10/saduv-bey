@@ -1,4 +1,4 @@
-// app/profile/page.js - Fixed avatar display and improved error handling
+// app/profile/page.js - Fixed to only use Google ID
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -88,10 +88,15 @@ export default function ProfilePage() {
 
   // Fetch user statistics when component mounts or session changes
   useEffect(() => {
-    if (session?.user) {
+    if (session?.user?.googleId) {
+      console.log('Profile: Fetching data for Google ID:', session.user.googleId); // Debug log
       fetchUserData();
+    } else if (session?.user) {
+      console.warn('Profile: No Google ID found in session:', session.user); // Debug log
+      setError('Authentication error: Google ID not found');
+      setIsLoading(false);
     }
-  }, [session?.user]);
+  }, [session?.user?.googleId]);
 
   const fetchUserData = async () => {
     try {
@@ -314,6 +319,13 @@ export default function ProfilePage() {
                   <p className="text-yellow-800 dark:text-yellow-200 text-sm">
                     {error} - Showing default values. Start taking quizzes to see your actual progress!
                   </p>
+                </div>
+              )}
+
+              {/* Debug Info */}
+              {session?.user?.googleId && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Google ID: {session.user.googleId}
                 </div>
               )}
 
