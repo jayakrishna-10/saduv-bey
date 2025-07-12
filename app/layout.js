@@ -1,9 +1,10 @@
-// app/layout.js - Updated with ThemeProvider and Auth
+// app/layout.js - Updated with debug component and better error handling
 import './globals.css'
 import 'katex/dist/katex.min.css'
 import ErrorBoundary from './components/ErrorBoundary'
 import NavBar from './components/NavBar'
 import AskAI from './components/AskAI'
+import AuthDebug from './components/debug/AuthDebug'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider } from './components/auth/AuthProvider'
 
@@ -25,6 +26,8 @@ export default function RootLayout({ children }) {
               <NavBar />
               {children}
               <AskAI />
+              {/* Only show debug component in development */}
+              {process.env.NODE_ENV === 'development' && <AuthDebug />}
             </ErrorBoundary>
           </ThemeProvider>
         </AuthProvider>
