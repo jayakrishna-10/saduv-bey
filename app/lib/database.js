@@ -1,4 +1,4 @@
-// app/lib/database.js - Fixed with proper authentication
+// app/lib/database.js - Fixed with consistent Google ID usage
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -8,56 +8,104 @@ const supabase = createClient(
 
 // Helper function to get internal user ID from Google ID
 const getInternalUserId = async (googleId) => {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('google_id', googleId)
-    .single();
+  try {
+    if (!googleId) {
+      console.warn('getInternalUserId: No Google ID provided');
+      return null;
+    }
+
+    console.log('getInternalUserId: Looking up user with Google ID:', googleId); // Debug log
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('google_id', googleId)
+      .single();
+      
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log('getInternalUserId: User not found, this might be a new user');
+        return null;
+      }
+      console.error('getInternalUserId: Database error:', error);
+      return null;
+    }
     
-  if (error || !user) {
-    throw new Error('User not found');
+    console.log('getInternalUserId: Found user with internal ID:', user.id); // Debug log
+    return user.id;
+  } catch (error) {
+    console.error('getInternalUserId: Unexpected error:', error);
+    return null;
   }
-  
-  return user.id;
 };
 
 // User operations
 export const getUserByGoogleId = async (googleId) => {
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('google_id', googleId)
-    .single();
-  
-  if (error) throw error;
-  return data;
+  try {
+    if (!googleId) {
+      throw new Error('Google ID is required');
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('google_id', googleId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('getUserByGoogleId error:', error);
+    throw error;
+  }
 };
 
 export const createUser = async (userData) => {
-  const { data, error } = await supabase
-    .from('users')
-    .insert(userData)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .insert(userData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('createUser error:', error);
+    throw error;
+  }
 };
 
 export const updateUserLastLogin = async (googleId) => {
-  const { error } = await supabase
-    .from('users')
-    .update({ last_login: new Date().toISOString() })
-    .eq('google_id', googleId);
-  
-  if (error) throw error;
+  try {
+    if (!googleId) {
+      throw new Error('Google ID is required');
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('google_id', googleId);
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error('updateUserLastLogin error:', error);
+    throw error;
+  }
 };
 
-// Quiz attempts - Fixed to handle Google ID
+// Quiz attempts - Fixed to handle Google ID consistently
 export const saveQuizAttempt = async (googleId, attemptData) => {
   try {
+    console.log('saveQuizAttempt: Saving for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('saveQuizAttempt: Cannot save, user not found');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('quiz_attempts')
       .insert({
@@ -67,18 +115,30 @@ export const saveQuizAttempt = async (googleId, attemptData) => {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('saveQuizAttempt: Database error:', error);
+      return null;
+    }
+
+    console.log('saveQuizAttempt: Successfully saved attempt'); // Debug log
     return data;
   } catch (error) {
-    console.error('Error saving quiz attempt:', error);
+    console.error('saveQuizAttempt: Unexpected error:', error);
     return null;
   }
 };
 
 export const getUserQuizAttempts = async (googleId, limit = 10) => {
   try {
+    console.log('getUserQuizAttempts: Fetching for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('getUserQuizAttempts: User not found');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('quiz_attempts')
       .select('*')
@@ -86,19 +146,31 @@ export const getUserQuizAttempts = async (googleId, limit = 10) => {
       .order('completed_at', { ascending: false })
       .limit(limit);
     
-    if (error) throw error;
+    if (error) {
+      console.error('getUserQuizAttempts: Database error:', error);
+      return [];
+    }
+
+    console.log('getUserQuizAttempts: Found', data?.length || 0, 'attempts'); // Debug log
     return data || [];
   } catch (error) {
-    console.error('Error getting quiz attempts:', error);
+    console.error('getUserQuizAttempts: Unexpected error:', error);
     return [];
   }
 };
 
-// Test attempts - Fixed to handle Google ID
+// Test attempts - Fixed to handle Google ID consistently
 export const saveTestAttempt = async (googleId, attemptData) => {
   try {
+    console.log('saveTestAttempt: Saving for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('saveTestAttempt: Cannot save, user not found');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('test_attempts')
       .insert({
@@ -108,18 +180,30 @@ export const saveTestAttempt = async (googleId, attemptData) => {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('saveTestAttempt: Database error:', error);
+      return null;
+    }
+
+    console.log('saveTestAttempt: Successfully saved attempt'); // Debug log
     return data;
   } catch (error) {
-    console.error('Error saving test attempt:', error);
+    console.error('saveTestAttempt: Unexpected error:', error);
     return null;
   }
 };
 
 export const getUserTestAttempts = async (googleId, limit = 10) => {
   try {
+    console.log('getUserTestAttempts: Fetching for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('getUserTestAttempts: User not found');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('test_attempts')
       .select('*')
@@ -127,19 +211,31 @@ export const getUserTestAttempts = async (googleId, limit = 10) => {
       .order('completed_at', { ascending: false })
       .limit(limit);
     
-    if (error) throw error;
+    if (error) {
+      console.error('getUserTestAttempts: Database error:', error);
+      return [];
+    }
+
+    console.log('getUserTestAttempts: Found', data?.length || 0, 'attempts'); // Debug log
     return data || [];
   } catch (error) {
-    console.error('Error getting test attempts:', error);
+    console.error('getUserTestAttempts: Unexpected error:', error);
     return [];
   }
 };
 
-// User progress - Fixed to handle Google ID
+// User progress - Fixed to handle Google ID consistently
 export const updateUserProgress = async (googleId, chapter, paper, isCorrect) => {
   try {
+    console.log('updateUserProgress: Updating for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('updateUserProgress: Cannot update, user not found');
+      return null;
+    }
+
     // First, try to get existing progress
     const { data: existingProgress } = await supabase
       .from('user_progress')
@@ -179,7 +275,10 @@ export const updateUserProgress = async (googleId, chapter, paper, isCorrect) =>
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('updateUserProgress: Update error:', error);
+        return null;
+      }
       return data;
     } else {
       // Create new progress record
@@ -199,56 +298,89 @@ export const updateUserProgress = async (googleId, chapter, paper, isCorrect) =>
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('updateUserProgress: Insert error:', error);
+        return null;
+      }
       return data;
     }
   } catch (error) {
-    console.error('Error updating user progress:', error);
+    console.error('updateUserProgress: Unexpected error:', error);
     return null;
   }
 };
 
 export const getUserProgress = async (googleId) => {
   try {
+    console.log('getUserProgress: Fetching for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('getUserProgress: User not found');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('user_progress')
       .select('*')
       .eq('user_id', internalUserId)
       .order('last_practiced', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('getUserProgress: Database error:', error);
+      return [];
+    }
+
+    console.log('getUserProgress: Found', data?.length || 0, 'progress records'); // Debug log
     return data || [];
   } catch (error) {
-    console.error('Error getting user progress:', error);
+    console.error('getUserProgress: Unexpected error:', error);
     return [];
   }
 };
 
-// User preferences - Fixed to handle Google ID
+// User preferences - Fixed to handle Google ID consistently
 export const getUserPreferences = async (googleId) => {
   try {
+    console.log('getUserPreferences: Fetching for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('getUserPreferences: User not found');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('user_preferences')
       .select('*')
       .eq('user_id', internalUserId)
       .single();
     
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {
+      console.error('getUserPreferences: Database error:', error);
+      return null;
+    }
+    
     return data;
   } catch (error) {
-    console.error('Error getting user preferences:', error);
+    console.error('getUserPreferences: Unexpected error:', error);
     return null;
   }
 };
 
 export const createUserPreferences = async (googleId, preferences = {}) => {
   try {
+    console.log('createUserPreferences: Creating for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('createUserPreferences: Cannot create, user not found');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('user_preferences')
       .insert({
@@ -258,18 +390,29 @@ export const createUserPreferences = async (googleId, preferences = {}) => {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('createUserPreferences: Database error:', error);
+      return null;
+    }
+    
     return data;
   } catch (error) {
-    console.error('Error creating user preferences:', error);
+    console.error('createUserPreferences: Unexpected error:', error);
     return null;
   }
 };
 
 export const updateUserPreferences = async (googleId, preferences) => {
   try {
+    console.log('updateUserPreferences: Updating for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
     
+    if (!internalUserId) {
+      console.warn('updateUserPreferences: Cannot update, user not found');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('user_preferences')
       .update(preferences)
@@ -277,18 +420,30 @@ export const updateUserPreferences = async (googleId, preferences) => {
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('updateUserPreferences: Database error:', error);
+      return null;
+    }
+    
     return data;
   } catch (error) {
-    console.error('Error updating user preferences:', error);
+    console.error('updateUserPreferences: Unexpected error:', error);
     return null;
   }
 };
 
-// Study sessions - Fixed to handle Google ID
+// Study sessions - Fixed to handle Google ID consistently
 export const updateStudySession = async (googleId, sessionData) => {
   try {
+    console.log('updateStudySession: Updating for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
+    
+    if (!internalUserId) {
+      console.warn('updateStudySession: Cannot update, user not found');
+      return null;
+    }
+
     const today = new Date().toISOString().split('T')[0];
     
     const { data: existingSession } = await supabase
@@ -313,7 +468,10 @@ export const updateStudySession = async (googleId, sessionData) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('updateStudySession: Update error:', error);
+        return null;
+      }
       return data;
     } else {
       // Create new session
@@ -327,18 +485,29 @@ export const updateStudySession = async (googleId, sessionData) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('updateStudySession: Insert error:', error);
+        return null;
+      }
       return data;
     }
   } catch (error) {
-    console.error('Error updating study session:', error);
+    console.error('updateStudySession: Unexpected error:', error);
     return null;
   }
 };
 
 export const getUserStudySessions = async (googleId, days = 30) => {
   try {
+    console.log('getUserStudySessions: Fetching for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
+    
+    if (!internalUserId) {
+      console.warn('getUserStudySessions: User not found');
+      return [];
+    }
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
@@ -349,18 +518,36 @@ export const getUserStudySessions = async (googleId, days = 30) => {
       .gte('session_date', startDate.toISOString().split('T')[0])
       .order('session_date', { ascending: false });
     
-    if (error) throw error;
+    if (error) {
+      console.error('getUserStudySessions: Database error:', error);
+      return [];
+    }
+
+    console.log('getUserStudySessions: Found', data?.length || 0, 'sessions'); // Debug log
     return data || [];
   } catch (error) {
-    console.error('Error getting study sessions:', error);
+    console.error('getUserStudySessions: Unexpected error:', error);
     return [];
   }
 };
 
-// Analytics queries - Fixed to handle Google ID
+// Analytics queries - Fixed to handle Google ID consistently
 export const getUserAnalytics = async (googleId, days = 30) => {
   try {
+    console.log('getUserAnalytics: Fetching for Google ID:', googleId); // Debug log
+    
     const internalUserId = await getInternalUserId(googleId);
+    
+    if (!internalUserId) {
+      console.warn('getUserAnalytics: User not found');
+      return {
+        quizAttempts: [],
+        testAttempts: [],
+        progress: [],
+        sessions: []
+      };
+    }
+
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString();
@@ -372,7 +559,9 @@ export const getUserAnalytics = async (googleId, days = 30) => {
       .eq('user_id', internalUserId)
       .gte('completed_at', startDateStr);
 
-    if (quizError) throw quizError;
+    if (quizError) {
+      console.error('getUserAnalytics: Quiz error:', quizError);
+    }
 
     // Get test attempts
     const { data: testAttempts, error: testError } = await supabase
@@ -381,7 +570,9 @@ export const getUserAnalytics = async (googleId, days = 30) => {
       .eq('user_id', internalUserId)
       .gte('completed_at', startDateStr);
 
-    if (testError) throw testError;
+    if (testError) {
+      console.error('getUserAnalytics: Test error:', testError);
+    }
 
     // Get progress data
     const { data: progress, error: progressError } = await supabase
@@ -389,7 +580,9 @@ export const getUserAnalytics = async (googleId, days = 30) => {
       .select('*')
       .eq('user_id', internalUserId);
 
-    if (progressError) throw progressError;
+    if (progressError) {
+      console.error('getUserAnalytics: Progress error:', progressError);
+    }
 
     // Get study sessions
     const { data: sessions, error: sessionsError } = await supabase
@@ -398,7 +591,9 @@ export const getUserAnalytics = async (googleId, days = 30) => {
       .eq('user_id', internalUserId)
       .gte('session_date', startDate.toISOString().split('T')[0]);
 
-    if (sessionsError) throw sessionsError;
+    if (sessionsError) {
+      console.error('getUserAnalytics: Sessions error:', sessionsError);
+    }
 
     return {
       quizAttempts: quizAttempts || [],
@@ -407,7 +602,7 @@ export const getUserAnalytics = async (googleId, days = 30) => {
       sessions: sessions || []
     };
   } catch (error) {
-    console.error('Error getting user analytics:', error);
+    console.error('getUserAnalytics: Unexpected error:', error);
     return {
       quizAttempts: [],
       testAttempts: [],
