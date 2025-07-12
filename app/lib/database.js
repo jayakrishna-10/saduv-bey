@@ -1,4 +1,4 @@
-// app/lib/database.js - Fixed with consistent Google ID usage
+// app/lib/database.js - Fixed with strict Google ID validation
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -6,19 +6,48 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// Helper function to get internal user ID from Google ID
+// Helper function to validate Google ID format
+const validateGoogleId = (googleId) => {
+  if (!googleId) {
+    console.warn('validateGoogleId: No Google ID provided');
+    return false;
+  }
+  
+  if (typeof googleId !== 'string') {
+    console.warn('validateGoogleId: Google ID is not a string:', typeof googleId, googleId);
+    return false;
+  }
+  
+  // Google IDs should be numeric strings, typically 18-21 digits
+  const googleIdPattern = /^\d{18,21}$/;
+  if (!googleIdPattern.test(googleId)) {
+    console.warn('validateGoogleId: Invalid Google ID format. Expected numeric string, got:', googleId);
+    return false;
+  }
+  
+  // Check if it looks like a UUID (which would be wrong)
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidPattern.test(googleId)) {
+    console.error('validateGoogleId: Received UUID instead of Google ID:', googleId);
+    return false;
+  }
+  
+  return true;
+};
+
+// Helper function to get internal user ID from Google ID with strict validation
 const getInternalUserId = async (googleId) => {
   try {
-    if (!googleId) {
-      console.warn('getInternalUserId: No Google ID provided');
+    if (!validateGoogleId(googleId)) {
+      console.error('getInternalUserId: Invalid Google ID provided:', googleId);
       return null;
     }
 
-    console.log('getInternalUserId: Looking up user with Google ID:', googleId); // Debug log
+    console.log('getInternalUserId: Looking up user with validated Google ID:', googleId);
 
     const { data: user, error } = await supabase
       .from('users')
-      .select('id')
+      .select('id, google_id')
       .eq('google_id', googleId)
       .single();
       
@@ -30,8 +59,14 @@ const getInternalUserId = async (googleId) => {
       console.error('getInternalUserId: Database error:', error);
       return null;
     }
+
+    // Double-check that the returned Google ID matches what we searched for
+    if (user.google_id !== googleId) {
+      console.error('getInternalUserId: Google ID mismatch! Searched for:', googleId, 'Found:', user.google_id);
+      return null;
+    }
     
-    console.log('getInternalUserId: Found user with internal ID:', user.id); // Debug log
+    console.log('getInternalUserId: Found user with internal ID:', user.id);
     return user.id;
   } catch (error) {
     console.error('getInternalUserId: Unexpected error:', error);
@@ -39,11 +74,11 @@ const getInternalUserId = async (googleId) => {
   }
 };
 
-// User operations
+// User operations with enhanced validation
 export const getUserByGoogleId = async (googleId) => {
   try {
-    if (!googleId) {
-      throw new Error('Google ID is required');
+    if (!validateGoogleId(googleId)) {
+      throw new Error(`Invalid Google ID format: ${googleId}`);
     }
 
     const { data, error } = await supabase
@@ -62,6 +97,11 @@ export const getUserByGoogleId = async (googleId) => {
 
 export const createUser = async (userData) => {
   try {
+    // Validate Google ID if provided
+    if (userData.google_id && !validateGoogleId(userData.google_id)) {
+      throw new Error(`Invalid Google ID format: ${userData.google_id}`);
+    }
+
     const { data, error } = await supabase
       .from('users')
       .insert(userData)
@@ -78,8 +118,8 @@ export const createUser = async (userData) => {
 
 export const updateUserLastLogin = async (googleId) => {
   try {
-    if (!googleId) {
-      throw new Error('Google ID is required');
+    if (!validateGoogleId(googleId)) {
+      throw new Error(`Invalid Google ID format: ${googleId}`);
     }
 
     const { error } = await supabase
@@ -97,7 +137,12 @@ export const updateUserLastLogin = async (googleId) => {
 // Quiz attempts - Fixed to handle Google ID consistently
 export const saveQuizAttempt = async (googleId, attemptData) => {
   try {
-    console.log('saveQuizAttempt: Saving for Google ID:', googleId); // Debug log
+    console.log('saveQuizAttempt: Starting with Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('saveQuizAttempt: Invalid Google ID, aborting');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -120,7 +165,7 @@ export const saveQuizAttempt = async (googleId, attemptData) => {
       return null;
     }
 
-    console.log('saveQuizAttempt: Successfully saved attempt'); // Debug log
+    console.log('saveQuizAttempt: Successfully saved attempt');
     return data;
   } catch (error) {
     console.error('saveQuizAttempt: Unexpected error:', error);
@@ -130,7 +175,12 @@ export const saveQuizAttempt = async (googleId, attemptData) => {
 
 export const getUserQuizAttempts = async (googleId, limit = 10) => {
   try {
-    console.log('getUserQuizAttempts: Fetching for Google ID:', googleId); // Debug log
+    console.log('getUserQuizAttempts: Fetching for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('getUserQuizAttempts: Invalid Google ID provided');
+      return [];
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -151,7 +201,7 @@ export const getUserQuizAttempts = async (googleId, limit = 10) => {
       return [];
     }
 
-    console.log('getUserQuizAttempts: Found', data?.length || 0, 'attempts'); // Debug log
+    console.log('getUserQuizAttempts: Found', data?.length || 0, 'attempts');
     return data || [];
   } catch (error) {
     console.error('getUserQuizAttempts: Unexpected error:', error);
@@ -162,7 +212,12 @@ export const getUserQuizAttempts = async (googleId, limit = 10) => {
 // Test attempts - Fixed to handle Google ID consistently
 export const saveTestAttempt = async (googleId, attemptData) => {
   try {
-    console.log('saveTestAttempt: Saving for Google ID:', googleId); // Debug log
+    console.log('saveTestAttempt: Starting with Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('saveTestAttempt: Invalid Google ID, aborting');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -185,7 +240,7 @@ export const saveTestAttempt = async (googleId, attemptData) => {
       return null;
     }
 
-    console.log('saveTestAttempt: Successfully saved attempt'); // Debug log
+    console.log('saveTestAttempt: Successfully saved attempt');
     return data;
   } catch (error) {
     console.error('saveTestAttempt: Unexpected error:', error);
@@ -195,7 +250,12 @@ export const saveTestAttempt = async (googleId, attemptData) => {
 
 export const getUserTestAttempts = async (googleId, limit = 10) => {
   try {
-    console.log('getUserTestAttempts: Fetching for Google ID:', googleId); // Debug log
+    console.log('getUserTestAttempts: Fetching for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('getUserTestAttempts: Invalid Google ID provided');
+      return [];
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -216,7 +276,7 @@ export const getUserTestAttempts = async (googleId, limit = 10) => {
       return [];
     }
 
-    console.log('getUserTestAttempts: Found', data?.length || 0, 'attempts'); // Debug log
+    console.log('getUserTestAttempts: Found', data?.length || 0, 'attempts');
     return data || [];
   } catch (error) {
     console.error('getUserTestAttempts: Unexpected error:', error);
@@ -227,7 +287,12 @@ export const getUserTestAttempts = async (googleId, limit = 10) => {
 // User progress - Fixed to handle Google ID consistently
 export const updateUserProgress = async (googleId, chapter, paper, isCorrect) => {
   try {
-    console.log('updateUserProgress: Updating for Google ID:', googleId); // Debug log
+    console.log('updateUserProgress: Starting with Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('updateUserProgress: Invalid Google ID, aborting');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -312,7 +377,12 @@ export const updateUserProgress = async (googleId, chapter, paper, isCorrect) =>
 
 export const getUserProgress = async (googleId) => {
   try {
-    console.log('getUserProgress: Fetching for Google ID:', googleId); // Debug log
+    console.log('getUserProgress: Fetching for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('getUserProgress: Invalid Google ID provided');
+      return [];
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -332,7 +402,7 @@ export const getUserProgress = async (googleId) => {
       return [];
     }
 
-    console.log('getUserProgress: Found', data?.length || 0, 'progress records'); // Debug log
+    console.log('getUserProgress: Found', data?.length || 0, 'progress records');
     return data || [];
   } catch (error) {
     console.error('getUserProgress: Unexpected error:', error);
@@ -343,7 +413,12 @@ export const getUserProgress = async (googleId) => {
 // User preferences - Fixed to handle Google ID consistently
 export const getUserPreferences = async (googleId) => {
   try {
-    console.log('getUserPreferences: Fetching for Google ID:', googleId); // Debug log
+    console.log('getUserPreferences: Fetching for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('getUserPreferences: Invalid Google ID provided');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -372,7 +447,12 @@ export const getUserPreferences = async (googleId) => {
 
 export const createUserPreferences = async (googleId, preferences = {}) => {
   try {
-    console.log('createUserPreferences: Creating for Google ID:', googleId); // Debug log
+    console.log('createUserPreferences: Creating for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('createUserPreferences: Invalid Google ID, aborting');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -404,7 +484,12 @@ export const createUserPreferences = async (googleId, preferences = {}) => {
 
 export const updateUserPreferences = async (googleId, preferences) => {
   try {
-    console.log('updateUserPreferences: Updating for Google ID:', googleId); // Debug log
+    console.log('updateUserPreferences: Updating for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('updateUserPreferences: Invalid Google ID, aborting');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -435,7 +520,12 @@ export const updateUserPreferences = async (googleId, preferences) => {
 // Study sessions - Fixed to handle Google ID consistently
 export const updateStudySession = async (googleId, sessionData) => {
   try {
-    console.log('updateStudySession: Updating for Google ID:', googleId); // Debug log
+    console.log('updateStudySession: Updating for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('updateStudySession: Invalid Google ID, aborting');
+      return null;
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -499,7 +589,12 @@ export const updateStudySession = async (googleId, sessionData) => {
 
 export const getUserStudySessions = async (googleId, days = 30) => {
   try {
-    console.log('getUserStudySessions: Fetching for Google ID:', googleId); // Debug log
+    console.log('getUserStudySessions: Fetching for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('getUserStudySessions: Invalid Google ID provided');
+      return [];
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
@@ -523,7 +618,7 @@ export const getUserStudySessions = async (googleId, days = 30) => {
       return [];
     }
 
-    console.log('getUserStudySessions: Found', data?.length || 0, 'sessions'); // Debug log
+    console.log('getUserStudySessions: Found', data?.length || 0, 'sessions');
     return data || [];
   } catch (error) {
     console.error('getUserStudySessions: Unexpected error:', error);
@@ -534,7 +629,17 @@ export const getUserStudySessions = async (googleId, days = 30) => {
 // Analytics queries - Fixed to handle Google ID consistently
 export const getUserAnalytics = async (googleId, days = 30) => {
   try {
-    console.log('getUserAnalytics: Fetching for Google ID:', googleId); // Debug log
+    console.log('getUserAnalytics: Fetching for Google ID:', googleId, typeof googleId);
+    
+    if (!validateGoogleId(googleId)) {
+      console.error('getUserAnalytics: Invalid Google ID provided');
+      return {
+        quizAttempts: [],
+        testAttempts: [],
+        progress: [],
+        sessions: []
+      };
+    }
     
     const internalUserId = await getInternalUserId(googleId);
     
