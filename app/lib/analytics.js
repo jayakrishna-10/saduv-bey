@@ -1,4 +1,4 @@
-// app/lib/analytics.js - Fixed with better user authentication handling
+// app/lib/analytics.js - Fixed with proper Google ID handling
 import { createClient } from '@supabase/supabase-js';
 
 // Use the anon key for client-side operations
@@ -8,20 +8,17 @@ const supabase = createClient(
 );
 
 export class AnalyticsService {
-  // Helper method to get authenticated supabase client
-  static getAuthenticatedClient() {
-    return supabase;
-  }
-
   // Helper method to get user ID with better error handling
   static async getUserId(googleId) {
     try {
       if (!googleId) {
-        console.warn('No Google ID provided');
+        console.warn('No Google ID provided to getUserId');
         return null;
       }
 
-      // First try to get the user
+      console.log('Looking up user with Google ID:', googleId); // Debug log
+
+      // Get the user by Google ID
       const { data: user, error: userError } = await supabase
         .from('users')
         .select('id')
@@ -42,6 +39,7 @@ export class AnalyticsService {
         return null;
       }
 
+      console.log('User found with internal ID:', user.id); // Debug log
       return user?.id || null;
     } catch (error) {
       console.error('Unexpected error in getUserId:', error);
@@ -52,6 +50,8 @@ export class AnalyticsService {
   // Record a quiz attempt with better error handling
   static async recordQuizAttempt(googleId, quizData) {
     try {
+      console.log('Recording quiz attempt for Google ID:', googleId); // Debug log
+      
       const internalUserId = await this.getUserId(googleId);
       
       if (!internalUserId) {
@@ -91,6 +91,8 @@ export class AnalyticsService {
         return null;
       }
 
+      console.log('Quiz attempt recorded successfully'); // Debug log
+
       // Update user progress
       if (quizData.chapter) {
         await this.updateUserProgress(internalUserId, quizData.chapter, 'paper1', quizData.score || 0);
@@ -106,6 +108,8 @@ export class AnalyticsService {
   // Record a test attempt with better error handling
   static async recordTestAttempt(googleId, testData) {
     try {
+      console.log('Recording test attempt for Google ID:', googleId); // Debug log
+      
       const internalUserId = await this.getUserId(googleId);
       
       if (!internalUserId) {
@@ -145,6 +149,8 @@ export class AnalyticsService {
         console.error('Error inserting test attempt:', error);
         return null;
       }
+
+      console.log('Test attempt recorded successfully'); // Debug log
 
       // Update user progress for each chapter
       if (testData.chapters && Array.isArray(testData.chapters)) {
@@ -231,6 +237,77 @@ export class AnalyticsService {
       return true;
     } catch (error) {
       console.error('Error updating user progress:', error);
+      return null;
+    }
+  }
+
+  // Record a study session with better error handling
+  static async recordStudySession(googleId, sessionData) {
+    try {
+      console.log('Recording study session for Google ID:', googleId); // Debug log
+      
+      const internalUserId = await this.getUserId(googleId);
+      
+      if (!internalUserId) {
+        console.warn('Cannot record study session: user not found');
+        return null;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data: existingSession, error: fetchError } = await supabase
+        .from('study_sessions')
+        .select('*')
+        .eq('user_id', internalUserId)
+        .eq('session_date', today)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching existing session:', fetchError);
+        return null;
+      }
+
+      if (existingSession) {
+        // Update existing session
+        const { error: updateError } = await supabase
+          .from('study_sessions')
+          .update({
+            questions_answered: (existingSession.questions_answered || 0) + (sessionData.questionsAnswered || 0),
+            quiz_attempts: (existingSession.quiz_attempts || 0) + (sessionData.quiz_attempts || 1),
+            test_attempts: (existingSession.test_attempts || 0) + (sessionData.test_attempts || 0),
+            time_spent: (existingSession.time_spent || 0) + (sessionData.duration || 0),
+            topics_studied: [...new Set([...(existingSession.topics_studied || []), ...(sessionData.topics_studied || [])])]
+          })
+          .eq('id', existingSession.id);
+
+        if (updateError) {
+          console.error('Error updating study session:', updateError);
+          return null;
+        }
+      } else {
+        // Create new session
+        const { error: insertError } = await supabase
+          .from('study_sessions')
+          .insert({
+            user_id: internalUserId,
+            session_date: today,
+            questions_answered: sessionData.questionsAnswered || 0,
+            quiz_attempts: sessionData.quiz_attempts || 1,
+            test_attempts: sessionData.test_attempts || 0,
+            time_spent: sessionData.duration || 0,
+            topics_studied: sessionData.topics_studied || []
+          });
+
+        if (insertError) {
+          console.error('Error inserting study session:', insertError);
+          return null;
+        }
+      }
+
+      console.log('Study session recorded successfully'); // Debug log
+      return true;
+    } catch (error) {
+      console.error('Error recording study session:', error);
       return null;
     }
   }
@@ -469,74 +546,6 @@ export class AnalyticsService {
     } catch (error) {
       console.error('Error calculating study streak:', error);
       return 0;
-    }
-  }
-
-  // Record a study session with better error handling
-  static async recordStudySession(googleId, sessionData) {
-    try {
-      const internalUserId = await this.getUserId(googleId);
-      
-      if (!internalUserId) {
-        console.warn('Cannot record study session: user not found');
-        return null;
-      }
-
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data: existingSession, error: fetchError } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .eq('user_id', internalUserId)
-        .eq('session_date', today)
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error fetching existing session:', fetchError);
-        return null;
-      }
-
-      if (existingSession) {
-        // Update existing session
-        const { error: updateError } = await supabase
-          .from('study_sessions')
-          .update({
-            questions_answered: (existingSession.questions_answered || 0) + (sessionData.questionsAnswered || 0),
-            quiz_attempts: (existingSession.quiz_attempts || 0) + (sessionData.quiz_attempts || 1),
-            test_attempts: (existingSession.test_attempts || 0) + (sessionData.test_attempts || 0),
-            time_spent: (existingSession.time_spent || 0) + (sessionData.duration || 0),
-            topics_studied: [...new Set([...(existingSession.topics_studied || []), ...(sessionData.topics_studied || [])])]
-          })
-          .eq('id', existingSession.id);
-
-        if (updateError) {
-          console.error('Error updating study session:', updateError);
-          return null;
-        }
-      } else {
-        // Create new session
-        const { error: insertError } = await supabase
-          .from('study_sessions')
-          .insert({
-            user_id: internalUserId,
-            session_date: today,
-            questions_answered: sessionData.questionsAnswered || 0,
-            quiz_attempts: sessionData.quiz_attempts || 1,
-            test_attempts: sessionData.test_attempts || 0,
-            time_spent: sessionData.duration || 0,
-            topics_studied: sessionData.topics_studied || []
-          });
-
-        if (insertError) {
-          console.error('Error inserting study session:', insertError);
-          return null;
-        }
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error recording study session:', error);
-      return null;
     }
   }
 
