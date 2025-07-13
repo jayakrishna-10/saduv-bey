@@ -1,8 +1,8 @@
-// app/components/NavBar.js - Updated with dark mode toggle and fixed AnimatePresence import
+// app/components/NavBar.js - Updated with dark mode toggle and revision notes
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion'; // Fixed: Added AnimatePresence import
+import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
@@ -124,6 +124,19 @@ export default function NavBar() {
                           Notes
                         </motion.button>
                       </Link>
+                      <Link href="/nce/revision">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                            pathname.startsWith('/nce/revision')
+                              ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          Revision
+                        </motion.button>
+                      </Link>
                     </div>
                   </div>
                   
@@ -220,6 +233,15 @@ export default function NavBar() {
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     }`}>
                       Study Notes
+                    </div>
+                  </Link>
+                  <Link href="/nce/revision" onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className={`px-3 py-2 rounded-lg transition-all ${
+                      pathname.startsWith('/nce/revision')
+                        ? 'bg-pink-100 dark:bg-pink-900/50 text-pink-700 dark:text-pink-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}>
+                      Revision Notes
                     </div>
                   </Link>
                 </div>
