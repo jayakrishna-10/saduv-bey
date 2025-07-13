@@ -50,50 +50,43 @@ export async function GET(request) {
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const paper = searchParams.get('paper');
-    const topic = searchParams.get('topic');
+    const tags = searchParams.get('topic'); // Using tags field for topics
     const difficulty = searchParams.get('difficulty');
-    const year = searchParams.get('year');
+    const nceNumber = searchParams.get('year'); // Using NCE_number for year filtering
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Build query
+    // Build query - selecting from the actual schema
     let query = supabase
       .from('questions')
       .select(`
         id,
-        nce_number,
-        nce_year,
+        "NCE_number",
+        question_number,
         paper,
-        question_code,
-        marks,
-        title,
-        topic,
-        subtopic,
-        difficulty,
-        estimated_time,
-        question_type,
-        question_data,
-        solution_data,
-        status
+        question,
+        explanation,
+        tags,
+        difficulty_level
       `)
-      .eq('status', 'published')
       .range(offset, offset + limit - 1)
-      .order('nce_year', { ascending: false })
+      .order('NCE_number', { ascending: false })
       .order('paper', { ascending: true })
-      .order('question_code', { ascending: true });
+      .order('question_number', { ascending: true });
 
     // Add filters
     if (paper && paper !== 'all') {
       query = query.eq('paper', paper);
     }
-    if (topic && topic !== 'all') {
-      query = query.eq('topic', topic);
+    if (tags && tags !== 'all') {
+      // Using ilike for partial tag matching
+      query = query.ilike('tags', `%${tags}%`);
     }
     if (difficulty && difficulty !== 'all') {
-      query = query.eq('difficulty', difficulty);
+      query = query.eq('difficulty_level', difficulty);
     }
-    if (year && year !== 'all') {
-      query = query.eq('nce_year', parseInt(year));
+    if (nceNumber && nceNumber !== 'all') {
+      query = query.eq('NCE_number', parseInt(nceNumber));
     }
 
     const { data, error, count } = await query;
@@ -106,26 +99,46 @@ export async function GET(request) {
     // Get unique filter values for UI
     const filtersQuery = supabase
       .from('questions')
-      .select('paper, topic, difficulty, nce_year')
-      .eq('status', 'published');
+      .select('paper, tags, difficulty_level, "NCE_number"');
 
     const { data: filtersData } = await filtersQuery;
     
+    // Process filters data
     const filters = {
-      papers: [...new Set(filtersData?.map(q => q.paper))].sort(),
-      topics: [...new Set(filtersData?.map(q => q.topic))].filter(Boolean).sort(),
-      difficulties: [...new Set(filtersData?.map(q => q.difficulty))].filter(Boolean).sort(),
-      years: [...new Set(filtersData?.map(q => q.nce_year))].sort((a, b) => b - a)
+      papers: [...new Set(filtersData?.map(q => q.paper))].filter(Boolean).sort(),
+      topics: [...new Set(filtersData?.flatMap(q => 
+        q.tags ? q.tags.split(',').map(tag => tag.trim()) : []
+      ))].filter(Boolean).sort(),
+      difficulties: [...new Set(filtersData?.map(q => q.difficulty_level))].filter(Boolean).sort(),
+      years: [...new Set(filtersData?.map(q => q.NCE_number))].filter(Boolean).sort((a, b) => b - a)
     };
 
+    // Transform data to match component expectations
+    const transformedData = data?.map(question => ({
+      id: question.id,
+      nce_number: question.NCE_number,
+      question_number: question.question_number,
+      paper: question.paper,
+      topic: question.tags,
+      difficulty: question.difficulty_level,
+      question_data: question.question,
+      solution_data: question.explanation,
+      // Extract additional metadata from question JSONB
+      marks: question.question?.marks || '5',
+      estimated_time: question.question?.estimated_time || '10-15 mins',
+      title: question.question?.title || '',
+      question_type: question.question?.type || 'short_answer',
+      keywords: question.question?.keywords || []
+    })) || [];
+
     return NextResponse.json({
-      questions: data,
+      questions: transformedData,
       filters,
       pagination: {
         offset,
         limit,
         total: count,
-        hasMore: data.length === limit
+        hasMore: data?.length === limit
       }
     });
 
@@ -146,9 +159,17 @@ export async function POST(request) {
 
     const { data, error } = await supabase
       .from('questions')
-      .select('*')
+      .select(`
+        id,
+        "NCE_number",
+        question_number,
+        paper,
+        question,
+        explanation,
+        tags,
+        difficulty_level
+      `)
       .eq('id', questionId)
-      .eq('status', 'published')
       .single();
 
     if (error) {
@@ -156,7 +177,24 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ question: data });
+    // Transform single question data
+    const transformedQuestion = {
+      id: data.id,
+      nce_number: data.NCE_number,
+      question_number: data.question_number,
+      paper: data.paper,
+      topic: data.tags,
+      difficulty: data.difficulty_level,
+      question_data: data.question,
+      solution_data: data.explanation,
+      marks: data.question?.marks || '5',
+      estimated_time: data.question?.estimated_time || '10-15 mins',
+      title: data.question?.title || '',
+      question_type: data.question?.type || 'short_answer',
+      keywords: data.question?.keywords || []
+    };
+
+    return NextResponse.json({ question: transformedQuestion });
 
   } catch (error) {
     console.error('API error:', error);
