@@ -1,6 +1,6 @@
-// app/components/QnAApp.js - Complete Fixed Version
+// app/components/QnAApp.js - Complete Fixed Version with Mermaid Support
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -24,8 +24,25 @@ import {
   AlertCircle,
   Info,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
+
+// Lazy load MermaidDiagram component to reduce initial bundle size
+const MermaidDiagram = lazy(() => import('./MermaidDiagram'));
+
+// Loading fallback for Mermaid diagrams
+const MermaidFallback = ({ content }) => (
+  <div className="bg-blue-500/10 rounded-xl p-6 border border-blue-400/30">
+    <div className="flex items-center justify-center py-8">
+      <div className="text-center">
+        <Loader2 className="h-6 w-6 text-blue-400 animate-spin mx-auto mb-3" />
+        <div className="text-blue-300 font-semibold text-sm">Loading diagram engine...</div>
+        <div className="text-blue-200 text-xs mt-1">First time load may take a moment</div>
+      </div>
+    </div>
+  </div>
+);
 
 export function QnAApp() {
   const [questions, setQuestions] = useState([]);
@@ -607,7 +624,7 @@ function SolutionPanel({ question, showSolution }) {
   );
 }
 
-// Content Block Renderer
+// Content Block Renderer - Updated with Mermaid support
 function ContentBlock({ block, index }) {
   if (!block || !block.type) {
     return null;
@@ -700,23 +717,13 @@ function ContentBlock({ block, index }) {
     case 'mermaid':
       return (
         <div key={index} className="space-y-3">
-          <div className="bg-blue-500/10 rounded-xl p-6 border border-blue-400/30">
-            <div className="flex items-center gap-2 mb-3">
-              <Info className="h-4 w-4 text-blue-400" />
-              <span className="text-blue-300 font-semibold text-sm">Mermaid Diagram</span>
-            </div>
-            <div className="bg-white rounded-lg p-4">
-              <pre className="text-gray-800 text-sm overflow-x-auto whitespace-pre-wrap">
-                <code>{block.content}</code>
-              </pre>
-            </div>
-            <p className="text-blue-200 text-xs mt-2">
-              Note: Mermaid diagrams show as code. In a full implementation, this would render as an interactive diagram.
-            </p>
-          </div>
-          {block.caption && (
-            <p className="text-white/70 text-sm text-center italic">{block.caption}</p>
-          )}
+          <Suspense fallback={<MermaidFallback content={block.content} />}>
+            <MermaidDiagram 
+              content={block.content} 
+              caption={block.caption}
+              id={`diagram-${index}`}
+            />
+          </Suspense>
         </div>
       );
 
