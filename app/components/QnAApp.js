@@ -1,6 +1,6 @@
-// app/components/QnAApp.js - Complete Fixed Version with Mermaid Support
+// app/components/QnAApp.js - Complete Fixed Version with Dynamic Mermaid Loading
 'use client';
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -27,9 +27,6 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-
-// Lazy load MermaidDiagram component to reduce initial bundle size
-const MermaidDiagram = lazy(() => import('./MermaidDiagram'));
 
 // Loading fallback for Mermaid diagrams
 const MermaidFallback = ({ content }) => (
@@ -624,8 +621,27 @@ function SolutionPanel({ question, showSolution }) {
   );
 }
 
-// Content Block Renderer - Updated with Mermaid support
+// Content Block Renderer - Updated with Dynamic Mermaid loading
 function ContentBlock({ block, index }) {
+  const [MermaidDiagram, setMermaidDiagram] = useState(null);
+  const [isMermaidLoading, setIsMermaidLoading] = useState(false);
+
+  useEffect(() => {
+    if (block.type === 'mermaid' && !MermaidDiagram && !isMermaidLoading) {
+      setIsMermaidLoading(true);
+      import('./MermaidDiagram')
+        .then((module) => {
+          setMermaidDiagram(() => module.default);
+        })
+        .catch((error) => {
+          console.error('Failed to load MermaidDiagram:', error);
+        })
+        .finally(() => {
+          setIsMermaidLoading(false);
+        });
+    }
+  }, [block.type, MermaidDiagram, isMermaidLoading]);
+
   if (!block || !block.type) {
     return null;
   }
@@ -717,13 +733,15 @@ function ContentBlock({ block, index }) {
     case 'mermaid':
       return (
         <div key={index} className="space-y-3">
-          <Suspense fallback={<MermaidFallback content={block.content} />}>
+          {MermaidDiagram ? (
             <MermaidDiagram 
               content={block.content} 
               caption={block.caption}
               id={`diagram-${index}`}
             />
-          </Suspense>
+          ) : (
+            <MermaidFallback content={block.content} />
+          )}
         </div>
       );
 
