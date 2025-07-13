@@ -1,4 +1,4 @@
-// app/components/QnAApp.js - Complete Fixed Version
+// app/components/QnAApp.js - Updated for new schema
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -427,7 +427,7 @@ function FiltersPanel({ filters, activeFilters, setActiveFilters, onClose }) {
           
           {/* Year Filter */}
           <div>
-            <label className="block text-white/80 text-sm mb-2">Year</label>
+            <label className="block text-white/80 text-sm mb-2">NCE Year</label>
             <select
               value={activeFilters.year}
               onChange={(e) => setActiveFilters({...activeFilters, year: e.target.value})}
@@ -475,9 +475,16 @@ function QuestionPanel({ question, onShowSolution, showSolution }) {
           <span className="px-2 py-1 bg-purple-500/20 rounded-full text-purple-300">
             {question.marks} marks
           </span>
-          <span className="px-2 py-1 bg-blue-500/20 rounded-full text-blue-300">
-            {question.topic}
-          </span>
+          {question.topic && (
+            <span className="px-2 py-1 bg-blue-500/20 rounded-full text-blue-300">
+              {question.topic}
+            </span>
+          )}
+          {question.question_number && (
+            <span className="px-2 py-1 bg-green-500/20 rounded-full text-green-300">
+              Q{question.question_number}
+            </span>
+          )}
         </div>
         
         {question.title && (
@@ -509,6 +516,9 @@ function QuestionPanel({ question, onShowSolution, showSolution }) {
 
 // Solution Panel Component
 function SolutionPanel({ question, showSolution, solutionType, setSolutionType }) {
+  const hasQuickSolution = question.solution_data?.quick || question.solution_data?.answer;
+  const hasDetailedSolution = question.solution_data?.detailed || question.solution_data?.explanation;
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -526,43 +536,37 @@ function SolutionPanel({ question, showSolution, solutionType, setSolutionType }
           </div>
           
           {/* Solution Type Toggle */}
-          {showSolution && (
+          {showSolution && (hasQuickSolution || hasDetailedSolution) && (
             <div className="flex bg-white/10 rounded-xl p-1">
-              <button
-                onClick={() => setSolutionType('quick')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                  solutionType === 'quick'
-                    ? 'bg-green-500 text-white shadow-lg'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Zap className="h-3 w-3" />
-                Quick
-              </button>
-              <button
-                onClick={() => setSolutionType('detailed')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
-                  solutionType === 'detailed'
-                    ? 'bg-purple-500 text-white shadow-lg'
-                    : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <BookOpen className="h-3 w-3" />
-                Detailed
-              </button>
+              {hasQuickSolution && (
+                <button
+                  onClick={() => setSolutionType('quick')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                    solutionType === 'quick'
+                      ? 'bg-green-500 text-white shadow-lg'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  <Zap className="h-3 w-3" />
+                  Quick
+                </button>
+              )}
+              {hasDetailedSolution && (
+                <button
+                  onClick={() => setSolutionType('detailed')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                    solutionType === 'detailed'
+                      ? 'bg-purple-500 text-white shadow-lg'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  <BookOpen className="h-3 w-3" />
+                  Detailed
+                </button>
+              )}
             </div>
           )}
         </div>
-
-        {/* Solution Info */}
-        {showSolution && question.solution_data?.[solutionType] && (
-          <div className="flex items-center gap-4 text-white/60 text-sm">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {question.solution_data[solutionType].estimated_time}
-            </span>
-          </div>
-        )}
       </div>
 
       {/* Solution Content */}
@@ -593,7 +597,7 @@ function SolutionPanel({ question, showSolution, solutionType, setSolutionType }
               className="p-6"
             >
               <SolutionContent 
-                solutionData={question.solution_data?.[solutionType]} 
+                solutionData={question.solution_data} 
                 type={solutionType}
               />
             </motion.div>
@@ -602,6 +606,128 @@ function SolutionPanel({ question, showSolution, solutionType, setSolutionType }
       </div>
     </motion.div>
   );
+}
+
+// Content Block Renderer
+function ContentBlock({ block, index }) {
+  if (!block || !block.type) {
+    return null;
+  }
+
+  switch (block.type) {
+    case 'text':
+      return (
+        <div key={index} className="text-white/90 leading-relaxed">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {block.content}
+          </ReactMarkdown>
+        </div>
+      );
+
+    case 'table':
+      return (
+        <div key={index} className="space-y-3">
+          {block.caption && (
+            <h4 className="text-white font-semibold text-center">{block.caption}</h4>
+          )}
+          <div className="overflow-x-auto">
+            <table className="w-full bg-white/5 rounded-xl border border-white/20">
+              <thead>
+                <tr className="border-b border-white/20">
+                  {Array.isArray(block.content.headers) && block.content.headers.map((header, idx) => (
+                    <th key={idx} className="px-4 py-3 text-left text-white font-semibold">
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(block.content.rows) && block.content.rows.map((row, rowIdx) => (
+                  <tr key={rowIdx} className="border-b border-white/10">
+                    {Array.isArray(row) && row.map((cell, cellIdx) => (
+                      <td key={cellIdx} className="px-4 py-3 text-white">
+                        {cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+
+    case 'formula':
+      return (
+        <div key={index} className="bg-black/20 rounded-lg p-4 border border-white/10">
+          {block.format === 'latex' ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {`$${block.content}$`}
+            </ReactMarkdown>
+          ) : (
+            <code className="text-green-300 font-mono text-lg">{block.content}</code>
+          )}
+        </div>
+      );
+
+    case 'list':
+      const ListComponent = block.content.type === 'ordered' ? 'ol' : 'ul';
+      return (
+        <ListComponent key={index} className={`space-y-2 ${
+          block.content.type === 'ordered' ? 'list-decimal' : 'list-disc'
+        } list-inside text-white/80`}>
+          {Array.isArray(block.content.items) && block.content.items.map((item, itemIdx) => (
+            <li key={itemIdx} className="leading-relaxed">
+              <ReactMarkdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                  p: ({ children }) => <span>{children}</span>
+                }}
+              >
+                {item}
+              </ReactMarkdown>
+            </li>
+          ))}
+        </ListComponent>
+      );
+
+    case 'mermaid':
+      return (
+        <div key={index} className="space-y-3">
+          <div className="bg-blue-500/10 rounded-xl p-6 border border-blue-400/30">
+            <div className="flex items-center gap-2 mb-3">
+              <Info className="h-4 w-4 text-blue-400" />
+              <span className="text-blue-300 font-semibold text-sm">Mermaid Diagram</span>
+            </div>
+            <div className="bg-white rounded-lg p-4">
+              <pre className="text-gray-800 text-sm overflow-x-auto whitespace-pre-wrap">
+                <code>{block.content}</code>
+              </pre>
+            </div>
+            <p className="text-blue-200 text-xs mt-2">
+              Note: Mermaid diagrams show as code. In a full implementation, this would render as an interactive diagram.
+            </p>
+          </div>
+          {block.caption && (
+            <p className="text-white/70 text-sm text-center italic">{block.caption}</p>
+          )}
+        </div>
+      );
+
+    default:
+      return (
+        <div key={index} className="text-white/60 text-sm italic">
+          Unsupported content type: {block.type}
+        </div>
+      );
+  }
 }
 
 // Question Content Renderer
@@ -615,10 +741,47 @@ function QuestionContent({ questionData }) {
     );
   }
 
+  // Handle legacy format (fallback)
+  if (typeof questionData === 'string') {
+    return (
+      <div className="text-white/90 leading-relaxed">
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+        >
+          {questionData}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Main Question Text */}
-      {questionData.text && (
+      {/* Main Content Blocks */}
+      {Array.isArray(questionData.content) && questionData.content.map((block, index) => (
+        <ContentBlock key={index} block={block} index={index} />
+      ))}
+
+      {/* Sub-questions */}
+      {Array.isArray(questionData.sub_questions) && questionData.sub_questions.map((subQ, index) => (
+        <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/20">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+              {subQ.part}
+            </div>
+            <span className="font-semibold text-white">Part {subQ.part.toUpperCase()}</span>
+            <span className="text-white/60 text-sm">({subQ.marks} marks)</span>
+          </div>
+          <div className="space-y-4">
+            {Array.isArray(subQ.content) && subQ.content.map((block, blockIdx) => (
+              <ContentBlock key={blockIdx} block={block} index={blockIdx} />
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Legacy support for old format */}
+      {questionData.text && !questionData.content && (
         <div className="text-white/90 leading-relaxed">
           <ReactMarkdown
             remarkPlugins={[remarkMath]}
@@ -629,84 +792,21 @@ function QuestionContent({ questionData }) {
         </div>
       )}
 
-      {/* Context */}
-      {questionData.context && (
-        <div className="bg-blue-500/10 rounded-xl p-4 border border-blue-400/30">
-          <div className="flex items-center gap-2 mb-2">
-            <Info className="h-4 w-4 text-blue-400" />
-            <span className="font-semibold text-blue-300">Context</span>
-          </div>
-          <div className="text-white/80 text-sm">
-            <ReactMarkdown
-              remarkPlugins={[remarkMath]}
-              rehypePlugins={[rehypeKatex]}
-            >
-              {questionData.context}
-            </ReactMarkdown>
-          </div>
-        </div>
-      )}
-
-      {/* Tables */}
-      {Array.isArray(questionData.tables) && questionData.tables.map((table, index) => (
-        <div key={table.id || index} className="space-y-3">
-          {table.title && (
-            <h4 className="text-white font-semibold">{table.title}</h4>
-          )}
-          <div className="overflow-x-auto">
-            <table className="w-full bg-white/5 rounded-xl border border-white/20">
-              <thead>
-                <tr className="border-b border-white/20">
-                  {Array.isArray(table.headers) && table.headers.map((header, idx) => (
-                    <th key={idx} className="px-4 py-3 text-left text-white font-semibold">
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(table.rows) && table.rows.map((row, rowIdx) => (
-                  <tr key={rowIdx} className="border-b border-white/10">
-                    {Array.isArray(row) && row.map((cell, cellIdx) => (
-                      <td key={cellIdx} className="px-4 py-3 text-white">
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
-
-      {/* Additional Info Boxes */}
-      {Array.isArray(questionData.additional_info) && questionData.additional_info.map((info, index) => (
-        <div key={index} className={`rounded-xl p-4 border ${
-          info.type === 'warning' ? 'bg-yellow-500/10 border-yellow-400/30' :
-          info.type === 'note' ? 'bg-green-500/10 border-green-400/30' :
-          'bg-blue-500/10 border-blue-400/30'
-        }`}>
-          {info.title && (
-            <div className="flex items-center gap-2 mb-2">
-              <Info className={`h-4 w-4 ${
-                info.type === 'warning' ? 'text-yellow-400' :
-                info.type === 'note' ? 'text-green-400' :
-                'text-blue-400'
-              }`} />
-              <span className={`font-semibold ${
-                info.type === 'warning' ? 'text-yellow-300' :
-                info.type === 'note' ? 'text-green-300' :
-                'text-blue-300'
-              }`}>{info.title}</span>
+      {/* Legacy parts support */}
+      {Array.isArray(questionData.parts) && !questionData.sub_questions && questionData.parts.map((part, index) => (
+        <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/20">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
+              {String.fromCharCode(97 + index)}
             </div>
-          )}
-          <div className="text-white/80 text-sm">
+            <span className="font-semibold text-white">Part {String.fromCharCode(97 + index).toUpperCase()}</span>
+          </div>
+          <div className="text-white/80">
             <ReactMarkdown
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
             >
-              {info.content}
+              {part}
             </ReactMarkdown>
           </div>
         </div>
@@ -726,32 +826,49 @@ function SolutionContent({ solutionData, type }) {
     );
   }
 
+  // Handle the legacy schema where explanation might be a string
+  if (typeof solutionData === 'string') {
+    return (
+      <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-5 border border-green-400/30">
+        <div className="flex items-center gap-3 mb-3">
+          <CheckCircle className="h-6 w-6 text-green-400" />
+          <span className="font-semibold text-green-300 text-lg">Solution</span>
+        </div>
+        <div className="text-white/90 leading-relaxed">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {solutionData}
+          </ReactMarkdown>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle new comprehensive explanation structure
+  const explanation = solutionData.explanation || solutionData;
+
   if (type === 'quick') {
     return (
       <div className="space-y-6">
-        {/* Answer */}
-        {solutionData.answer && (
+        {/* Final Answer */}
+        {explanation.final_answer && (
           <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-5 border border-green-400/30">
             <div className="flex items-center gap-3 mb-3">
               <CheckCircle className="h-6 w-6 text-green-400" />
-              <span className="font-semibold text-green-300 text-lg">Answer</span>
+              <span className="font-semibold text-green-300 text-lg">Final Answer</span>
             </div>
-            <div className="text-white font-mono text-lg mb-2">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-              >
-                {solutionData.answer}
-              </ReactMarkdown>
+            <div className="space-y-4">
+              {Array.isArray(explanation.final_answer.content) && explanation.final_answer.content.map((block, idx) => (
+                <ContentBlock key={idx} block={block} index={idx} />
+              ))}
             </div>
-            {solutionData.interpretation && (
-              <p className="text-white/80 text-sm">{solutionData.interpretation}</p>
-            )}
           </div>
         )}
 
-        {/* Steps */}
-        {Array.isArray(solutionData.steps) && solutionData.steps.map((step, idx) => (
+        {/* Step by Step Solution */}
+        {Array.isArray(explanation.step_by_step_solution) && explanation.step_by_step_solution.map((step, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, y: 20 }}
@@ -761,48 +878,94 @@ function SolutionContent({ solutionData, type }) {
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">
-                {idx + 1}
+                {step.step}
               </div>
               <h4 className="font-semibold text-white">{step.title}</h4>
             </div>
             
-            {step.content && (
-              <div className="text-white/80 mb-4">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                >
-                  {step.content}
-                </ReactMarkdown>
-              </div>
-            )}
+            <div className="space-y-4">
+              {Array.isArray(step.content) && step.content.map((block, blockIdx) => (
+                <ContentBlock key={blockIdx} block={block} index={blockIdx} />
+              ))}
+            </div>
             
-            {step.formula && (
-              <div className="bg-black/20 rounded-lg p-3 mb-4 border border-white/10">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                >
-                  {`$$${step.formula}$$`}
-                </ReactMarkdown>
-              </div>
-            )}
-            
-            {step.calculation && (
-              <div className="bg-black/20 rounded-lg p-3 border border-white/10">
-                <code className="text-green-300 font-mono">{step.calculation}</code>
+            {step.result && (
+              <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-400/30">
+                <span className="text-green-300 font-semibold">Result: </span>
+                <span className="text-white">{step.result}</span>
               </div>
             )}
           </motion.div>
         ))}
+
+        {/* Legacy support for old quick format */}
+        {!explanation.step_by_step_solution && explanation.quick && (
+          <>
+            {explanation.quick.answer && (
+              <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-5 border border-green-400/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <CheckCircle className="h-6 w-6 text-green-400" />
+                  <span className="font-semibold text-green-300 text-lg">Answer</span>
+                </div>
+                <div className="text-white font-mono text-lg">
+                  {explanation.quick.answer}
+                </div>
+              </div>
+            )}
+            {Array.isArray(explanation.quick.steps) && explanation.quick.steps.map((step, idx) => (
+              <div key={idx} className="bg-white/5 rounded-xl p-5 border border-white/20">
+                <h4 className="font-semibold text-white mb-4">{step.title}</h4>
+                <div className="text-white/80">{step.content}</div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
     );
   }
 
-  // Detailed solution
+  // Detailed solution with comprehensive sections
   return (
     <div className="space-y-6">
-      {Array.isArray(solutionData.sections) && solutionData.sections.map((section, idx) => (
+      {/* Solving Approach */}
+      {explanation.solving_approach && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-500/10 rounded-xl p-5 border border-blue-400/30"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <Target className="h-5 w-5 text-blue-400" />
+            <h4 className="font-semibold text-blue-300 text-lg">{explanation.solving_approach.title}</h4>
+          </div>
+          <div className="space-y-4">
+            {Array.isArray(explanation.solving_approach.content) && explanation.solving_approach.content.map((block, idx) => (
+              <ContentBlock key={idx} block={block} index={idx} />
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Prerequisite Knowledge */}
+      {Array.isArray(explanation.prerequisite_knowledge) && explanation.prerequisite_knowledge.length > 0 && (
+        <div className="bg-purple-500/10 rounded-xl p-5 border border-purple-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <BookOpen className="h-5 w-5 text-purple-400" />
+            <h4 className="font-semibold text-purple-300 text-lg">Prerequisite Knowledge</h4>
+          </div>
+          <ul className="space-y-2">
+            {explanation.prerequisite_knowledge.map((knowledge, idx) => (
+              <li key={idx} className="flex items-center gap-2 text-white/80">
+                <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                {knowledge}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Step by Step Solution */}
+      {Array.isArray(explanation.step_by_step_solution) && explanation.step_by_step_solution.map((step, idx) => (
         <motion.div
           key={idx}
           initial={{ opacity: 0, y: 20 }}
@@ -810,46 +973,200 @@ function SolutionContent({ solutionData, type }) {
           transition={{ delay: idx * 0.1 }}
           className="bg-white/5 rounded-xl p-5 border border-white/20"
         >
-          <h4 className="font-semibold text-white mb-4 text-lg flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">
-              {idx + 1}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm">
+              {step.step}
             </div>
-            {section.title}
-          </h4>
+            <h4 className="font-semibold text-white text-lg">{step.title}</h4>
+          </div>
           
-          {section.content && (
-            <div className="text-white/80 leading-relaxed mb-4">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath]}
-                rehypePlugins={[rehypeKatex]}
-              >
-                {section.content}
-              </ReactMarkdown>
+          <div className="space-y-4">
+            {Array.isArray(step.content) && step.content.map((block, blockIdx) => (
+              <ContentBlock key={blockIdx} block={block} index={blockIdx} />
+            ))}
+          </div>
+          
+          {step.result && (
+            <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-400/30">
+              <span className="text-green-300 font-semibold">Result: </span>
+              <span className="text-white">{step.result}</span>
             </div>
-          )}
-          
-          {Array.isArray(section.key_points) && (
-            <ul className="space-y-2 mb-4">
-              {section.key_points.map((point, pointIdx) => (
-                <li key={pointIdx} className="flex items-start gap-3 text-white/80">
-                  <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                  <span>{point}</span>
-                </li>
-              ))}
-            </ul>
           )}
         </motion.div>
       ))}
-      
-      {solutionData.conclusion && (
-        <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-5 border border-purple-400/30">
-          <h4 className="font-semibold text-purple-300 mb-3">Conclusion</h4>
-          <div className="text-white/80">
+
+      {/* Final Answer */}
+      {explanation.final_answer && (
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-xl p-5 border border-green-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckCircle className="h-6 w-6 text-green-400" />
+            <span className="font-semibold text-green-300 text-lg">Final Answer</span>
+          </div>
+          <div className="space-y-4">
+            {Array.isArray(explanation.final_answer.content) && explanation.final_answer.content.map((block, idx) => (
+              <ContentBlock key={idx} block={block} index={idx} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Verification Check */}
+      {explanation.verification_check && (
+        <div className="bg-yellow-500/10 rounded-xl p-5 border border-yellow-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckCircle className="h-5 w-5 text-yellow-400" />
+            <h4 className="font-semibold text-yellow-300 text-lg">Verification</h4>
+          </div>
+          <div className="mb-3">
+            <span className="text-yellow-200 font-medium">Method: </span>
+            <span className="text-white/80">{explanation.verification_check.method}</span>
+          </div>
+          <div className="space-y-4">
+            {Array.isArray(explanation.verification_check.content) && explanation.verification_check.content.map((block, idx) => (
+              <ContentBlock key={idx} block={block} index={idx} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Formulas Used */}
+      {Array.isArray(explanation.formulas_used) && explanation.formulas_used.length > 0 && (
+        <div className="bg-indigo-500/10 rounded-xl p-5 border border-indigo-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <Brain className="h-5 w-5 text-indigo-400" />
+            <h4 className="font-semibold text-indigo-300 text-lg">Formulas Used</h4>
+          </div>
+          <div className="space-y-4">
+            {explanation.formulas_used.map((formula, idx) => (
+              <div key={idx} className="bg-black/20 rounded-lg p-4 border border-indigo-400/20">
+                <div className="mb-3">
+                  <code className="text-indigo-300 font-mono text-lg">{formula.formula}</code>
+                </div>
+                {formula.terms && (
+                  <div className="mb-3">
+                    <h5 className="text-indigo-200 font-medium mb-2">Where:</h5>
+                    <ul className="space-y-1">
+                      {Object.entries(formula.terms).map(([term, definition]) => (
+                        <li key={term} className="text-white/80 text-sm">
+                          <span className="font-mono text-indigo-300">{term}</span> = {definition}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {formula.application && (
+                  <p className="text-white/70 text-sm italic">{formula.application}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Important Concepts */}
+      {Array.isArray(explanation.important_concepts) && explanation.important_concepts.length > 0 && (
+        <div className="bg-cyan-500/10 rounded-xl p-5 border border-cyan-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <Info className="h-5 w-5 text-cyan-400" />
+            <h4 className="font-semibold text-cyan-300 text-lg">Important Concepts</h4>
+          </div>
+          <div className="space-y-3">
+            {explanation.important_concepts.map((concept, idx) => (
+              <div key={idx} className="bg-cyan-500/5 rounded-lg p-3">
+                <h5 className="font-medium text-cyan-200 mb-2">{concept.concept}</h5>
+                <p className="text-white/80 text-sm">{concept.overview}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tips and Tricks */}
+      {Array.isArray(explanation.tips_and_tricks) && explanation.tips_and_tricks.length > 0 && (
+        <div className="bg-green-500/10 rounded-xl p-5 border border-green-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <Zap className="h-5 w-5 text-green-400" />
+            <h4 className="font-semibold text-green-300 text-lg">Tips & Tricks</h4>
+          </div>
+          <div className="space-y-3">
+            {explanation.tips_and_tricks.map((tip, idx) => (
+              <div key={idx} className="bg-green-500/5 rounded-lg p-3">
+                <h5 className="font-medium text-green-200 mb-2">💡 {tip.tip}</h5>
+                <p className="text-white/80 text-sm">{tip.reason}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Common Mistakes */}
+      {Array.isArray(explanation.common_mistakes) && explanation.common_mistakes.length > 0 && (
+        <div className="bg-red-500/10 rounded-xl p-5 border border-red-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <h4 className="font-semibold text-red-300 text-lg">Common Mistakes</h4>
+          </div>
+          <div className="space-y-3">
+            {explanation.common_mistakes.map((mistake, idx) => (
+              <div key={idx} className="bg-red-500/5 rounded-lg p-3">
+                <h5 className="font-medium text-red-200 mb-2">❌ {mistake.mistake}</h5>
+                <p className="text-white/80 text-sm">✅ {mistake.correction}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Exam Strategy */}
+      {explanation.exam_strategy && (
+        <div className="bg-orange-500/10 rounded-xl p-5 border border-orange-400/30">
+          <div className="flex items-center gap-3 mb-4">
+            <Target className="h-5 w-5 text-orange-400" />
+            <h4 className="font-semibold text-orange-300 text-lg">Exam Strategy</h4>
+          </div>
+          <div className="space-y-4">
+            {explanation.exam_strategy.time_allocation && (
+              <div>
+                <span className="text-orange-200 font-medium">Time Allocation: </span>
+                <span className="text-white/80">{explanation.exam_strategy.time_allocation}</span>
+              </div>
+            )}
+            {explanation.exam_strategy.marks_distribution && (
+              <div>
+                <h5 className="text-orange-200 font-medium mb-2">Marks Distribution:</h5>
+                <ul className="space-y-1">
+                  {Object.entries(explanation.exam_strategy.marks_distribution).map(([component, marks]) => (
+                    <li key={component} className="text-white/80 text-sm">
+                      • {component}: {marks}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {Array.isArray(explanation.exam_strategy.key_points) && (
+              <div>
+                <h5 className="text-orange-200 font-medium mb-2">Key Points for Exam:</h5>
+                <ul className="space-y-1">
+                  {explanation.exam_strategy.key_points.map((point, idx) => (
+                    <li key={idx} className="text-white/80 text-sm">• {point}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Legacy support for old detailed format */}
+      {!explanation.step_by_step_solution && explanation.detailed && (
+        <div className="bg-white/5 rounded-xl p-5 border border-white/20">
+          <h4 className="font-semibold text-white mb-4 text-lg">Detailed Explanation</h4>
+          <div className="text-white/80 leading-relaxed">
             <ReactMarkdown
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
             >
-              {solutionData.conclusion}
+              {explanation.detailed}
             </ReactMarkdown>
           </div>
         </div>
