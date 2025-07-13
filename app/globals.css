@@ -45,6 +45,258 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* Mermaid Diagram Styles */
+.mermaid-container {
+  background: transparent;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mermaid-container svg {
+  max-width: 100% !important;
+  height: auto !important;
+  background: transparent !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+/* Ensure Mermaid diagrams work well in dark theme */
+.mermaid-container .node rect,
+.mermaid-container .node circle,
+.mermaid-container .node ellipse,
+.mermaid-container .node polygon {
+  fill: #374151 !important;
+  stroke: #8B5CF6 !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid-container .node text,
+.mermaid-container .nodeLabel,
+.mermaid-container .label {
+  fill: #FFFFFF !important;
+  color: #FFFFFF !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.mermaid-container .edgePath path {
+  stroke: #E5E7EB !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid-container .arrowheadPath {
+  fill: #E5E7EB !important;
+  stroke: #E5E7EB !important;
+}
+
+.mermaid-container .edgeLabel {
+  background-color: #1F2937 !important;
+  color: #FFFFFF !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+}
+
+/* Flowchart specific styles */
+.mermaid-container .flowchart-node {
+  fill: #374151 !important;
+  stroke: #8B5CF6 !important;
+}
+
+/* Sequence diagram styles */
+.mermaid-container .actor {
+  fill: #374151 !important;
+  stroke: #8B5CF6 !important;
+}
+
+.mermaid-container .messageLine0,
+.mermaid-container .messageLine1 {
+  stroke: #E5E7EB !important;
+}
+
+.mermaid-container .messageText {
+  fill: #FFFFFF !important;
+  stroke: none !important;
+  font-size: 12px !important;
+}
+
+/* Gantt chart styles */
+.mermaid-container .grid .tick {
+  stroke: #4B5563 !important;
+}
+
+.mermaid-container .grid path {
+  stroke: #4B5563 !important;
+}
+
+.mermaid-container .task {
+  fill: #8B5CF6 !important;
+  stroke: #A855F7 !important;
+}
+
+.mermaid-container .taskText {
+  fill: #FFFFFF !important;
+  font-size: 11px !important;
+}
+
+/* Class diagram styles */
+.mermaid-container .classBox {
+  fill: #374151 !important;
+  stroke: #8B5CF6 !important;
+}
+
+.mermaid-container .classText {
+  fill: #FFFFFF !important;
+}
+
+/* State diagram styles */
+.mermaid-container .state {
+  fill: #374151 !important;
+  stroke: #8B5CF6 !important;
+}
+
+.mermaid-container .stateText {
+  fill: #FFFFFF !important;
+}
+
+/* Pie chart styles */
+.mermaid-container .pieOuterCircle {
+  stroke: #8B5CF6 !important;
+  stroke-width: 2px !important;
+}
+
+.mermaid-container .pieTitleText {
+  fill: #FFFFFF !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+.mermaid-container .slice {
+  stroke-width: 1px !important;
+  stroke: #1F2937 !important;
+}
+
+.mermaid-container .legend text {
+  fill: #FFFFFF !important;
+  font-size: 12px !important;
+}
+
+/* Journey diagram styles */
+.mermaid-container .journey-section {
+  fill: #374151 !important;
+  stroke: #8B5CF6 !important;
+}
+
+.mermaid-container .journey-task {
+  fill: #FFFFFF !important;
+}
+
+/* Git diagram styles */
+.mermaid-container .commit {
+  fill: #8B5CF6 !important;
+  stroke: #A855F7 !important;
+}
+
+.mermaid-container .commit-label {
+  fill: #FFFFFF !important;
+}
+
+.mermaid-container .branch-label {
+  fill: #FFFFFF !important;
+}
+
+/* Responsive Mermaid diagrams */
+@media (max-width: 768px) {
+  .mermaid-container svg {
+    font-size: 12px !important;
+  }
+  
+  .mermaid-container .node text,
+  .mermaid-container .nodeLabel {
+    font-size: 12px !important;
+  }
+  
+  .mermaid-container .edgeLabel {
+    font-size: 10px !important;
+  }
+}
+
+/* Loading states for Mermaid */
+.mermaid-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+}
+
+.mermaid-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #FCA5A5;
+}
+
+/* Hover effects for interactive elements */
+.mermaid-container .node:hover rect,
+.mermaid-container .node:hover circle,
+.mermaid-container .node:hover ellipse,
+.mermaid-container .node:hover polygon {
+  fill: #4B5563 !important;
+  stroke: #A855F7 !important;
+  stroke-width: 3px !important;
+  cursor: pointer;
+}
+
+.mermaid-container .edgePath:hover path {
+  stroke: #A855F7 !important;
+  stroke-width: 3px !important;
+  cursor: pointer;
+}
+
+/* Ensure proper contrast in high contrast mode */
+@media (prefers-contrast: high) {
+  .mermaid-container .node rect,
+  .mermaid-container .node circle,
+  .mermaid-container .node ellipse,
+  .mermaid-container .node polygon {
+    fill: #000000 !important;
+    stroke: #FFFFFF !important;
+    stroke-width: 3px !important;
+  }
+  
+  .mermaid-container .edgePath path {
+    stroke: #FFFFFF !important;
+    stroke-width: 3px !important;
+  }
+}
+
+/* Print styles for Mermaid diagrams */
+@media print {
+  .mermaid-container svg {
+    background: white !important;
+  }
+  
+  .mermaid-container .node text,
+  .mermaid-container .nodeLabel,
+  .mermaid-container .label {
+    fill: #000000 !important;
+    color: #000000 !important;
+  }
+  
+  .mermaid-container .node rect,
+  .mermaid-container .node circle,
+  .mermaid-container .node ellipse,
+  .mermaid-container .node polygon {
+    fill: #FFFFFF !important;
+    stroke: #000000 !important;
+  }
+  
+  .mermaid-container .edgePath path {
+    stroke: #000000 !important;
+  }
+}
+
 /* Test Interface Styles */
 
 /* Ensure test interface works with fixed navigation */
@@ -427,6 +679,13 @@ select:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  
+  .mermaid-container .node:hover rect,
+  .mermaid-container .node:hover circle,
+  .mermaid-container .node:hover ellipse,
+  .mermaid-container .node:hover polygon {
+    transform: none !important;
   }
 }
 
