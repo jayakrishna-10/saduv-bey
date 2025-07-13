@@ -1,4 +1,4 @@
-// app/components/QnAApp.js - Updated for new schema
+// app/components/QnAApp.js - Complete Fixed Version
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -550,9 +550,9 @@ function CollapsibleSection({ title, icon: Icon, children, defaultExpanded = fal
     </div>
   );
 }
-  const hasQuickSolution = question.solution_data?.quick || question.solution_data?.answer;
-  const hasDetailedSolution = question.solution_data?.detailed || question.solution_data?.explanation;
 
+// Solution Panel Component
+function SolutionPanel({ question, showSolution }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -590,7 +590,7 @@ function CollapsibleSection({ title, icon: Icon, children, defaultExpanded = fal
             </motion.div>
           ) : (
             <motion.div
-              key={solutionType}
+              key="solution"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -667,7 +667,7 @@ function ContentBlock({ block, index }) {
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex]}
             >
-              {`$${block.content}$`}
+              {`$$${block.content}$$`}
             </ReactMarkdown>
           ) : (
             <code className="text-green-300 font-mono text-lg">{block.content}</code>
