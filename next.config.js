@@ -1,3 +1,4 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -5,7 +6,7 @@ const nextConfig = {
   images: {
     domains: ['vercel.com'],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -13,9 +14,25 @@ const nextConfig = {
       canvas: false,
     };
     
+    // Handle Mermaid ESM issues
+    if (!isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'cytoscape': require.resolve('cytoscape'),
+      };
+    }
+    
+    // Externalize problematic modules for server builds
+    if (isServer) {
+      config.externals = [...(config.externals || []), 'cytoscape', 'cytoscape-cose-bilkent', 'cytoscape-fcose'];
+    }
+    
     return config;
   },
-  transpilePackages: ['markmap-lib', 'markmap-view', 'markmap-common'],
+  transpilePackages: ['mermaid'],
+  experimental: {
+    esmExternals: 'loose',
+  },
   async headers() {
     return [
       {
@@ -28,9 +45,6 @@ const nextConfig = {
         ]
       }
     ];
-  },
-  experimental: {
-    esmExternals: 'loose',
   }
 };
 
