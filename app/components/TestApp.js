@@ -1,4 +1,4 @@
-// app/components/TestApp.js - Refactored into smaller components
+// app/components/TestApp.js - Fixed with proper analytics integration
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -122,7 +122,15 @@ export function TestApp() {
   };
 
   const recordTestAttempt = async (endTime) => {
-    if (!session?.user?.id) return;
+    // Improved error handling and logging
+    console.log('recordTestAttempt: Starting analytics recording...');
+    console.log('Session data:', session?.user);
+    
+    if (!session?.user?.googleId) {
+      console.error('recordTestAttempt: No Google ID found in session');
+      console.log('Session user object:', session?.user);
+      return;
+    }
 
     try {
       const { questions, answers, startTime } = testData;
@@ -134,6 +142,7 @@ export function TestApp() {
       }).length;
       
       const totalQuestions = questions.length;
+      const unanswered = totalQuestions - Object.keys(answers).length;
       const score = Math.round((correctAnswers / totalQuestions) * 100);
       const timeTaken = Math.round((endTime - startTime) / 1000 / 60); // in minutes
       
@@ -157,27 +166,45 @@ export function TestApp() {
         };
       });
 
-      const testData = {
+      const testAnalyticsData = {
         testType: testConfig.mode,
         chapters,
         totalQuestions,
         correctAnswers,
+        unanswered,
         score,
         timeTaken,
         questionsData
       };
 
-      await AnalyticsService.recordTestAttempt(session.user.id, testData);
+      console.log('recordTestAttempt: Test data prepared:', testAnalyticsData);
+      console.log('recordTestAttempt: Using Google ID:', session.user.googleId);
+
+      const result = await AnalyticsService.recordTestAttempt(session.user.googleId, testAnalyticsData);
       
-      // Record study session
-      await AnalyticsService.recordStudySession(session.user.id, {
-        duration: timeTaken,
-        questionsAnswered: totalQuestions
-      });
+      if (result) {
+        console.log('recordTestAttempt: Successfully recorded test attempt');
+        
+        // Record study session
+        const sessionResult = await AnalyticsService.recordStudySession(session.user.googleId, {
+          duration: timeTaken,
+          questionsAnswered: totalQuestions,
+          quiz_attempts: 0,
+          test_attempts: 1,
+          topics_studied: chapters
+        });
+        
+        if (sessionResult) {
+          console.log('recordTestAttempt: Successfully recorded study session');
+        } else {
+          console.warn('recordTestAttempt: Failed to record study session');
+        }
+      } else {
+        console.error('recordTestAttempt: Failed to record test attempt');
+      }
       
-      console.log('Test attempt recorded successfully');
     } catch (error) {
-      console.error('Error recording test attempt:', error);
+      console.error('recordTestAttempt: Unexpected error:', error);
     }
   };
 
