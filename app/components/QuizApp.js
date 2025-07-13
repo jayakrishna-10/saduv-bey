@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Fixed with navigation controls, finish button, and modal issues
+// app/components/QuizApp.js - Fixed with proper analytics integration and error handling
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -160,7 +160,20 @@ export function QuizApp() {
   };
 
   const recordQuizAttempt = async () => {
-    if (!session?.user?.id) return;
+    // Improved error handling and logging
+    console.log('recordQuizAttempt: Starting analytics recording...');
+    console.log('Session data:', session?.user);
+    
+    if (!session?.user?.googleId) {
+      console.error('recordQuizAttempt: No Google ID found in session');
+      console.log('Session user object:', session?.user);
+      return;
+    }
+
+    if (answeredQuestions.length === 0) {
+      console.warn('recordQuizAttempt: No answered questions to record');
+      return;
+    }
 
     try {
       const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
@@ -180,6 +193,7 @@ export function QuizApp() {
       ) || 'mixed';
 
       const quizData = {
+        paper: selectedPaper,
         chapter: primaryChapter,
         totalQuestions,
         correctAnswers,
@@ -196,17 +210,34 @@ export function QuizApp() {
         }))
       };
 
-      await AnalyticsService.recordQuizAttempt(session.user.id, quizData);
+      console.log('recordQuizAttempt: Quiz data prepared:', quizData);
+      console.log('recordQuizAttempt: Using Google ID:', session.user.googleId);
+
+      const result = await AnalyticsService.recordQuizAttempt(session.user.googleId, quizData);
       
-      // Record study session
-      await AnalyticsService.recordStudySession(session.user.id, {
-        duration: timeTaken,
-        questionsAnswered: totalQuestions
-      });
+      if (result) {
+        console.log('recordQuizAttempt: Successfully recorded quiz attempt');
+        
+        // Record study session
+        const sessionResult = await AnalyticsService.recordStudySession(session.user.googleId, {
+          duration: timeTaken,
+          questionsAnswered: totalQuestions,
+          quiz_attempts: 1,
+          test_attempts: 0,
+          topics_studied: [primaryChapter]
+        });
+        
+        if (sessionResult) {
+          console.log('recordQuizAttempt: Successfully recorded study session');
+        } else {
+          console.warn('recordQuizAttempt: Failed to record study session');
+        }
+      } else {
+        console.error('recordQuizAttempt: Failed to record quiz attempt');
+      }
       
-      console.log('Quiz attempt recorded successfully');
     } catch (error) {
-      console.error('Error recording quiz attempt:', error);
+      console.error('recordQuizAttempt: Unexpected error:', error);
     }
   };
 
