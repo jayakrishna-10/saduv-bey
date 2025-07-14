@@ -1,4 +1,4 @@
-// app/components/QnAApp.js - FIXED VERSION WITH ENHANCED ERROR HANDLING
+// app/components/QnAApp.js - FIXED VERSION WITH ENHANCED LIST HANDLING
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -768,10 +768,41 @@ function ContentBlock({ block, index }) {
         );
 
       case 'list':
-        // Enhanced list validation
+        // FIXED: Enhanced list handling to support multiple formats
+        console.log('Processing list block:', block);
+        
+        // NEW FORMAT: Handle case where items and ordered are directly on the block
+        if (block.items && Array.isArray(block.items)) {
+          const items = block.items;
+          const isOrdered = block.ordered || false;
+          
+          console.log('Using direct format - items:', items.length, 'ordered:', isOrdered);
+          
+          const ListComponent = isOrdered ? 'ol' : 'ul';
+          return (
+            <ListComponent key={index} className={`space-y-2 ${
+              isOrdered ? 'list-decimal' : 'list-disc'
+            } list-inside text-white/80`}>
+              {items.map((item, itemIdx) => (
+                <li key={itemIdx} className="leading-relaxed">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                      p: ({ children }) => <span>{children}</span>
+                    }}
+                  >
+                    {String(item || '')}
+                  </ReactMarkdown>
+                </li>
+              ))}
+            </ListComponent>
+          );
+        }
+        
+        // LEGACY FORMAT: Handle nested content structure
         const listContent = block.content;
         
-        // Handle various list data structures
         if (!listContent) {
           console.warn('List block missing content:', block);
           return (
@@ -802,7 +833,7 @@ function ContentBlock({ block, index }) {
           );
         }
 
-        // Handle object with items property
+        // Handle object with items property (nested format)
         if (typeof listContent === 'object') {
           const items = listContent.items || listContent.list || [];
           
@@ -815,10 +846,10 @@ function ContentBlock({ block, index }) {
             );
           }
 
-          const ListComponent = listContent.type === 'ordered' ? 'ol' : 'ul';
+          const ListComponent = listContent.type === 'ordered' || listContent.ordered ? 'ol' : 'ul';
           return (
             <ListComponent key={index} className={`space-y-2 ${
-              listContent.type === 'ordered' ? 'list-decimal' : 'list-disc'
+              listContent.type === 'ordered' || listContent.ordered ? 'list-decimal' : 'list-disc'
             } list-inside text-white/80`}>
               {items.map((item, itemIdx) => (
                 <li key={itemIdx} className="leading-relaxed">
