@@ -1,4 +1,4 @@
-// app/components/MermaidDiagram.js
+// app/components/MermaidDiagram.js - Enhanced with better error handling
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,7 @@ const MermaidDiagram = ({ content, caption, id = null }) => {
   const [isLibraryLoaded, setIsLibraryLoaded] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Generate unique ID for each diagram
   const diagramId = id || `mermaid-${Math.random().toString(36).substr(2, 9)}`;
@@ -26,96 +27,137 @@ const MermaidDiagram = ({ content, caption, id = null }) => {
         setIsLoading(true);
         setError(null);
 
+        // Validate content first
+        if (!content || typeof content !== 'string') {
+          throw new Error('Invalid or missing diagram content');
+        }
+
         // Lazy load mermaid library
         if (!mermaid) {
-          const mermaidModule = await import('mermaid');
-          mermaid = mermaidModule.default;
-          
-          // Configure mermaid
-          mermaid.initialize({
-            startOnLoad: false,
-            theme: 'dark',
-            themeVariables: {
-              primaryColor: '#8B5CF6',
-              primaryTextColor: '#FFFFFF',
-              primaryBorderColor: '#A855F7',
-              lineColor: '#E5E7EB',
-              secondaryColor: '#1F2937',
-              tertiaryColor: '#374151',
-              background: '#111827',
-              mainBkg: '#1F2937',
-              secondBkg: '#374151',
-              tertiaryBkg: '#4B5563'
-            },
-            fontFamily: 'Inter, system-ui, sans-serif',
-            flowchart: {
-              htmlLabels: true,
-              curve: 'basis',
-              useMaxWidth: true,
-              padding: 20
-            },
-            sequence: {
-              diagramMarginX: 20,
-              diagramMarginY: 20,
-              actorMargin: 50,
-              width: 150,
-              height: 65,
-              boxMargin: 10,
-              boxTextMargin: 5,
-              noteMargin: 10,
-              messageMargin: 35,
-              mirrorActors: true,
-              bottomMarginAdj: 1,
-              useMaxWidth: true,
-              rightAngles: false,
-              showSequenceNumbers: false
-            },
-            gantt: {
-              useMaxWidth: true,
-              leftPadding: 75,
-              rightPadding: 20,
-              gridLineStartPadding: 35,
-              fontSize: 11,
-              fontFamily: 'Inter, system-ui, sans-serif'
-            }
-          });
-          
-          setIsLibraryLoaded(true);
+          try {
+            const mermaidModule = await import('mermaid');
+            mermaid = mermaidModule.default;
+            
+            // Configure mermaid with safe settings
+            mermaid.initialize({
+              startOnLoad: false,
+              theme: 'dark',
+              themeVariables: {
+                primaryColor: '#8B5CF6',
+                primaryTextColor: '#FFFFFF',
+                primaryBorderColor: '#A855F7',
+                lineColor: '#E5E7EB',
+                secondaryColor: '#1F2937',
+                tertiaryColor: '#374151',
+                background: '#111827',
+                mainBkg: '#1F2937',
+                secondBkg: '#374151',
+                tertiaryBkg: '#4B5563'
+              },
+              fontFamily: 'Inter, system-ui, sans-serif',
+              flowchart: {
+                htmlLabels: true,
+                curve: 'basis',
+                useMaxWidth: true,
+                padding: 20
+              },
+              sequence: {
+                diagramMarginX: 20,
+                diagramMarginY: 20,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                mirrorActors: true,
+                bottomMarginAdj: 1,
+                useMaxWidth: true,
+                rightAngles: false,
+                showSequenceNumbers: false
+              },
+              gantt: {
+                useMaxWidth: true,
+                leftPadding: 75,
+                rightPadding: 20,
+                gridLineStartPadding: 35,
+                fontSize: 11,
+                fontFamily: 'Inter, system-ui, sans-serif'
+              },
+              // Security settings
+              securityLevel: 'strict',
+              maxTextSize: 50000,
+              maxEdges: 500
+            });
+            
+            setIsLibraryLoaded(true);
+          } catch (loadError) {
+            console.error('Failed to load Mermaid library:', loadError);
+            throw new Error('Failed to load diagram engine');
+          }
         }
 
         if (!isMounted) return;
-
-        // Validate and sanitize content
-        if (!content || typeof content !== 'string') {
-          throw new Error('Invalid diagram content');
-        }
 
         // Basic security: remove potentially harmful content
         const sanitizedContent = content
           .replace(/<script[^>]*>.*?<\/script>/gi, '')
           .replace(/javascript:/gi, '')
-          .replace(/on\w+\s*=/gi, '');
+          .replace(/on\w+\s*=/gi, '')
+          .trim();
+
+        if (!sanitizedContent) {
+          throw new Error('Content became empty after sanitization');
+        }
 
         // Clear previous content
         if (containerRef.current) {
           containerRef.current.innerHTML = '';
         }
 
-        // Validate mermaid syntax
-        const isValid = await mermaid.parse(sanitizedContent);
+        // Validate mermaid syntax with timeout
+        let isValid = false;
+        try {
+          const validatePromise = mermaid.parse(sanitizedContent);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Validation timeout')), 5000)
+          );
+          
+          isValid = await Promise.race([validatePromise, timeoutPromise]);
+        } catch (parseError) {
+          console.error('Mermaid parse error:', parseError);
+          throw new Error(`Invalid diagram syntax: ${parseError.message}`);
+        }
+
         if (!isValid && isMounted) {
-          throw new Error('Invalid Mermaid syntax');
+          throw new Error('Diagram validation failed');
         }
 
         if (!isMounted) return;
 
-        // Render the diagram
-        const { svg } = await mermaid.render(diagramId, sanitizedContent);
+        // Render the diagram with timeout
+        let renderResult;
+        try {
+          const renderPromise = mermaid.render(diagramId, sanitizedContent);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Render timeout')), 10000)
+          );
+          
+          renderResult = await Promise.race([renderPromise, timeoutPromise]);
+        } catch (renderError) {
+          console.error('Mermaid render error:', renderError);
+          throw new Error(`Failed to render diagram: ${renderError.message}`);
+        }
+
+        if (!renderResult || !renderResult.svg) {
+          throw new Error('No SVG output from Mermaid');
+        }
         
         if (containerRef.current && isMounted) {
-          containerRef.current.innerHTML = svg;
+          containerRef.current.innerHTML = renderResult.svg;
           
-          // Make diagram responsive
+          // Make diagram responsive and add safety measures
           const svgElement = containerRef.current.querySelector('svg');
           if (svgElement) {
             svgElement.style.maxWidth = '100%';
@@ -125,6 +167,10 @@ const MermaidDiagram = ({ content, caption, id = null }) => {
             // Add click handlers for fullscreen
             svgElement.style.cursor = 'pointer';
             svgElement.addEventListener('click', () => setIsFullscreen(true));
+
+            // Remove any potential script tags from SVG
+            const scripts = svgElement.querySelectorAll('script');
+            scripts.forEach(script => script.remove());
           }
         }
 
@@ -145,7 +191,13 @@ const MermaidDiagram = ({ content, caption, id = null }) => {
     return () => {
       isMounted = false;
     };
-  }, [content, diagramId]);
+  }, [content, diagramId, retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    setError(null);
+    setIsLoading(true);
+  };
 
   // Loading state
   if (isLoading) {
@@ -179,13 +231,22 @@ const MermaidDiagram = ({ content, caption, id = null }) => {
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="h-5 w-5 text-red-400" />
             <span className="text-red-300 font-semibold">Diagram Error</span>
-            <button
-              onClick={() => setShowCode(!showCode)}
-              className="ml-auto p-2 hover:bg-red-500/20 rounded-lg transition-colors"
-              title="View source code"
-            >
-              <Code className="h-4 w-4 text-red-300" />
-            </button>
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                onClick={() => setShowCode(!showCode)}
+                className="p-2 hover:bg-red-500/20 rounded-lg transition-colors"
+                title="View source code"
+              >
+                <Code className="h-4 w-4 text-red-300" />
+              </button>
+              <button
+                onClick={handleRetry}
+                className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-colors text-sm"
+                title="Retry rendering"
+              >
+                Retry
+              </button>
+            </div>
           </div>
           
           <p className="text-red-200 text-sm mb-4">{error}</p>
