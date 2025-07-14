@@ -1,4 +1,4 @@
-// app/api/qna/route.js
+// app/api/qna/route.js - Enhanced with better data validation
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -31,6 +31,158 @@ function isRateLimited(ip) {
   validRequests.push(now);
   rateLimits.set(ip, validRequests);
   return false;
+}
+
+// Helper function to safely parse JSON
+function safeParseJSON(jsonString, fallback = null) {
+  if (!jsonString) return fallback;
+  if (typeof jsonString === 'object') return jsonString;
+  
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('Failed to parse JSON:', error, 'String:', jsonString);
+    return fallback;
+  }
+}
+
+// Helper function to validate and clean content blocks
+function validateContentBlocks(content) {
+  if (!Array.isArray(content)) return [];
+  
+  return content.filter(block => {
+    if (!block || typeof block !== 'object') return false;
+    if (!block.type) return false;
+    return true;
+  }).map(block => {
+    // Ensure all blocks have required properties
+    const cleanBlock = {
+      type: String(block.type),
+      ...block
+    };
+    
+    // Validate specific block types
+    switch (block.type) {
+      case 'text':
+        if (!cleanBlock.content) cleanBlock.content = '';
+        break;
+      case 'table':
+        if (!cleanBlock.content || typeof cleanBlock.content !== 'object') {
+          cleanBlock.content = { headers: [], rows: [] };
+        }
+        break;
+      case 'list':
+        if (!cleanBlock.content || !Array.isArray(cleanBlock.content.items)) {
+          cleanBlock.content = { type: 'bullet', items: [] };
+        }
+        break;
+      case 'formula':
+        if (!cleanBlock.content) cleanBlock.content = '';
+        break;
+    }
+    
+    return cleanBlock;
+  });
+}
+
+// Helper function to validate and clean solution data
+function validateSolutionData(solutionData) {
+  if (!solutionData) return null;
+  
+  if (typeof solutionData === 'string') {
+    return solutionData;
+  }
+  
+  if (typeof solutionData !== 'object') {
+    return null;
+  }
+  
+  const cleanSolution = { ...solutionData };
+  
+  // Validate explanation structure
+  if (cleanSolution.explanation) {
+    const explanation = cleanSolution.explanation;
+    
+    // Validate final_answer
+    if (explanation.final_answer && explanation.final_answer.content) {
+      explanation.final_answer.content = validateContentBlocks(explanation.final_answer.content);
+    }
+    
+    // Validate step_by_step_solution
+    if (Array.isArray(explanation.step_by_step_solution)) {
+      explanation.step_by_step_solution = explanation.step_by_step_solution.filter(step => {
+        return step && typeof step === 'object' && (step.title || step.content);
+      }).map(step => {
+        const cleanStep = { ...step };
+        if (Array.isArray(cleanStep.content)) {
+          cleanStep.content = validateContentBlocks(cleanStep.content);
+        }
+        return cleanStep;
+      });
+    }
+    
+    // Validate solving_approach
+    if (explanation.solving_approach && explanation.solving_approach.content) {
+      explanation.solving_approach.content = validateContentBlocks(explanation.solving_approach.content);
+    }
+    
+    // Validate verification_check
+    if (explanation.verification_check && explanation.verification_check.content) {
+      explanation.verification_check.content = validateContentBlocks(explanation.verification_check.content);
+    }
+    
+    // Ensure arrays are actually arrays
+    const arrayFields = [
+      'prerequisite_knowledge', 
+      'formulas_used', 
+      'important_concepts', 
+      'tips_and_tricks', 
+      'common_mistakes'
+    ];
+    
+    arrayFields.forEach(field => {
+      if (explanation[field] && !Array.isArray(explanation[field])) {
+        explanation[field] = [];
+      }
+    });
+  }
+  
+  return cleanSolution;
+}
+
+// Helper function to validate question data
+function validateQuestionData(questionData) {
+  if (!questionData) return null;
+  
+  if (typeof questionData === 'string') {
+    return questionData;
+  }
+  
+  if (typeof questionData !== 'object') {
+    return null;
+  }
+  
+  const cleanQuestion = { ...questionData };
+  
+  // Validate content blocks
+  if (Array.isArray(cleanQuestion.content)) {
+    cleanQuestion.content = validateContentBlocks(cleanQuestion.content);
+  }
+  
+  // Validate sub_questions
+  if (Array.isArray(cleanQuestion.sub_questions)) {
+    cleanQuestion.sub_questions = cleanQuestion.sub_questions.filter(subQ => {
+      return subQ && typeof subQ === 'object';
+    }).map(subQ => {
+      const cleanSubQ = { ...subQ };
+      if (Array.isArray(cleanSubQ.content)) {
+        cleanSubQ.content = validateContentBlocks(cleanSubQ.content);
+      }
+      return cleanSubQ;
+    });
+  }
+  
+  return cleanQuestion;
 }
 
 export async function GET(request) {
@@ -113,23 +265,36 @@ export async function GET(request) {
       years: [...new Set(filtersData?.map(q => q.NCE_number))].filter(Boolean).sort((a, b) => b - a)
     };
 
-    // Transform data to match component expectations
-    const transformedData = data?.map(question => ({
-      id: question.id,
-      nce_number: question.NCE_number,
-      question_number: question.question_number,
-      paper: question.paper,
-      topic: question.tags,
-      difficulty: question.difficulty_level,
-      question_data: question.question,
-      solution_data: question.explanation,
-      // Extract additional metadata from question JSONB
-      marks: question.question?.marks || '5',
-      estimated_time: question.question?.estimated_time || '10-15 mins',
-      title: question.question?.title || '',
-      question_type: question.question?.type || 'short_answer',
-      keywords: question.question?.keywords || []
-    })) || [];
+    // Transform and validate data to match component expectations
+    const transformedData = (data || []).map(question => {
+      // Parse JSON fields safely
+      const questionData = safeParseJSON(question.question, null);
+      const solutionData = safeParseJSON(question.explanation, null);
+      
+      // Validate and clean the data
+      const validatedQuestionData = validateQuestionData(questionData);
+      const validatedSolutionData = validateSolutionData(solutionData);
+      
+      return {
+        id: question.id,
+        nce_number: question.NCE_number,
+        question_number: question.question_number,
+        paper: question.paper,
+        topic: question.tags,
+        difficulty: question.difficulty_level,
+        question_data: validatedQuestionData,
+        solution_data: validatedSolutionData,
+        // Extract additional metadata from question JSONB
+        marks: questionData?.marks || '5',
+        estimated_time: questionData?.estimated_time || '10-15 mins',
+        title: questionData?.title || '',
+        question_type: questionData?.type || 'short_answer',
+        keywords: questionData?.keywords || []
+      };
+    }).filter(question => {
+      // Filter out questions with invalid data
+      return question.question_data !== null && question.solution_data !== null;
+    });
 
     return NextResponse.json({
       questions: transformedData,
@@ -137,14 +302,17 @@ export async function GET(request) {
       pagination: {
         offset,
         limit,
-        total: count,
+        total: transformedData.length,
         hasMore: data?.length === limit
       }
     });
 
   } catch (error) {
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error.message 
+    }, { status: 500 });
   }
 }
 
@@ -177,6 +345,13 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Question not found' }, { status: 404 });
     }
 
+    // Parse and validate JSON fields
+    const questionData = safeParseJSON(data.question, null);
+    const solutionData = safeParseJSON(data.explanation, null);
+    
+    const validatedQuestionData = validateQuestionData(questionData);
+    const validatedSolutionData = validateSolutionData(solutionData);
+
     // Transform single question data
     const transformedQuestion = {
       id: data.id,
@@ -185,19 +360,22 @@ export async function POST(request) {
       paper: data.paper,
       topic: data.tags,
       difficulty: data.difficulty_level,
-      question_data: data.question,
-      solution_data: data.explanation,
-      marks: data.question?.marks || '5',
-      estimated_time: data.question?.estimated_time || '10-15 mins',
-      title: data.question?.title || '',
-      question_type: data.question?.type || 'short_answer',
-      keywords: data.question?.keywords || []
+      question_data: validatedQuestionData,
+      solution_data: validatedSolutionData,
+      marks: questionData?.marks || '5',
+      estimated_time: questionData?.estimated_time || '10-15 mins',
+      title: questionData?.title || '',
+      question_type: questionData?.type || 'short_answer',
+      keywords: questionData?.keywords || []
     };
 
     return NextResponse.json({ question: transformedQuestion });
 
   } catch (error) {
     console.error('API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error.message 
+    }, { status: 500 });
   }
 }
