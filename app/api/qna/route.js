@@ -1,4 +1,4 @@
-// app/api/qna/route.js - Enhanced with better data validation
+// app/api/qna/route.js - ENHANCED WITH ROBUST DATA VALIDATION
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
@@ -46,7 +46,7 @@ function safeParseJSON(jsonString, fallback = null) {
   }
 }
 
-// Helper function to validate and clean content blocks
+// Enhanced helper function to validate and clean content blocks
 function validateContentBlocks(content) {
   if (!Array.isArray(content)) return [];
   
@@ -61,31 +61,92 @@ function validateContentBlocks(content) {
       ...block
     };
     
-    // Validate specific block types
+    // Validate specific block types with enhanced error handling
     switch (block.type) {
       case 'text':
         if (!cleanBlock.content) cleanBlock.content = '';
+        cleanBlock.content = String(cleanBlock.content);
         break;
+        
       case 'table':
         if (!cleanBlock.content || typeof cleanBlock.content !== 'object') {
           cleanBlock.content = { headers: [], rows: [] };
+        } else {
+          // Ensure headers and rows are arrays
+          if (!Array.isArray(cleanBlock.content.headers)) {
+            cleanBlock.content.headers = [];
+          }
+          if (!Array.isArray(cleanBlock.content.rows)) {
+            cleanBlock.content.rows = [];
+          }
+          // Validate each row is an array
+          cleanBlock.content.rows = cleanBlock.content.rows.map(row => 
+            Array.isArray(row) ? row : [row]
+          );
         }
         break;
+        
       case 'list':
-        if (!cleanBlock.content || !Array.isArray(cleanBlock.content.items)) {
+        // Enhanced list validation to handle multiple formats
+        if (!cleanBlock.content) {
+          cleanBlock.content = { type: 'bullet', items: [] };
+        } else if (Array.isArray(cleanBlock.content)) {
+          // Handle legacy format where content is directly an array
+          cleanBlock.content = {
+            type: 'bullet',
+            items: cleanBlock.content.map(item => String(item || ''))
+          };
+        } else if (typeof cleanBlock.content === 'object') {
+          // Handle object format
+          if (!cleanBlock.content.type) {
+            cleanBlock.content.type = 'bullet';
+          }
+          
+          // Handle different property names for items
+          let items = cleanBlock.content.items || 
+                     cleanBlock.content.list || 
+                     cleanBlock.content.points || 
+                     [];
+          
+          if (!Array.isArray(items)) {
+            items = [];
+          }
+          
+          // Ensure all items are strings
+          cleanBlock.content.items = items.map(item => String(item || ''));
+          
+          // Clean up extra properties
+          cleanBlock.content = {
+            type: cleanBlock.content.type,
+            items: cleanBlock.content.items
+          };
+        } else {
+          // Fallback for unexpected formats
           cleanBlock.content = { type: 'bullet', items: [] };
         }
         break;
+        
       case 'formula':
         if (!cleanBlock.content) cleanBlock.content = '';
+        cleanBlock.content = String(cleanBlock.content);
+        if (!cleanBlock.format) cleanBlock.format = 'text';
         break;
+        
+      case 'mermaid':
+        if (!cleanBlock.content) cleanBlock.content = '';
+        cleanBlock.content = String(cleanBlock.content);
+        break;
+        
+      default:
+        // For unknown types, ensure content exists
+        if (!cleanBlock.content) cleanBlock.content = '';
     }
     
     return cleanBlock;
   });
 }
 
-// Helper function to validate and clean solution data
+// Enhanced helper function to validate and clean solution data
 function validateSolutionData(solutionData) {
   if (!solutionData) return null;
   
@@ -131,7 +192,7 @@ function validateSolutionData(solutionData) {
       explanation.verification_check.content = validateContentBlocks(explanation.verification_check.content);
     }
     
-    // Ensure arrays are actually arrays
+    // Ensure arrays are actually arrays and contain valid data
     const arrayFields = [
       'prerequisite_knowledge', 
       'formulas_used', 
@@ -141,16 +202,34 @@ function validateSolutionData(solutionData) {
     ];
     
     arrayFields.forEach(field => {
-      if (explanation[field] && !Array.isArray(explanation[field])) {
-        explanation[field] = [];
+      if (explanation[field]) {
+        if (!Array.isArray(explanation[field])) {
+          explanation[field] = [];
+        } else {
+          // Filter out null/undefined/invalid entries
+          explanation[field] = explanation[field].filter(item => 
+            item && (typeof item === 'string' || (typeof item === 'object' && Object.keys(item).length > 0))
+          );
+        }
       }
     });
+    
+    // Validate legacy quick/detailed format
+    if (explanation.quick && explanation.quick.steps) {
+      if (!Array.isArray(explanation.quick.steps)) {
+        explanation.quick.steps = [];
+      } else {
+        explanation.quick.steps = explanation.quick.steps.filter(step => 
+          step && typeof step === 'object' && (step.title || step.content)
+        );
+      }
+    }
   }
   
   return cleanSolution;
 }
 
-// Helper function to validate question data
+// Enhanced helper function to validate question data
 function validateQuestionData(questionData) {
   if (!questionData) return null;
   
@@ -182,6 +261,13 @@ function validateQuestionData(questionData) {
     });
   }
   
+  // Validate legacy parts format
+  if (Array.isArray(cleanQuestion.parts)) {
+    cleanQuestion.parts = cleanQuestion.parts.filter(part => 
+      part && (typeof part === 'string' || typeof part === 'object')
+    ).map(part => String(part));
+  }
+  
   return cleanQuestion;
 }
 
@@ -207,6 +293,8 @@ export async function GET(request) {
     const nceNumber = searchParams.get('year'); // Using NCE_number for year filtering
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
     const offset = parseInt(searchParams.get('offset') || '0');
+
+    console.log('QnA API Request:', { paper, tags, difficulty, nceNumber, limit, offset });
 
     // Build query - selecting from the actual schema
     let query = supabase
@@ -248,6 +336,8 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
+    console.log(`Found ${data?.length || 0} questions`);
+
     // Get unique filter values for UI
     const filtersQuery = supabase
       .from('questions')
@@ -255,46 +345,75 @@ export async function GET(request) {
 
     const { data: filtersData } = await filtersQuery;
     
-    // Process filters data
+    // Process filters data with better error handling
     const filters = {
-      papers: [...new Set(filtersData?.map(q => q.paper))].filter(Boolean).sort(),
-      topics: [...new Set(filtersData?.flatMap(q => 
-        q.tags ? q.tags.split(',').map(tag => tag.trim()) : []
-      ))].filter(Boolean).sort(),
-      difficulties: [...new Set(filtersData?.map(q => q.difficulty_level))].filter(Boolean).sort(),
-      years: [...new Set(filtersData?.map(q => q.NCE_number))].filter(Boolean).sort((a, b) => b - a)
+      papers: [],
+      topics: [],
+      difficulties: [],
+      years: []
     };
 
+    if (Array.isArray(filtersData)) {
+      filters.papers = [...new Set(filtersData.map(q => q.paper))].filter(Boolean).sort();
+      filters.topics = [...new Set(filtersData.flatMap(q => 
+        q.tags ? q.tags.split(',').map(tag => tag.trim()) : []
+      ))].filter(Boolean).sort();
+      filters.difficulties = [...new Set(filtersData.map(q => q.difficulty_level))].filter(Boolean).sort();
+      filters.years = [...new Set(filtersData.map(q => q.NCE_number))].filter(Boolean).sort((a, b) => b - a);
+    }
+
     // Transform and validate data to match component expectations
-    const transformedData = (data || []).map(question => {
-      // Parse JSON fields safely
-      const questionData = safeParseJSON(question.question, null);
-      const solutionData = safeParseJSON(question.explanation, null);
-      
-      // Validate and clean the data
-      const validatedQuestionData = validateQuestionData(questionData);
-      const validatedSolutionData = validateSolutionData(solutionData);
-      
-      return {
-        id: question.id,
-        nce_number: question.NCE_number,
-        question_number: question.question_number,
-        paper: question.paper,
-        topic: question.tags,
-        difficulty: question.difficulty_level,
-        question_data: validatedQuestionData,
-        solution_data: validatedSolutionData,
-        // Extract additional metadata from question JSONB
-        marks: questionData?.marks || '5',
-        estimated_time: questionData?.estimated_time || '10-15 mins',
-        title: questionData?.title || '',
-        question_type: questionData?.type || 'short_answer',
-        keywords: questionData?.keywords || []
-      };
+    const transformedData = (data || []).map((question, index) => {
+      try {
+        // Parse JSON fields safely
+        const questionData = safeParseJSON(question.question, null);
+        const solutionData = safeParseJSON(question.explanation, null);
+        
+        // Validate and clean the data
+        const validatedQuestionData = validateQuestionData(questionData);
+        const validatedSolutionData = validateSolutionData(solutionData);
+        
+        return {
+          id: question.id,
+          nce_number: question.NCE_number,
+          question_number: question.question_number,
+          paper: question.paper,
+          topic: question.tags,
+          difficulty: question.difficulty_level,
+          question_data: validatedQuestionData,
+          solution_data: validatedSolutionData,
+          // Extract additional metadata from question JSONB
+          marks: questionData?.marks || '5',
+          estimated_time: questionData?.estimated_time || '10-15 mins',
+          title: questionData?.title || '',
+          question_type: questionData?.type || 'short_answer',
+          keywords: questionData?.keywords || []
+        };
+      } catch (processingError) {
+        console.error(`Error processing question ${question.id}:`, processingError);
+        // Return a minimal valid question object
+        return {
+          id: question.id,
+          nce_number: question.NCE_number,
+          question_number: question.question_number,
+          paper: question.paper,
+          topic: question.tags,
+          difficulty: question.difficulty_level,
+          question_data: { content: [{ type: 'text', content: 'Question content could not be loaded' }] },
+          solution_data: { explanation: { final_answer: { content: [{ type: 'text', content: 'Solution content could not be loaded' }] } } },
+          marks: '5',
+          estimated_time: '10-15 mins',
+          title: '',
+          question_type: 'short_answer',
+          keywords: []
+        };
+      }
     }).filter(question => {
-      // Filter out questions with invalid data
+      // Filter out questions with invalid data but be more lenient
       return question.question_data !== null && question.solution_data !== null;
     });
+
+    console.log(`Returning ${transformedData.length} valid questions`);
 
     return NextResponse.json({
       questions: transformedData,
