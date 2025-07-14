@@ -1,4 +1,4 @@
-// app/components/QnAApp.js - COMPLETE FILE WITH ALL SECTIONS
+// app/components/QnAApp.js - FIXED VERSION WITH ENHANCED ERROR HANDLING
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -768,33 +768,81 @@ function ContentBlock({ block, index }) {
         );
 
       case 'list':
-        if (!block.content || typeof block.content !== 'object' || !Array.isArray(block.content.items)) {
+        // Enhanced list validation
+        const listContent = block.content;
+        
+        // Handle various list data structures
+        if (!listContent) {
+          console.warn('List block missing content:', block);
           return (
             <div key={index} className="text-white/60 text-sm italic">
-              ⚠️ List block missing or invalid content/items
+              ⚠️ List block missing content
             </div>
           );
         }
-        
-        const ListComponent = block.content.type === 'ordered' ? 'ol' : 'ul';
+
+        // Handle case where content is directly an array (legacy format)
+        if (Array.isArray(listContent)) {
+          return (
+            <ul key={index} className="space-y-2 list-disc list-inside text-white/80">
+              {listContent.map((item, itemIdx) => (
+                <li key={itemIdx} className="leading-relaxed">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                      p: ({ children }) => <span>{children}</span>
+                    }}
+                  >
+                    {String(item || '')}
+                  </ReactMarkdown>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        // Handle object with items property
+        if (typeof listContent === 'object') {
+          const items = listContent.items || listContent.list || [];
+          
+          if (!Array.isArray(items)) {
+            console.warn('List items is not an array:', listContent);
+            return (
+              <div key={index} className="text-white/60 text-sm italic">
+                ⚠️ List items is not an array
+              </div>
+            );
+          }
+
+          const ListComponent = listContent.type === 'ordered' ? 'ol' : 'ul';
+          return (
+            <ListComponent key={index} className={`space-y-2 ${
+              listContent.type === 'ordered' ? 'list-decimal' : 'list-disc'
+            } list-inside text-white/80`}>
+              {items.map((item, itemIdx) => (
+                <li key={itemIdx} className="leading-relaxed">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[rehypeKatex]}
+                    components={{
+                      p: ({ children }) => <span>{children}</span>
+                    }}
+                  >
+                    {String(item || '')}
+                  </ReactMarkdown>
+                </li>
+              ))}
+            </ListComponent>
+          );
+        }
+
+        // Fallback for other formats
+        console.warn('Unexpected list content format:', listContent);
         return (
-          <ListComponent key={index} className={`space-y-2 ${
-            block.content.type === 'ordered' ? 'list-decimal' : 'list-disc'
-          } list-inside text-white/80`}>
-            {block.content.items.map((item, itemIdx) => (
-              <li key={itemIdx} className="leading-relaxed">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                    p: ({ children }) => <span>{children}</span>
-                  }}
-                >
-                  {String(item || '')}
-                </ReactMarkdown>
-              </li>
-            ))}
-          </ListComponent>
+          <div key={index} className="text-white/60 text-sm italic">
+            ⚠️ Unexpected list format
+          </div>
         );
 
       case 'mermaid':
