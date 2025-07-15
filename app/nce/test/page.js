@@ -2,15 +2,16 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
-// Dynamically import TestApp with no SSR
-const TestApp = dynamic(() => import('@/components/TestApp').then(mod => ({ default: mod.TestApp })), {
+// Dynamically import TestApp with no SSR - Using default export
+const TestApp = dynamic(() => import('@/components/TestApp'), {
   ssr: false,
   loading: () => (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
       <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-3 animate-spin" />
+          <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-white" />
           <p className="text-white text-sm">Loading test interface...</p>
         </div>
       </div>
@@ -30,7 +31,7 @@ export default function NCETestPage() {
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <div className="backdrop-blur-xl bg-white/10 rounded-2xl p-6 border border-white/20">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full mx-auto mb-3 animate-spin" />
+            <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-white" />
             <p className="text-white text-sm">Loading test interface...</p>
           </div>
         </div>
