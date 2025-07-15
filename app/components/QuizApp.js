@@ -1,59 +1,62 @@
 // FILE: app/components/QuizApp.js
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
-import QuizHeader from './quiz/QuizHeader';
-import QuizQuestion from './quiz/QuizQuestion';
-import QuizProgress from './quiz/QuizProgress';
-import QuizSummary from './quiz/QuizSummary';
-import QuizConfiguration from './quiz/QuizConfiguration';
-import { fetchQuizQuestions, fetchTopicsAndYears } from '@/lib/quizApi';
-import { generateQuizSummary } from '@/lib/utils';
+import { CheckCircle, Loader2, AlertTriangle, RefreshCw, Lightbulb } from 'lucide-react';
 
-export default function QuizApp() {
+import { QuizHeader } from './quiz/QuizHeader';
+import { QuizQuestion } from './quiz/QuizQuestion';
+import { QuizActions } from './quiz/QuizActions';
+import { QuizStats } from './quiz/QuizStats';
+import { QuizSummary } from './quiz/QuizSummary';
+import { QuizCompletion } from './quiz/QuizCompletion';
+import { ExplanationDisplay } from './ExplanationDisplay';
+import { QuizSelector } from './QuizSelector';
+import { 
+  fetchQuizQuestions, 
+  fetchTopicsAndYears, 
+  normalizeChapterName, 
+  isCorrectAnswer,
+  generateQuizSummary
+} from '@/lib/quiz-utils';
+
+export function QuizApp() {
   const { data: session, status } = useSession();
   
-  // Quiz state
+  // Quiz state - maintaining existing structure
+  const [selectedPaper, setSelectedPaper] = useState('paper1');
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [showAnswer, setShowAnswer] = useState(false);
-  const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
-  const [answeredQuestions, setAnsweredQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  
-  // Configuration state
-  const [selectedPaper, setSelectedPaper] = useState('paper1');
-  const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedYear, setSelectedYear] = useState('all');
-  const [questionCount, setQuestionCount] = useState(10);
-  const [topics, setTopics] = useState([]);
-  const [years, setYears] = useState([]);
-  
-  // UI state
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
-  const [showMobileStats, setShowMobileStats] = useState(false);
   const [showModifyQuiz, setShowModifyQuiz] = useState(false);
-  const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
+  const [showMobileStats, setShowMobileStats] = useState(false);
   const [currentExplanation, setCurrentExplanation] = useState(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  
-  // Debug and error state
-  const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
-  const [saveError, setSaveError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState({});
-  
-  // Timing state
+  const [topics, setTopics] = useState([]);
+  const [years, setYears] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState('all');
+  const [selectedYear, setSelectedYear] = useState('all');
+  const [questionCount, setQuestionCount] = useState(20);
+  const [answeredQuestions, setAnsweredQuestions] = useState([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [startTime, setStartTime] = useState(null);
   const [isExplanationVisible, setIsExplanationVisible] = useState(false);
   const explanationRef = useRef(null);
+  
+  // Debug and error state - NEW
+  const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
+  const [saveError, setSaveError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState({});
 
   // Enhanced logging function
   const logDebug = (message, data = null) => {
@@ -357,25 +360,53 @@ export default function QuizApp() {
     fetchQuestions();
   };
 
-  const handleAnswerSubmit = (isCorrect) => {
-    const currentQ = questions[currentQuestionIndex];
-    const questionId = currentQ.main_id || currentQ.id;
+  const handleOptionSelect = async (option) => {
+    if (selectedOption || isTransitioning || showAnswer || showFeedback) return;
+    
+    const questionId = currentQuestion.main_id || currentQuestion.id;
+    const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
+    
+    setSelectedOption(option);
+    setShowFeedback(true);
     
     const answerData = {
       questionId,
-      selectedOption,
-      correctAnswer: currentQ.correct_answer,
+      selectedOption: option,
+      correctAnswer: currentQuestion.correct_answer,
       isCorrect,
-      question: currentQ.question_text,
-      tag: currentQ.tag,
-      year: currentQ.year
+      question: currentQuestion.question_text,
+      tag: currentQuestion.tag,
+      year: currentQuestion.year,
+      chapter: normalizeChapterName(currentQuestion.tag),
+      timestamp: new Date()
     };
 
     setAnsweredQuestions(prev => [...prev, answerData]);
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
-    setShowFeedback(true);
+    
+    loadExplanation(questionId);
     
     logDebug('Answer submitted:', answerData);
+  };
+
+  const handleGetAnswer = () => {
+    if (showAnswer || showFeedback || isTransitioning) return;
+    
+    const questionId = currentQuestion.main_id || currentQuestion.id;
+    
+    setShowAnswer(true);
+    setShowFeedback(true);
+    loadExplanation(questionId);
+    setCompletedQuestionIds(prev => new Set([...prev, questionId]));
+    setAnsweredQuestions(prev => [...prev, {
+      questionId: questionId,
+      question: currentQuestion.question_text,
+      selectedOption: null,
+      correctOption: currentQuestion.correct_answer,
+      isCorrect: false,
+      chapter: normalizeChapterName(currentQuestion.tag),
+      timestamp: new Date()
+    }]);
   };
 
   const handleNextQuestion = () => {
@@ -526,147 +557,102 @@ export default function QuizApp() {
       />
 
       <main className={`relative z-10 px-4 md:px-8 py-6 md:py-12 transition-all duration-300 ${
-        isExplanationVisible ? 'md:pb-80' : ''
+        isExplanationVisible ? 'pb-32 md:pb-12' : 'pb-20 md:pb-12' 
       }`}>
         <div className="max-w-4xl mx-auto">
-          <QuizProgress 
-            current={questionProgress.attempted} 
-            total={questionProgress.total} 
-            className="mb-8" 
-          />
-          
-          <QuizQuestion
-            question={currentQuestion}
-            selectedOption={selectedOption}
-            setSelectedOption={setSelectedOption}
-            showFeedback={showFeedback}
-            showAnswer={showAnswer}
-            setShowAnswer={setShowAnswer}
-            onAnswerSubmit={handleAnswerSubmit}
-            onNextQuestion={handleNextQuestion}
-            isTransitioning={isTransitioning}
-            currentExplanation={currentExplanation}
-            isLoadingExplanation={isLoadingExplanation}
-            onLoadExplanation={loadExplanation}
-            explanationRef={explanationRef}
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`} 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }} 
+              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-6 md:p-12 mb-8"
+            >
+              <QuizQuestion 
+                question={currentQuestion} 
+                questionIndex={currentQuestionIndex} 
+                totalQuestions={questions.length} 
+                selectedOption={selectedOption} 
+                showFeedback={showFeedback} 
+                showAnswer={showAnswer} 
+                onOptionSelect={handleOptionSelect} 
+                isTransitioning={isTransitioning} 
+              />
+              <AnimatePresence>
+                {(showFeedback || showAnswer) && (
+                  <motion.div 
+                    ref={explanationRef} 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }} 
+                    exit={{ opacity: 0, height: 0 }} 
+                    className="mb-6 md:mb-8"
+                  >
+                     {isLoadingExplanation ? (
+                        <div className="p-4 md:p-6 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+                          <Loader2 className="h-5 w-5 animate-spin"/>
+                        </div>
+                     ) : (
+                        <ExplanationDisplay 
+                          explanationData={currentExplanation} 
+                          questionText={currentQuestion.question_text} 
+                          options={{ 
+                            option_a: currentQuestion.option_a, 
+                            option_b: currentQuestion.option_b, 
+                            option_c: currentQuestion.option_c, 
+                            option_d: currentQuestion.option_d 
+                          }} 
+                          correctAnswer={currentQuestion.correct_answer?.toLowerCase()} 
+                          userAnswer={selectedOption} 
+                        />
+                     )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <QuizActions 
+                answeredQuestions={answeredQuestions} 
+                showFeedback={showFeedback} 
+                showAnswer={showAnswer} 
+                isTransitioning={isTransitioning} 
+                onGetAnswer={handleGetAnswer} 
+                onNextQuestion={handleNextQuestion} 
+                onViewSummary={handleViewSummary} 
+              />
+            </motion.div>
+          </AnimatePresence>
+          <QuizStats 
+            questionProgress={questionProgress} 
+            answeredQuestions={answeredQuestions} 
           />
         </div>
       </main>
 
-      {/* Quiz Configuration Modal */}
-      <AnimatePresence>
-        {showModifyQuiz && (
-          <QuizConfiguration
-            isOpen={showModifyQuiz}
-            onClose={() => setShowModifyQuiz(false)}
-            onSubmit={handleQuizConfiguration}
-            initialConfig={{
-              selectedPaper,
-              selectedTopic,
-              selectedYear,
-              questionCount
-            }}
-            topics={topics}
-            years={years}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Quiz Summary Modal */}
-      <AnimatePresence>
-        {showSummary && (
-          <QuizSummary
-            isOpen={showSummary}
-            onClose={() => setShowSummary(false)}
-            answeredQuestions={answeredQuestions}
-            startTime={startTime}
-            questionCount={questionCount}
-            selectedPaper={selectedPaper}
-            selectedTopic={selectedTopic}
-            selectedYear={selectedYear}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Completion Modal */}
-      <AnimatePresence>
-        {showCompletionModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-gray-200/50 dark:border-gray-700/50 w-full max-w-lg p-8 shadow-2xl text-center"
-            >
-              <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="h-10 w-10 text-white" />
-              </div>
-              
-              <h2 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-4">Quiz Complete! 🎉</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-8">
-                You've completed all available questions. Great job!
-              </p>
-              
-              {/* Save Status in Completion Modal */}
-              {session && (
-                <div className="mb-6">
-                  {saveStatus === 'saving' && (
-                    <div className="flex items-center justify-center text-blue-600">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span className="text-sm">Saving your progress...</span>
-                    </div>
-                  )}
-                  {saveStatus === 'success' && (
-                    <div className="flex items-center justify-center text-green-600">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      <span className="text-sm">Progress saved successfully!</span>
-                    </div>
-                  )}
-                  {saveStatus === 'error' && (
-                    <div className="text-center text-red-600">
-                      <div className="flex items-center justify-center">
-                        <AlertTriangle className="h-4 w-4 mr-2" />
-                        <span className="text-sm">Failed to save progress</span>
-                      </div>
-                      <p className="text-xs mt-1">{saveError}</p>
-                      <button 
-                        onClick={saveQuizAttempt}
-                        className="text-xs bg-red-600 text-white px-3 py-1 rounded mt-2 hover:bg-red-700"
-                      >
-                        Retry Save
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <motion.button
-                  onClick={handleViewSummary}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-2xl transition-all duration-200"
-                >
-                  View Summary
-                </motion.button>
-                <motion.button
-                  onClick={resetFilters}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-2xl transition-all duration-200"
-                >
-                  Start New Quiz
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <QuizSelector 
+        isOpen={showModifyQuiz} 
+        onClose={() => setShowModifyQuiz(false)} 
+        currentConfig={{ 
+          selectedPaper, 
+          selectedTopic, 
+          selectedYear, 
+          questionCount, 
+          showExplanations: true 
+        }} 
+        onApply={handleQuizConfiguration} 
+        topics={topics} 
+        years={years} 
+      />
+      
+      <QuizSummary 
+        isOpen={showSummary} 
+        onClose={() => setShowSummary(false)} 
+        answeredQuestions={answeredQuestions} 
+        startTime={startTime} 
+      />
+      
+      <QuizCompletion 
+        isOpen={showCompletionModal} 
+        onViewSummary={handleViewSummary} 
+        onStartNewQuiz={resetFilters} 
+      />
 
       {/* Save Status Indicator */}
       <SaveStatusIndicator />
