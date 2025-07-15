@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['vercel.com'],
+    domains: ['vercel.com', 'lh3.googleusercontent.com'],
   },
   webpack: (config) => {
     config.resolve.fallback = {
