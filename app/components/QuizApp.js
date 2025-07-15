@@ -5,11 +5,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
-import QuizHeader from './QuizHeader';
-import QuizQuestion from './QuizQuestion';
-import QuizProgress from './QuizProgress';
-import QuizSummary from './QuizSummary';
-import QuizConfiguration from './QuizConfiguration';
+import QuizHeader from './quiz/QuizHeader';
+import QuizQuestion from './quiz/QuizQuestion';
+import QuizProgress from './quiz/QuizProgress';
+import QuizSummary from './quiz/QuizSummary';
+import QuizConfiguration from './quiz/QuizConfiguration';
 import { fetchQuizQuestions, fetchTopicsAndYears } from '@/lib/quizApi';
 import { generateQuizSummary } from '@/lib/utils';
 
