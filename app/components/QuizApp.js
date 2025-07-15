@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
 import { QuizHeader } from './quiz/QuizHeader';
@@ -131,7 +131,7 @@ export function QuizApp() {
   const updateProgress = () => {
     const totalQuestions = questions.length;
     const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
-    setQuestionProgress({ total, attempted: attemptedQuestions });
+    setQuestionProgress({ total: totalQuestions, attempted: attemptedQuestions });
 
     if (totalQuestions > 0 && attemptedQuestions === totalQuestions) {
       setShowCompletionModal(true);
