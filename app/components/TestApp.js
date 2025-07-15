@@ -1,8 +1,9 @@
-// FILE: app/components/TestApp.js
+// app/components/TestApp.js
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
+import { Loader2 } from 'lucide-react';
 
 import { TestConfig } from './test/TestConfig';
 import { TestInterface } from './test/TestInterface';
@@ -122,16 +123,21 @@ export function TestApp() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-600 dark:text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-700 dark:text-gray-300">Loading test interface...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden">
         <motion.div animate={{ x: mousePosition.x * 0.1, y: mousePosition.y * 0.1 }} className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 opacity-40 blur-3xl" />
         <motion.div animate={{ x: -mousePosition.x * 0.05, y: -mousePosition.y * 0.05 }} className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/20 opacity-30 blur-3xl" />
+      </div>
       <AnimatePresence mode="wait">
         {currentView === 'config' && <TestConfig key="config" config={testConfig} setConfig={setTestConfig} onStart={startTest} topics={topics} years={years} />}
         {currentView === 'test' && <TestInterface key="test" config={testConfig} testData={testData} setTestData={setTestData} onSubmit={submitTest} showPalette={showPalette} setShowPalette={setShowPalette} showMobileStats={showMobileStats} setShowMobileStats={setShowMobileStats} />}
@@ -141,3 +147,6 @@ export function TestApp() {
     </div>
   );
 }
+
+// Add default export for easier importing
+export default TestApp;
