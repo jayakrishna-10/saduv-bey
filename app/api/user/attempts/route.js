@@ -107,11 +107,25 @@ export async function POST(request) {
 
     if (type === 'quiz') {
       tableName = 'quiz_attempts';
+      
+      // Convert "all" values to null and handle data type conversions
+      const selectedTopic = attemptData.selectedTopic === 'all' ? null : attemptData.selectedTopic;
+      let selectedYear = null;
+      
+      if (attemptData.selectedYear && attemptData.selectedYear !== 'all') {
+        const yearNum = parseInt(attemptData.selectedYear);
+        if (!isNaN(yearNum)) {
+          selectedYear = yearNum;
+        } else {
+          logWithTimestamp('warn', 'Invalid year value, setting to null:', attemptData.selectedYear);
+        }
+      }
+      
       dataToInsert = {
         user_id: userId,
         paper: attemptData.paper,
-        selected_topic: attemptData.selectedTopic,
-        selected_year: attemptData.selectedYear,
+        selected_topic: selectedTopic,
+        selected_year: selectedYear,
         question_count: attemptData.questionCount,
         questions_data: attemptData.questionsData,
         answers: attemptData.answers,
@@ -125,6 +139,10 @@ export async function POST(request) {
         tableName,
         userId,
         paper: attemptData.paper,
+        originalSelectedTopic: attemptData.selectedTopic,
+        convertedSelectedTopic: selectedTopic,
+        originalSelectedYear: attemptData.selectedYear,
+        convertedSelectedYear: selectedYear,
         questionCount: attemptData.questionCount,
         totalQuestions: attemptData.totalQuestions,
         score: attemptData.score,
@@ -159,7 +177,8 @@ export async function POST(request) {
         testType: attemptData.testType,
         totalQuestions: attemptData.totalQuestions,
         score: attemptData.score,
-        timeTaken: attemptData.timeTaken
+        timeTaken: attemptData.timeTaken,
+        timeLimit: attemptData.timeLimit
       });
 
     } else {
