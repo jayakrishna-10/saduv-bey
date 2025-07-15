@@ -1,10 +1,11 @@
-// app/layout.js - Updated with ThemeProvider
+// FILE: app/layout.js
 import './globals.css'
 import 'katex/dist/katex.min.css'
 import ErrorBoundary from './components/ErrorBoundary'
 import NavBar from './components/NavBar'
 import AskAI from './components/AskAI'
 import { ThemeProvider } from './context/ThemeContext'
+import AuthSessionProvider from './components/AuthSessionProvider'
 
 export const metadata = {
   title: {
@@ -18,13 +19,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
       <body className="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-        <ThemeProvider>
-          <ErrorBoundary>
-            <NavBar />
-            {children}
-            <AskAI />
-          </ErrorBoundary>
-        </ThemeProvider>
+        <AuthSessionProvider>
+          <ThemeProvider>
+            <ErrorBoundary>
+              <NavBar />
+              {children}
+              <AskAI />
+            </ErrorBoundary>
+          </ThemeProvider>
+        </AuthSessionProvider>
       </body>
     </html>
   );
