@@ -149,16 +149,16 @@ export async function GET(request) {
     
     console.log('User data test:', userDataTest);
 
-    // Test insertion capability (dry run)
+    // Test insertion capability with proper data types
     let insertionTest = {};
     if (session?.user?.id) {
       try {
-        // Test with minimal data that should work
+        // Test with minimal data that should work - using proper data types
         const testData = {
           user_id: session.user.id,
           paper: 'paper1',
-          selected_topic: 'test',
-          selected_year: 2024,
+          selected_topic: null, // Test with null instead of "all"
+          selected_year: null,  // Test with null instead of "all"
           question_count: 1,
           questions_data: [],
           answers: [],
@@ -167,6 +167,8 @@ export async function GET(request) {
           score: 0,
           time_taken: 0
         };
+
+        console.log('Testing insertion with data:', testData);
 
         // Actually try to insert (we'll delete it right after)
         const { data, error } = await supabase
@@ -244,6 +246,12 @@ export async function GET(request) {
     }
     if (insertionTest.error) {
       result.recommendations.push(`CRITICAL: Cannot insert data - ${insertionTest.error}`);
+      
+      // Add specific recommendations for common data type issues
+      if (insertionTest.error.includes('invalid input syntax for type integer')) {
+        result.recommendations.push('DATA TYPE ISSUE: Make sure "all" values are converted to null before database insertion');
+        result.recommendations.push('FIX: Update API to convert selectedYear="all" to null, and selectedTopic="all" to null');
+      }
     }
 
     console.log('Final result:', result);
