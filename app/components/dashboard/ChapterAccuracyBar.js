@@ -12,8 +12,9 @@ import {
   Tooltip, 
   Legend 
 } from 'chart.js';
-import { Target, TrendingUp, AlertCircle, ChevronRight } from 'lucide-react';
+import { Target, TrendingUp, AlertCircle, ChevronRight, BookOpen, Loader2 } from 'lucide-react';
 import { getChartOptions } from '@/lib/chart-config';
+import { CHAPTER_WEIGHTAGES } from '@/lib/dashboard-utils';
 
 // Register ChartJS components
 ChartJS.register(
@@ -25,43 +26,54 @@ ChartJS.register(
   Legend
 );
 
-export function ChapterAccuracyBar({ onChapterClick }) {
-  const [chapterData, setChapterData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hoveredChapter, setHoveredChapter] = useState(null);
+export function ChapterAccuracyBar({ chapterStats, onChapterClick }) {
+  const [selectedPaper, setSelectedPaper] = useState('paper1');
+  const [chartData, setChartData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    fetchChapterAccuracy();
-  }, []);
-
-  const fetchChapterAccuracy = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/user/learning-analytics');
-      const data = await response.json();
-      
-      if (response.ok && data.chapterStats) {
-        processChapterData(data.chapterStats);
-      }
-    } catch (error) {
-      console.error('Error fetching chapter accuracy:', error);
-    } finally {
-      setIsLoading(false);
+    if (chapterStats) {
+      processChapterData();
     }
-  };
+  }, [chapterStats, selectedPaper]);
 
-  const processChapterData = (stats) => {
-    // Sort chapters by accuracy (descending)
-    const sortedChapters = Object.entries(stats)
-      .sort(([, a], [, b]) => b.accuracy - a.accuracy)
-      .slice(0, 10); // Top 10 chapters
+  const processChapterData = () => {
+    if (!chapterStats || !chapterStats[selectedPaper]) {
+      setChartData(null);
+      return;
+    }
 
-    const labels = sortedChapters.map(([chapter]) => {
-      // Truncate long chapter names
-      return chapter.length > 30 ? chapter.substring(0, 27) + '...' : chapter;
+    // Get all chapters for the selected paper from CHAPTER_WEIGHTAGES
+    const paperChapters = CHAPTER_WEIGHTAGES[selectedPaper] || {};
+    const chapterNames = Object.keys(paperChapters);
+    
+    // Get stats for each chapter
+    const chapterDataArray = chapterNames.map(chapterName => {
+      const stats = chapterStats[selectedPaper][chapterName] || {
+        accuracy: 0,
+        totalQuestions: 0,
+        correctAnswers: 0
+      };
+      
+      return {
+        chapter: chapterName,
+        accuracy: stats.accuracy || 0,
+        totalQuestions: stats.totalQuestions || 0,
+        correctAnswers: stats.correctAnswers || 0,
+        weightage: paperChapters[chapterName] || 0
+      };
     });
 
-    const accuracyData = sortedChapters.map(([, data]) => data.accuracy);
+    // Sort by accuracy (highest first)
+    chapterDataArray.sort((a, b) => b.accuracy - a.accuracy);
+
+    const labels = chapterDataArray.map(item => {
+      // Truncate long chapter names for display
+      const name = item.chapter.length > 40 ? item.chapter.substring(0, 37) + '...' : item.chapter;
+      return name;
+    });
+
+    const accuracyData = chapterDataArray.map(item => item.accuracy);
     
     // Color based on accuracy
     const backgroundColors = accuracyData.map(accuracy => {
@@ -76,7 +88,7 @@ export function ChapterAccuracyBar({ onChapterClick }) {
       return 'rgb(239, 68, 68)';
     });
 
-    setChapterData({
+    setChartData({
       labels,
       datasets: [{
         label: 'Accuracy %',
@@ -85,123 +97,147 @@ export function ChapterAccuracyBar({ onChapterClick }) {
         borderColor: borderColors,
         borderWidth: 2,
         borderRadius: 6,
-        barThickness: 30,
+        barThickness: 25,
       }],
-      fullData: sortedChapters
+      fullData: chapterDataArray
     });
   };
 
   const chartOptions = getChartOptions('bar', {
-    title: 'Chapter Accuracy Rankings',
     indexAxis: 'y', // Horizontal bars
     xAxisLabel: 'Accuracy (%)',
     enableLegend: false,
     maintainAspectRatio: false,
-    onClick: (event, elements) => {
-      if (elements.length > 0 && chapterData) {
-        const index = elements[0].index;
-        const [chapter, data] = chapterData.fullData[index];
-        onChapterClick({ chapter, ...data });
+    scales: {
+      x: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          callback: function(value) {
+            return value + '%';
+          }
+        }
+      },
+      y: {
+        ticks: {
+          autoSkip: false,
+          maxRotation: 0,
+          font: {
+            size: 11
+          }
+        }
       }
     },
-    onHover: (event, elements) => {
-      if (elements.length > 0) {
-        setHoveredChapter(elements[0].index);
-      } else {
-        setHoveredChapter(null);
+    onClick: (event, elements) => {
+      if (elements.length > 0 && chartData) {
+        const index = elements[0].index;
+        const chapterData = chartData.fullData[index];
+        onChapterClick({ 
+          chapter: chapterData.chapter,
+          paper: selectedPaper,
+          ...chapterData
+        });
       }
     }
   });
 
-  if (isLoading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Chapter Accuracy Rankings
-        </h3>
-        <div className="h-[400px] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-        </div>
-      </div>
-    );
-  }
+  const papers = [
+    { id: 'paper1', name: 'Paper 1', color: 'from-blue-500 to-indigo-600' },
+    { id: 'paper2', name: 'Paper 2', color: 'from-orange-500 to-red-600' },
+    { id: 'paper3', name: 'Paper 3', color: 'from-emerald-500 to-cyan-600' }
+  ];
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Chapter Accuracy Rankings
-        </h3>
-        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-500 rounded"></div>
-            <span>≥80%</span>
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 h-full">
+      <div className="flex flex-col h-full">
+        {/* Header with Paper Toggle */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Chapter Accuracy Rankings
+            </h3>
+            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                <span>≥80%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                <span>60-79%</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-red-500 rounded"></div>
+                <span>&lt;60%</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-            <span>60-79%</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-red-500 rounded"></div>
-            <span>&lt;60%</span>
-          </div>
-        </div>
-      </div>
 
-      {chapterData && chapterData.fullData.length > 0 ? (
-        <>
-          <div className="h-[400px] cursor-pointer">
-            <Bar data={chapterData} options={chartOptions} />
-          </div>
-          
-          <div className="mt-4 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
-            <AlertCircle className="h-4 w-4 mr-1" />
-            Click on any bar to view detailed chapter statistics
-          </div>
-          
-          {/* Mobile-friendly list view */}
-          <div className="mt-6 md:hidden space-y-2">
-            {chapterData.fullData.slice(0, 5).map(([chapter, data], index) => (
+          {/* Paper Selector */}
+          <div className="flex gap-2">
+            {papers.map(paper => (
               <button
-                key={chapter}
-                onClick={() => onChapterClick({ chapter, ...data })}
-                className="w-full p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                key={paper.id}
+                onClick={() => setSelectedPaper(paper.id)}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                  selectedPaper === paper.id
+                    ? `bg-gradient-to-r ${paper.color} text-white shadow-lg`
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-8 rounded ${
-                    data.accuracy >= 80 ? 'bg-green-500' :
-                    data.accuracy >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}></div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[200px]">
-                      {chapter}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {data.totalQuestions} questions
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-lg font-semibold ${
-                    data.accuracy >= 80 ? 'text-green-600 dark:text-green-400' :
-                    data.accuracy >= 60 ? 'text-yellow-600 dark:text-yellow-400' : 
-                    'text-red-600 dark:text-red-400'
-                  }`}>
-                    {data.accuracy}%
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
-                </div>
+                {paper.name}
               </button>
             ))}
           </div>
-        </>
-      ) : (
-        <div className="h-[400px] flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-          <Target className="h-12 w-12 mb-3 opacity-50" />
-          <p>No chapter data available yet</p>
-          <p className="text-sm mt-1">Complete some quizzes to see your performance</p>
         </div>
-      )}
+
+        {/* Chart Area */}
+        <div className="flex-1 min-h-0">
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+            </div>
+          ) : chartData && chartData.fullData.length > 0 ? (
+            <>
+              <div className="h-[500px] relative">
+                <Bar data={chartData} options={chartOptions} />
+              </div>
+              
+              <div className="mt-4 flex items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                Click on any bar to view detailed chapter statistics
+              </div>
+            </>
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+              <Target className="h-12 w-12 mb-3 opacity-50" />
+              <p>No data available for {papers.find(p => p.id === selectedPaper)?.name}</p>
+              <p className="text-sm mt-1">Complete some quizzes to see your performance</p>
+            </div>
+          )}
+        </div>
+
+        {/* Chapter Count Summary */}
+        {chartData && chartData.fullData.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">
+                Total Chapters: {chartData.fullData.length}
+              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-green-600 dark:text-green-400">
+                  Strong: {chartData.fullData.filter(c => c.accuracy >= 80).length}
+                </span>
+                <span className="text-yellow-600 dark:text-yellow-400">
+                  Moderate: {chartData.fullData.filter(c => c.accuracy >= 60 && c.accuracy < 80).length}
+                </span>
+                <span className="text-red-600 dark:text-red-400">
+                  Weak: {chartData.fullData.filter(c => c.accuracy < 60).length}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
