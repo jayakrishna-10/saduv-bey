@@ -1,4 +1,4 @@
-// app/components/quiz/QuizSwipeHandler.js - Updated with session-based hint tracking
+// app/components/quiz/QuizSwipeHandler.js - Fixed swipe hints with reduced distraction
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,12 +11,12 @@ export function QuizSwipeHandler({
   children,
   swipeThreshold = 50,
   velocityThreshold = 500,
-  currentQuestionIndex = 0 // Add this to track question changes
+  currentQuestionIndex = 0
 }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragDirection, setDragDirection] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [questionsWithHints, setQuestionsWithHints] = useState(new Set());
+  const [hasUserSwiped, setHasUserSwiped] = useState(false); // Track if user has swiped at all
   const [shouldShowHint, setShouldShowHint] = useState(false);
   const dragStartRef = useRef(null);
   const hintTimeoutRef = useRef(null);
@@ -31,22 +31,21 @@ export function QuizSwipeHandler({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Track hints for first 3 questions only
+  // Show hint only for the first question and only if user hasn't swiped yet
   useEffect(() => {
-    if (!isMobile) return;
+    if (!isMobile || hasUserSwiped) return;
     
-    // Show hint for first 3 unique questions only
-    if (questionsWithHints.size < 3 && !questionsWithHints.has(currentQuestionIndex)) {
+    // Show hint only for the very first question (index 0)
+    if (currentQuestionIndex === 0) {
       setShouldShowHint(true);
-      setQuestionsWithHints(prev => new Set([...prev, currentQuestionIndex]));
       
-      // Auto-hide hint after 3 seconds
+      // Auto-hide hint after 4 seconds
       if (hintTimeoutRef.current) {
         clearTimeout(hintTimeoutRef.current);
       }
       hintTimeoutRef.current = setTimeout(() => {
         setShouldShowHint(false);
-      }, 3000);
+      }, 4000);
     }
 
     return () => {
@@ -54,14 +53,14 @@ export function QuizSwipeHandler({
         clearTimeout(hintTimeoutRef.current);
       }
     };
-  }, [currentQuestionIndex, isMobile, questionsWithHints]);
+  }, [currentQuestionIndex, isMobile, hasUserSwiped]);
 
-  // Reset hints when quiz is restarted (currentQuestionIndex goes back to 0 with empty Set)
+  // Reset when quiz restarts (currentQuestionIndex goes back to 0)
   useEffect(() => {
-    if (currentQuestionIndex === 0 && questionsWithHints.size > 0) {
-      setQuestionsWithHints(new Set());
+    if (currentQuestionIndex === 0) {
+      setHasUserSwiped(false);
     }
-  }, [currentQuestionIndex, questionsWithHints.size]);
+  }, [currentQuestionIndex]);
 
   const handlePanStart = (event, info) => {
     if (disabled || !isMobile) return;
@@ -107,6 +106,9 @@ export function QuizSwipeHandler({
 
     // Determine swipe direction and trigger appropriate callback
     if (horizontalSwipe && Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Mark that user has swiped (permanently hide hints)
+      setHasUserSwiped(true);
+      
       if (deltaX > 0 && onSwipeRight) {
         onSwipeRight();
         // Haptic feedback for successful swipe
@@ -121,6 +123,9 @@ export function QuizSwipeHandler({
         }
       }
     } else if (verticalSwipe && Math.abs(deltaY) > Math.abs(deltaX)) {
+      // Mark that user has swiped (permanently hide hints)
+      setHasUserSwiped(true);
+      
       if (deltaY > 0 && onSwipeDown) {
         onSwipeDown();
         // Haptic feedback for successful swipe
@@ -183,24 +188,41 @@ export function QuizSwipeHandler({
     );
   };
 
-  // Session-based swipe hints (only for first 3 questions)
+  // Improved swipe hints - more subtle and less distracting
   const SwipeHints = () => {
-    if (!isMobile || isDragging || !shouldShowHint) return null;
+    if (!isMobile || isDragging || !shouldShowHint || hasUserSwiped) return null;
 
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ 
+          opacity: 0.6, // More transparent to be less distracting
+          y: 0 
+        }}
         exit={{ opacity: 0, y: 20 }}
-        className="fixed bottom-32 left-1/2 transform -translate-x-1/2 z-40 pointer-events-none"
+        transition={{ 
+          duration: 0.8, // Slower, more gentle animation
+          ease: "easeOut" 
+        }}
+        className="fixed bottom-32 left-1/2 transform -translate-x-1/2 z-30 pointer-events-none" // Lower z-index
       >
-        <div className="bg-black/80 dark:bg-white/80 text-white dark:text-black px-4 py-2 rounded-full text-sm font-medium backdrop-blur-xl border border-white/10 dark:border-black/10">
+        <motion.div
+          animate={{ 
+            scale: [1, 1.05, 1], // Gentle breathing animation
+          }}
+          transition={{ 
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          className="bg-black/60 dark:bg-white/60 text-white dark:text-black px-4 py-2 rounded-full text-sm font-medium backdrop-blur-xl border border-white/10 dark:border-black/10"
+        >
           <div className="flex items-center gap-2">
-            <span>👈</span>
-            <span>Swipe to navigate</span>
-            <span>👉</span>
+            <span className="opacity-80">👈</span>
+            <span className="opacity-90">Swipe to navigate</span>
+            <span className="opacity-80">👉</span>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
     );
   };
