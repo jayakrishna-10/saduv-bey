@@ -76,10 +76,17 @@ export async function GET(request) {
       totalStats.totalTimeSpent = recentActivity.reduce((sum, s) => sum + s.time_spent, 0);
     }
 
-    // Format chapter stats for the dashboard
+    // Format chapter stats organized by paper
     const chapterStats = {};
+    const chapterStatsByPaper = {
+      paper1: {},
+      paper2: {},
+      paper3: {}
+    };
+
     if (chapterProgress) {
       chapterProgress.forEach(progress => {
+        // Legacy format for backward compatibility
         chapterStats[progress.chapter] = {
           paper: progress.paper,
           accuracy: Math.round(progress.accuracy),
@@ -88,6 +95,18 @@ export async function GET(request) {
           lastPracticed: progress.last_practiced,
           avgTimePerQuestion: progress.avg_time_per_question || 45
         };
+
+        // New format organized by paper
+        const paperKey = progress.paper || 'paper1';
+        if (chapterStatsByPaper[paperKey]) {
+          chapterStatsByPaper[paperKey][progress.chapter] = {
+            accuracy: Math.round(progress.accuracy),
+            totalQuestions: progress.total_questions_attempted,
+            correctAnswers: progress.correct_answers,
+            lastPracticed: progress.last_practiced,
+            avgTimePerQuestion: progress.avg_time_per_question || 45
+          };
+        }
       });
     }
 
@@ -117,7 +136,8 @@ export async function GET(request) {
         consistency_score: 0
       },
       totalStats,
-      chapterStats,
+      chapterStats, // Legacy format
+      chapterStatsByPaper, // New organized format
       studyStreak,
       activityData,
       userCreatedAt: session.user.createdAt || new Date().toISOString()
