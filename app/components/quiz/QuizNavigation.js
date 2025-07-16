@@ -1,4 +1,4 @@
-// app/components/quiz/QuizNavigation.js - Intelligent navigation system
+// app/components/quiz/QuizNavigation.js - Fixed reference errors
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -274,8 +274,8 @@ export function QuizNavigation({
             <motion.button
               onClick={onPrevious}
               disabled={!hasPrevQuestion}
-              whileHover={{ scale: hasPrevQuestion ? 1.1 : 1, x: hasPrevious ? -8 : 0 }}
-              whileTap={{ scale: hasPrevious ? 0.9 : 1 }}
+              whileHover={{ scale: hasPrevQuestion ? 1.1 : 1, x: hasPrevQuestion ? -8 : 0 }}
+              whileTap={{ scale: hasPrevQuestion ? 0.9 : 1 }}
               className={`p-4 rounded-full backdrop-blur-xl border shadow-xl transition-all ${
                 hasPrevQuestion
                   ? 'bg-white/80 dark:bg-gray-800/80 hover:bg-white/90 dark:hover:bg-gray-800/90 border-white/20 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 cursor-pointer'
