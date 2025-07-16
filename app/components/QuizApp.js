@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Enhanced with gesture support and modern UI
+// app/components/QuizApp.js - Updated with finish quiz flow and removed overview
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -10,11 +10,11 @@ import { QuizNavigation } from './quiz/QuizNavigation';
 import { QuizQuestion } from './quiz/QuizQuestion';
 import { QuizExplanation } from './quiz/QuizExplanation';
 import { QuizSelector } from './QuizSelector';
-import { QuizOverview } from './quiz/QuizOverview';
 import { QuizSwipeHandler } from './quiz/QuizSwipeHandler';
 import { QuizStats } from './quiz/QuizStats';
 import { QuizSummary } from './quiz/QuizSummary';
 import { QuizCompletion } from './quiz/QuizCompletion';
+import { QuizFinishConfirmation } from './quiz/QuizFinishConfirmation';
 import { 
   fetchQuizQuestions, 
   fetchTopicsAndYears, 
@@ -38,11 +38,11 @@ export function QuizApp() {
   
   // UI state
   const [showModifyQuiz, setShowModifyQuiz] = useState(false);
-  const [showOverview, setShowOverview] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
   const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);
-  const [navigationMode, setNavigationMode] = useState('floating'); // 'floating' | 'ambient' | 'hidden'
+  const [navigationMode, setNavigationMode] = useState('floating');
   
   // Feedback and explanation state
   const [showFeedback, setShowFeedback] = useState(false);
@@ -118,7 +118,7 @@ export function QuizApp() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (showModifyQuiz || showOverview || showSummary) return;
+      if (showModifyQuiz || showSummary || showFinishConfirmation) return;
       
       switch (e.key) {
         case 'ArrowLeft':
@@ -131,9 +131,6 @@ export function QuizApp() {
           if (selectedOption || showAnswer) {
             handleNextQuestion();
           }
-          break;
-        case 'Escape':
-          setShowOverview(true);
           break;
         case 'h':
           if (!showFeedback && !showAnswer) {
@@ -153,7 +150,7 @@ export function QuizApp() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedOption, showAnswer, showFeedback, showModifyQuiz, showOverview, showSummary]);
+  }, [selectedOption, showAnswer, showFeedback, showModifyQuiz, showSummary, showFinishConfirmation]);
 
   // Initialize quiz
   useEffect(() => {
@@ -376,17 +373,6 @@ export function QuizApp() {
     }, 150);
   };
 
-  const handleQuestionSelect = (index) => {
-    if (index === currentQuestionIndex) return;
-    
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setCurrentQuestionIndex(index);
-      resetQuestionState();
-      setIsTransitioning(false);
-    }, 150);
-  };
-
   const handleSwipeLeft = () => handleNextQuestion();
   const handleSwipeRight = () => handlePreviousQuestion();
 
@@ -406,11 +392,23 @@ export function QuizApp() {
     setShowSummary(true);
   };
 
+  const handleFinishQuiz = () => {
+    setShowFinishConfirmation(true);
+  };
+
+  const handleConfirmFinishQuiz = () => {
+    setShowFinishConfirmation(false);
+    if (session) {
+      saveQuizAttempt();
+    }
+    setShowCompletionModal(true);
+  };
+
   const resetQuiz = () => {
     setSelectedTopic('all');
     setSelectedYear('all');
     setShowCompletionModal(false);
-    setShowOverview(false);
+    setShowFinishConfirmation(false);
     setSaveStatus(null);
     setSaveError(null);
     fetchQuestions();
@@ -516,7 +514,8 @@ export function QuizApp() {
       <QuizSwipeHandler
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
-        disabled={isTransitioning || showModifyQuiz || showOverview}
+        disabled={isTransitioning || showModifyQuiz}
+        currentQuestionIndex={currentQuestionIndex} // Pass current question index for hint tracking
       >
         <main className="relative z-10 min-h-screen flex flex-col">
           {/* Question Content */}
@@ -579,9 +578,9 @@ export function QuizApp() {
         onPrevious={handlePreviousQuestion}
         onNext={handleNextQuestion}
         onShowAnswer={handleShowAnswer}
-        onShowOverview={() => setShowOverview(true)}
         onShowSummary={handleViewSummary}
         onShowConfig={() => setShowModifyQuiz(true)}
+        onFinishQuiz={handleFinishQuiz}
       />
 
       {/* Modals */}
@@ -599,23 +598,21 @@ export function QuizApp() {
         topics={topics} 
         years={years} 
       />
-
-      <QuizOverview
-        isOpen={showOverview}
-        onClose={() => setShowOverview(false)}
-        questions={questions}
-        currentQuestionIndex={currentQuestionIndex}
-        completedQuestionIds={completedQuestionIds}
-        answeredQuestions={answeredQuestions}
-        onQuestionSelect={handleQuestionSelect}
-        questionProgress={questionProgress}
-      />
       
       <QuizSummary 
         isOpen={showSummary} 
         onClose={() => setShowSummary(false)} 
         answeredQuestions={answeredQuestions} 
         startTime={startTime} 
+      />
+      
+      <QuizFinishConfirmation
+        isOpen={showFinishConfirmation}
+        onClose={() => setShowFinishConfirmation(false)}
+        onConfirmFinish={handleConfirmFinishQuiz}
+        answeredQuestions={answeredQuestions}
+        startTime={startTime}
+        questionProgress={questionProgress}
       />
       
       <QuizCompletion 
