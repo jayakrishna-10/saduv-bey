@@ -17,11 +17,9 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-// Import all dashboard components
-import { ChapterPerformanceChart } from '@/components/dashboard/ChapterPerformanceChart';
+// Import dashboard components
 import { ChapterAccuracyBar } from '@/components/dashboard/ChapterAccuracyBar';
 import { PredictedScoreCard } from '@/components/dashboard/PredictedScoreCard';
-import { ActivityGrid } from '@/components/dashboard/ActivityGrid';
 import { ChapterDetailModal } from '@/components/dashboard/ChapterDetailModal';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
@@ -46,7 +44,6 @@ export default function DashboardPage() {
   });
   
   // UI state
-  const [selectedChapters, setSelectedChapters] = useState([]);
   const [selectedChapterDetail, setSelectedChapterDetail] = useState(null);
   const [showChapterModal, setShowChapterModal] = useState(false);
 
@@ -78,15 +75,6 @@ export default function DashboardPage() {
         recentActivity: attempts
       });
 
-      // Auto-select top 3 chapters for performance chart
-      if (analytics.chapterStats) {
-        const topChapters = Object.entries(analytics.chapterStats)
-          .sort(([,a], [,b]) => b.totalQuestions - a.totalQuestions)
-          .slice(0, 3)
-          .map(([chapter]) => chapter);
-        setSelectedChapters(topChapters);
-      }
-
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
@@ -97,18 +85,6 @@ export default function DashboardPage() {
   const handleChapterClick = (chapterData) => {
     setSelectedChapterDetail(chapterData);
     setShowChapterModal(true);
-  };
-
-  const handleChapterSelect = (chapter) => {
-    setSelectedChapters(prev => {
-      if (prev.includes(chapter)) {
-        return prev.filter(c => c !== chapter);
-      }
-      if (prev.length >= 5) {
-        return [...prev.slice(1), chapter];
-      }
-      return [...prev, chapter];
-    });
   };
 
   if (status === 'loading' || isLoading) {
@@ -235,23 +211,15 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <ChapterPerformanceChart 
-              selectedChapters={selectedChapters}
-              dateRange={30}
-            />
-            <ChapterAccuracyBar 
-              onChapterClick={handleChapterClick}
-            />
-          </div>
-
-          {/* Bottom Grid */}
+          {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <PredictedScoreCard />
             <div className="lg:col-span-2">
-              <ActivityGrid />
+              <ChapterAccuracyBar 
+                chapterStats={analytics.chapterStatsByPaper}
+                onChapterClick={handleChapterClick}
+              />
             </div>
+            <PredictedScoreCard />
           </div>
 
           {/* Recent Activity */}
