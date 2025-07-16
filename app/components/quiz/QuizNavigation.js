@@ -1,4 +1,4 @@
-// app/components/quiz/QuizNavigation.js - Always show 4 buttons with icons for mobile
+// app/components/quiz/QuizNavigation.js - Always show 4 buttons with icons and swipe instructions for mobile
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -67,11 +67,11 @@ export function QuizNavigation({
                 {/* Previous */}
                 <motion.button
                   onClick={onPrevious}
-                  disabled={!hasPrevQuestion}
+                  disabled={!hasPrevious}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   className={`p-3 rounded-xl transition-all ${
-                    hasPrevQuestion
+                    hasPrevious
                       ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                       : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                   }`}
@@ -79,13 +79,25 @@ export function QuizNavigation({
                   <ChevronLeft className="h-5 w-5" />
                 </motion.button>
 
-                {/* Progress Info */}
+                {/* Swipe Instructions - Permanent Display */}
                 <div className="text-center">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {questionProgress.current}/{questionProgress.total}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {accuracy}% accuracy
+                  <motion.div 
+                    animate={{ 
+                      opacity: [0.4, 0.7, 0.4] 
+                    }}
+                    transition={{ 
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+                  >
+                    <span className="opacity-60">👈</span>
+                    <span className="font-medium">Swipe to navigate</span>
+                    <span className="opacity-60">👉</span>
+                  </motion.div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    {questionProgress.current}/{questionProgress.total} • {accuracy}%
                   </div>
                 </div>
 
@@ -191,11 +203,11 @@ export function QuizNavigation({
           >
             <motion.button
               onClick={onPrevious}
-              disabled={!hasPrevQuestion}
-              whileHover={{ scale: hasPrevQuestion ? 1.1 : 1, x: hasPrevQuestion ? -8 : 0 }}
-              whileTap={{ scale: hasPrevQuestion ? 0.9 : 1 }}
+              disabled={!hasPrevious}
+              whileHover={{ scale: hasPrevious ? 1.1 : 1, x: hasPrevious ? -8 : 0 }}
+              whileTap={{ scale: hasPrevious ? 0.9 : 1 }}
               className={`p-4 rounded-full backdrop-blur-xl border shadow-xl transition-all ${
-                hasPrevQuestion
+                hasPrevious
                   ? 'bg-white/80 dark:bg-gray-800/80 hover:bg-white/90 dark:hover:bg-gray-800/90 border-white/20 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 cursor-pointer'
                   : 'bg-white/40 dark:bg-gray-800/40 border-white/10 dark:border-gray-700/30 text-gray-400 dark:text-gray-600 cursor-not-allowed'
               }`}
