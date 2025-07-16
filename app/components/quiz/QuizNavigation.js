@@ -67,11 +67,11 @@ export function QuizNavigation({
                 {/* Previous */}
                 <motion.button
                   onClick={onPrevious}
-                  disabled={!hasPrevious}
+                  disabled={!hasPrevQuestion}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   className={`p-3 rounded-xl transition-all ${
-                    hasPrevious
+                    hasPrevQuestion
                       ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                       : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                   }`}
@@ -203,15 +203,17 @@ export function QuizNavigation({
           >
             <motion.button
               onClick={onPrevious}
-              disabled={!hasPrevious}
-              whileHover={{ scale: hasPrevious ? 1.1 : 1, x: hasPrevious ? -8 : 0 }}
-              whileTap={{ scale: hasPrevious ? 0.9 : 1 }}
+              disabled={!hasPrevQuestion}
+              whileHover={{ scale: hasPrevQuestion ? 1.1 : 1, x: hasPrevQuestion ? -8 : 0 }}
+              whileTap={{ scale: hasPrevQuestion ? 0.9 : 1 }}
               className={`p-4 rounded-full backdrop-blur-xl border shadow-xl transition-all ${
-                hasPrevious
+                hasPrevQuestion
                   ? 'bg-white/80 dark:bg-gray-800/80 hover:bg-white/90 dark:hover:bg-gray-800/90 border-white/20 dark:border-gray-700/50 text-gray-700 dark:text-gray-300 cursor-pointer'
                   : 'bg-white/40 dark:bg-gray-800/40 border-white/10 dark:border-gray-700/30 text-gray-400 dark:text-gray-600 cursor-not-allowed'
               }`}
             >
+              <ChevronLeft className="h-6 w-6" />
+            </motion.button>
               <ChevronLeft className="h-6 w-6" />
             </motion.button>
           </motion.div>
