@@ -29,7 +29,7 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
   const fetchDetailedStats = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/user/chapter-performance?chapters=${chapterData.chapter}&days=30`);
+      const response = await fetch(`/api/user/chapter-performance?chapter=${encodeURIComponent(chapterData.chapter)}&paper=${chapterData.paper}&range=30&mode=single`);
       const data = await response.json();
       
       if (response.ok) {
@@ -42,7 +42,7 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !chapterData) return null;
 
   const getMasteryLevel = (accuracy) => {
     if (accuracy >= 90) return { level: 'Expert', color: 'text-purple-600 dark:text-purple-400' };
@@ -78,7 +78,7 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
                   Chapter Details
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  {chapterData.chapter}
+                  {chapterData.chapter} ({chapterData.paper?.replace('paper', 'Paper ')})
                 </p>
               </div>
               <button
@@ -167,13 +167,13 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
                 </div>
 
                 {/* Recent Performance */}
-                {detailedStats?.performanceData && detailedStats.performanceData.length > 0 && (
+                {detailedStats?.performanceData?.chartData && detailedStats.performanceData.chartData.length > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
                       Recent Performance (Last 5 Sessions)
                     </h3>
                     <div className="space-y-2">
-                      {detailedStats.performanceData.slice(-5).reverse().map((session, index) => (
+                      {detailedStats.performanceData.chartData.slice(-5).reverse().map((session, index) => (
                         <div
                           key={index}
                           className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
@@ -186,7 +186,7 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
                           </div>
                           <div className="flex items-center gap-4">
                             <span className="text-sm text-gray-600 dark:text-gray-400">
-                              {session.totalQuestions} questions
+                              {session.questions} questions
                             </span>
                             <span className={`text-sm font-medium ${
                               session.accuracy >= 80 ? 'text-green-600 dark:text-green-400' :
@@ -198,6 +198,43 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Overall Stats from API */}
+                {detailedStats?.overallStats && (
+                  <div className="mb-8 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+                    <h3 className="text-lg font-medium text-indigo-900 dark:text-indigo-100 mb-3">
+                      Overall Statistics
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-indigo-700 dark:text-indigo-300">Total Questions:</span>
+                        <span className="ml-2 font-medium text-indigo-900 dark:text-indigo-100">
+                          {detailedStats.overallStats.totalQuestions}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-indigo-700 dark:text-indigo-300">Success Rate:</span>
+                        <span className="ml-2 font-medium text-indigo-900 dark:text-indigo-100">
+                          {detailedStats.overallStats.avgAccuracy?.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-indigo-700 dark:text-indigo-300">Sessions:</span>
+                        <span className="ml-2 font-medium text-indigo-900 dark:text-indigo-100">
+                          {detailedStats.overallStats.sessionsCount}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-indigo-700 dark:text-indigo-300">Last Practiced:</span>
+                        <span className="ml-2 font-medium text-indigo-900 dark:text-indigo-100">
+                          {detailedStats.overallStats.lastPracticed 
+                            ? format(new Date(detailedStats.overallStats.lastPracticed), 'MMM dd')
+                            : 'Never'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -242,7 +279,9 @@ export function ChapterDetailModal({ isOpen, onClose, chapterData }) {
           <div className="p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                Last updated: {format(new Date(), 'MMM dd, yyyy')}
+                {chapterData.weightage && (
+                  <span>NCE Weightage: {chapterData.weightage}%</span>
+                )}
               </div>
               <button
                 onClick={onClose}
