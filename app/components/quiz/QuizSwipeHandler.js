@@ -1,17 +1,6 @@
 // app/components/quiz/QuizSwipeHandler.js - Touch gesture handler
 import React, { useRef, useEffect, useState } from 'react';
-import { motion, PanInfo } from 'framer-motion';
-
-interface SwipeHandlerProps {
-  onSwipeLeft?: () => void;
-  onSwipeRight?: () => void;
-  onSwipeUp?: () => void;
-  onSwipeDown?: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-  swipeThreshold?: number;
-  velocityThreshold?: number;
-}
+import { motion } from 'framer-motion';
 
 export function QuizSwipeHandler({
   onSwipeLeft,
@@ -22,11 +11,11 @@ export function QuizSwipeHandler({
   children,
   swipeThreshold = 50,
   velocityThreshold = 500
-}: SwipeHandlerProps) {
+}) {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragDirection, setDragDirection] = useState<'left' | 'right' | 'up' | 'down' | null>(null);
+  const [dragDirection, setDragDirection] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartRef = useRef(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -38,7 +27,7 @@ export function QuizSwipeHandler({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handlePanStart = (event: any, info: PanInfo) => {
+  const handlePanStart = (event, info) => {
     if (disabled || !isMobile) return;
     
     setIsDragging(true);
@@ -50,7 +39,7 @@ export function QuizSwipeHandler({
     }
   };
 
-  const handlePan = (event: any, info: PanInfo) => {
+  const handlePan = (event, info) => {
     if (disabled || !isMobile || !isDragging) return;
 
     const deltaX = info.offset.x;
@@ -64,7 +53,7 @@ export function QuizSwipeHandler({
     }
   };
 
-  const handlePanEnd = (event: any, info: PanInfo) => {
+  const handlePanEnd = (event, info) => {
     if (disabled || !isMobile) return;
 
     setIsDragging(false);
@@ -199,11 +188,11 @@ export function QuizSwipeHandler({
 
 // Hook for programmatic swipe detection
 export function useSwipeDetection() {
-  const [swipeDirection, setSwipeDirection] = useState<string | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const [swipeDirection, setSwipeDirection] = useState(null);
+  const touchStartRef = useRef(null);
 
   useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (e) => {
       const touch = e.touches[0];
       touchStartRef.current = {
         x: touch.clientX,
@@ -212,7 +201,7 @@ export function useSwipeDetection() {
       };
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
+    const handleTouchEnd = (e) => {
       if (!touchStartRef.current) return;
 
       const touch = e.changedTouches[0];
@@ -253,7 +242,7 @@ export function useSwipeDetection() {
 }
 
 // Utility component for swipe gesture training
-export function SwipeGuide({ visible = false, onDismiss }: { visible?: boolean; onDismiss?: () => void }) {
+export function SwipeGuide({ visible = false, onDismiss }) {
   if (!visible) return null;
 
   return (
