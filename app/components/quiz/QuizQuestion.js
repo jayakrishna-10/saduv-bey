@@ -1,4 +1,4 @@
-// app/components/quiz/QuizQuestion.js - Refined for optimal mobile layout
+// app/components/quiz/QuizQuestion.js - Reduced animations and centered actions
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Clock, Calendar, Tag, Loader2 } from 'lucide-react';
@@ -46,19 +46,19 @@ export function QuizQuestion({
     }
 
     if (!showFeedback && !showAnswer) {
-      return "bg-white/80 dark:bg-gray-800/80 hover:bg-white/95 dark:hover:bg-gray-800/95 border-gray-200/60 dark:border-gray-700/60 hover:border-gray-300/60 dark:hover:border-gray-600/60 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:scale-[1.02] cursor-pointer";
+      return "bg-white/80 dark:bg-gray-800/80 hover:bg-white/95 dark:hover:bg-gray-800/95 border-gray-200/60 dark:border-gray-700/60 hover:border-gray-300/60 dark:hover:border-gray-600/60 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 cursor-pointer";
     }
 
     const isCorrect = isCorrectAnswer(option, question.correct_answer);
     const isSelected = selectedOption === option;
 
     if (isCorrect) {
-      return "bg-emerald-100/90 dark:bg-emerald-900/60 border-emerald-300/80 dark:border-emerald-600/80 text-emerald-800 dark:text-emerald-200 scale-[1.02] shadow-emerald-200/50 dark:shadow-emerald-900/30 shadow-lg";
+      return "bg-emerald-100/90 dark:bg-emerald-900/60 border-emerald-300/80 dark:border-emerald-600/80 text-emerald-800 dark:text-emerald-200 shadow-emerald-200/50 dark:shadow-emerald-900/30 shadow-lg";
     }
     if (isSelected && !isCorrect) {
-      return "bg-red-100/90 dark:bg-red-900/60 border-red-300/80 dark:border-red-600/80 text-red-800 dark:text-red-200 scale-[1.02] shadow-red-200/50 dark:shadow-red-900/30 shadow-lg";
+      return "bg-red-100/90 dark:bg-red-900/60 border-red-300/80 dark:border-red-600/80 text-red-800 dark:text-red-200 shadow-red-200/50 dark:shadow-red-900/30 shadow-lg";
     }
-    return "bg-gray-100/80 dark:bg-gray-700/80 border-gray-200/60 dark:border-gray-600/60 text-gray-600 dark:text-gray-400 scale-98 opacity-75";
+    return "bg-gray-100/80 dark:bg-gray-700/80 border-gray-200/60 dark:border-gray-600/60 text-gray-600 dark:text-gray-400 opacity-75";
   };
 
   const getOptionIconClass = (option) => {
@@ -183,36 +183,34 @@ export function QuizQuestion({
         </motion.h2>
       </motion.div>
 
-      {/* Options */}
+      {/* Options - Removed staggered animation delays */}
       <div className={`space-y-3 ${isMobile ? 'mb-6' : 'mb-8'}`}>
-        {['a', 'b', 'c', 'd'].map((option, index) => (
+        {['a', 'b', 'c', 'd'].map((option) => (
           <motion.button
             key={option}
+            // Removed individual delays for less distraction
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 + index * 0.1 }}
+            transition={{ duration: 0.3 }}
             onClick={() => handleOptionClick(option)}
             disabled={showAnswer || isTransitioning || loadingOption}
             whileHover={
               !selectedOption && !isTransitioning && !loadingOption ? 
-              { scale: 1.01, x: 4 } : 
+              { scale: 1.005, x: 2 } : // Reduced hover effect
               {}
             }
             whileTap={
               !selectedOption && !isTransitioning && !loadingOption ? 
-              { scale: 0.99 } : 
+              { scale: 0.995 } : // Reduced tap effect
               {}
             }
             className={`
               w-full p-4 md:p-6 rounded-2xl border-2 text-left transition-all duration-300 
-              backdrop-blur-sm touch-manipulation relative overflow-hidden group
+              backdrop-blur-sm touch-manipulation relative overflow-hidden
               ${getOptionClass(option)} 
               ${(isTransitioning || loadingOption) ? 'pointer-events-none' : ''}
             `}
           >
-            {/* Ripple Effect Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out pointer-events-none" />
-            
             <div className="flex items-center gap-3 md:gap-4 relative z-10">
               <div className={`
                 w-8 h-8 md:w-10 md:h-10 rounded-full border-2 flex items-center justify-center 
