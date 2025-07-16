@@ -25,8 +25,10 @@ export async function GET(request) {
     const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const chapter = searchParams.get('chapter');
+    const chapters = searchParams.get('chapters'); // For multiple chapters (legacy)
     const paper = searchParams.get('paper');
     const dateRange = searchParams.get('range') || '30'; // 7, 30, or 'all'
+    const days = searchParams.get('days') || dateRange; // Support both params
     const mode = searchParams.get('mode') || 'single'; // 'single' or 'comparison'
 
     // Build the query
@@ -37,8 +39,8 @@ export async function GET(request) {
       .order('date', { ascending: true });
 
     // Add date filter
-    if (dateRange !== 'all') {
-      const daysAgo = parseInt(dateRange);
+    if (dateRange !== 'all' && days !== 'all') {
+      const daysAgo = parseInt(days);
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - daysAgo);
       query = query.gte('date', startDate.toISOString().split('T')[0]);
@@ -47,8 +49,10 @@ export async function GET(request) {
     // Add chapter/paper filters
     if (mode === 'single' && chapter && paper) {
       query = query.eq('chapter_name', chapter).eq('paper', paper);
-    } else if (mode === 'comparison' && paper) {
-      query = query.eq('paper', paper);
+    } else if (chapters) {
+      // Legacy support for multiple chapters
+      const chapterList = chapters.split(',');
+      query = query.in('chapter_name', chapterList);
     }
 
     const { data: performanceData, error } = await query;
@@ -69,7 +73,7 @@ export async function GET(request) {
         .eq('paper', paper)
         .single();
 
-      // Get last 10 active sessions for this chapter
+      // Get last 10 sessions for this chapter
       const { data: recentSessions } = await supabase
         .from('daily_chapter_performance')
         .select('*')
@@ -114,13 +118,21 @@ export async function GET(request) {
     // Format data for charts
     const formattedData = {};
     
-    if (mode === 'single') {
+    if (mode === 'single' || chapter) {
       formattedData.chartData = performanceData.map(item => ({
         date: item.date,
         accuracy: item.accuracy,
         questions: item.questions_attempted,
         correct: item.correct_answers,
         timeSpent: item.time_spent
+      }));
+    } else if (chapters) {
+      // Legacy format for multiple chapters
+      formattedData.performanceData = performanceData.map(item => ({
+        date: item.date,
+        chapter: item.chapter_name,
+        accuracy: item.accuracy,
+        questions: item.questions_attempted
       }));
     } else {
       // Group by chapter for comparison
