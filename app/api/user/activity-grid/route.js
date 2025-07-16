@@ -24,13 +24,26 @@ export async function GET(request) {
 
     const userId = session.user.id;
     const { searchParams } = new URL(request.url);
-    const year = searchParams.get('year') || new Date().getFullYear();
+    const year = parseInt(searchParams.get('year') || new Date().getFullYear());
 
-    // Get start and end dates for the year
-    const startDate = new Date(`${year}-01-01`);
-    const endDate = new Date(`${year}-12-31`);
+    // Get date range for the last 365 days (not just current year)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 364); // 365 days including today
 
-    // Fetch study sessions for the year
+    // First, check if we have any study sessions at all
+    const { data: hasData } = await supabase
+      .from('study_sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1);
+
+    if (!hasData || hasData.length === 0) {
+      // If no study sessions, try to create them from existing quiz/test attempts
+      await createStudySessionsFromAttempts(userId);
+    }
+
+    // Fetch study sessions for the date range
     const { data: studySessions, error: sessionsError } = await supabase
       .from('study_sessions')
       .select('*')
@@ -44,67 +57,75 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Failed to fetch activity data' }, { status: 500 });
     }
 
-    // Create activity grid data
-    const activityGrid = createYearGrid(year);
-    const accuracyGrid = createYearGrid(year);
+    // Create activity grids
+    const questionsGrid = [];
+    const accuracyGrid = [];
+    
+    // Create a map for quick lookup
+    const sessionMap = {};
+    if (studySessions) {
+      studySessions.forEach(session => {
+        sessionMap[session.session_date] = session;
+      });
+    }
 
-    // Fill in the data
-    studySessions.forEach(session => {
-      const dateStr = session.session_date;
-      if (activityGrid[dateStr] !== undefined) {
-        activityGrid[dateStr] = {
-          date: dateStr,
-          count: session.questions_answered,
-          level: getActivityLevel(session.questions_answered),
-          details: {
-            questions: session.questions_answered,
-            quizzes: session.quiz_attempts,
-            tests: session.test_attempts,
-            time: session.time_spent,
-            chapters: session.unique_chapters_studied
-          }
-        };
+    // Generate data for each day in the range
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      const session = sessionMap[dateStr];
+      
+      questionsGrid.push({
+        date: dateStr,
+        count: session ? session.questions_answered : 0,
+        level: getActivityLevel(session ? session.questions_answered : 0),
+        details: session ? {
+          questions: session.questions_answered,
+          quizzes: session.quiz_attempts,
+          tests: session.test_attempts,
+          time: session.time_spent,
+          chapters: session.unique_chapters_studied
+        } : null
+      });
 
-        accuracyGrid[dateStr] = {
-          date: dateStr,
-          accuracy: session.average_accuracy,
-          level: getAccuracyLevel(session.average_accuracy),
-          details: {
-            accuracy: session.average_accuracy,
-            quizAccuracy: session.quiz_accuracy,
-            testAccuracy: session.test_accuracy,
-            bestChapter: session.best_chapter,
-            weakestChapter: session.weakest_chapter
-          }
-        };
-      }
-    });
+      accuracyGrid.push({
+        date: dateStr,
+        accuracy: session ? Math.round(session.average_accuracy) : 0,
+        level: getAccuracyLevel(session ? session.average_accuracy : 0),
+        details: session ? {
+          accuracy: Math.round(session.average_accuracy),
+          quizAccuracy: Math.round(session.quiz_accuracy || 0),
+          testAccuracy: Math.round(session.test_accuracy || 0),
+          bestChapter: session.best_chapter,
+          weakestChapter: session.weakest_chapter
+        } : null
+      });
+    }
 
     // Calculate statistics
-    const totalDays = Object.keys(activityGrid).length;
-    const activeDays = studySessions.length;
-    const totalQuestions = studySessions.reduce((sum, s) => sum + s.questions_answered, 0);
-    const averageAccuracy = studySessions.length > 0
+    const totalDays = questionsGrid.length;
+    const activeDays = studySessions ? studySessions.length : 0;
+    const totalQuestions = studySessions ? studySessions.reduce((sum, s) => sum + s.questions_answered, 0) : 0;
+    const averageAccuracy = studySessions && studySessions.length > 0
       ? studySessions.reduce((sum, s) => sum + s.average_accuracy, 0) / studySessions.length
       : 0;
 
-    // Find streaks
-    const streaks = calculateStreaks(studySessions);
+    // Calculate streaks
+    const streaks = calculateStreaks(studySessions || []);
 
     // Get monthly summaries
-    const monthlySummaries = calculateMonthlySummaries(studySessions);
+    const monthlySummaries = calculateMonthlySummaries(studySessions || []);
 
     return NextResponse.json({
-      activityGrid: Object.values(activityGrid),
-      accuracyGrid: Object.values(accuracyGrid),
+      questionsGrid, // Changed from activityGrid
+      accuracyGrid,
       statistics: {
         totalDays,
         activeDays,
         totalQuestions,
-        averageAccuracy,
+        averageAccuracy: Math.round(averageAccuracy),
         currentStreak: streaks.current,
         longestStreak: streaks.longest,
-        activityRate: (activeDays / totalDays) * 100
+        activityRate: Math.round((activeDays / totalDays) * 100)
       },
       monthlySummaries,
       year
@@ -116,22 +137,153 @@ export async function GET(request) {
   }
 }
 
-function createYearGrid(year) {
-  const grid = {};
-  const startDate = new Date(`${year}-01-01`);
-  const endDate = new Date(`${year}-12-31`);
-  
-  for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-    const dateStr = date.toISOString().split('T')[0];
-    grid[dateStr] = {
-      date: dateStr,
-      count: 0,
-      level: 0,
-      details: null
-    };
+// Helper function to create study sessions from existing attempts
+async function createStudySessionsFromAttempts(userId) {
+  try {
+    // Fetch all quiz attempts
+    const { data: quizAttempts } = await supabase
+      .from('quiz_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('completed_at', { ascending: true });
+
+    // Fetch all test attempts
+    const { data: testAttempts } = await supabase
+      .from('test_attempts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('completed_at', { ascending: true });
+
+    // Group by date
+    const sessionsByDate = {};
+
+    // Process quiz attempts
+    if (quizAttempts) {
+      quizAttempts.forEach(attempt => {
+        const date = attempt.completed_at.split('T')[0];
+        if (!sessionsByDate[date]) {
+          sessionsByDate[date] = {
+            user_id: userId,
+            session_date: date,
+            questions_answered: 0,
+            quiz_attempts: 0,
+            test_attempts: 0,
+            time_spent: 0,
+            topics_studied: [],
+            average_accuracy: 0,
+            unique_chapters_studied: 0,
+            quiz_accuracy: 0,
+            test_accuracy: 0,
+            quiz_scores: [],
+            test_scores: []
+          };
+        }
+        
+        sessionsByDate[date].questions_answered += attempt.total_questions;
+        sessionsByDate[date].quiz_attempts += 1;
+        sessionsByDate[date].time_spent += attempt.time_taken;
+        sessionsByDate[date].quiz_scores.push(attempt.score);
+        
+        // Extract chapters from questions_data
+        if (attempt.questions_data) {
+          attempt.questions_data.forEach(q => {
+            if (q.tag) {
+              const chapter = normalizeChapterName(q.tag);
+              if (!sessionsByDate[date].topics_studied.includes(chapter)) {
+                sessionsByDate[date].topics_studied.push(chapter);
+              }
+            }
+          });
+        }
+      });
+    }
+
+    // Process test attempts
+    if (testAttempts) {
+      testAttempts.forEach(attempt => {
+        const date = attempt.completed_at.split('T')[0];
+        if (!sessionsByDate[date]) {
+          sessionsByDate[date] = {
+            user_id: userId,
+            session_date: date,
+            questions_answered: 0,
+            quiz_attempts: 0,
+            test_attempts: 0,
+            time_spent: 0,
+            topics_studied: [],
+            average_accuracy: 0,
+            unique_chapters_studied: 0,
+            quiz_accuracy: 0,
+            test_accuracy: 0,
+            quiz_scores: [],
+            test_scores: []
+          };
+        }
+        
+        sessionsByDate[date].questions_answered += attempt.total_questions;
+        sessionsByDate[date].test_attempts += 1;
+        sessionsByDate[date].time_spent += attempt.time_taken;
+        sessionsByDate[date].test_scores.push(attempt.score);
+        
+        // Extract chapters from questions_data
+        if (attempt.questions_data) {
+          attempt.questions_data.forEach(q => {
+            if (q.tag) {
+              const chapter = normalizeChapterName(q.tag);
+              if (!sessionsByDate[date].topics_studied.includes(chapter)) {
+                sessionsByDate[date].topics_studied.push(chapter);
+              }
+            }
+          });
+        }
+      });
+    }
+
+    // Calculate averages and insert
+    for (const [date, session] of Object.entries(sessionsByDate)) {
+      // Calculate average accuracies
+      if (session.quiz_scores.length > 0) {
+        session.quiz_accuracy = session.quiz_scores.reduce((a, b) => a + b, 0) / session.quiz_scores.length;
+      }
+      if (session.test_scores.length > 0) {
+        session.test_accuracy = session.test_scores.reduce((a, b) => a + b, 0) / session.test_scores.length;
+      }
+      
+      // Overall average
+      const allScores = [...session.quiz_scores, ...session.test_scores];
+      if (allScores.length > 0) {
+        session.average_accuracy = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+      }
+      
+      session.unique_chapters_studied = session.topics_studied.length;
+      
+      // Clean up temporary arrays
+      delete session.quiz_scores;
+      delete session.test_scores;
+      
+      // Insert into database
+      await supabase
+        .from('study_sessions')
+        .insert(session);
+    }
+  } catch (error) {
+    console.error('Error creating study sessions from attempts:', error);
   }
-  
-  return grid;
+}
+
+function normalizeChapterName(tag) {
+  if (!tag) return '';
+  return tag
+    .replace(/['"]/g, '')
+    .trim()
+    .replace(/Act,?\s+(\d{4})/g, 'Act $1')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+and\s+/g, ' and ')
+    .replace(/^Chapter\s+/i, '')
+    .replace(/^chapter_/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function getActivityLevel(count) {
@@ -151,7 +303,7 @@ function getAccuracyLevel(accuracy) {
 }
 
 function calculateStreaks(sessions) {
-  if (sessions.length === 0) return { current: 0, longest: 0 };
+  if (!sessions || sessions.length === 0) return { current: 0, longest: 0 };
   
   const dates = sessions.map(s => new Date(s.session_date));
   dates.sort((a, b) => a - b);
@@ -173,7 +325,9 @@ function calculateStreaks(sessions) {
   
   // Check if current streak is still active
   const today = new Date();
-  const lastSessionDate = dates[dates.length - 1];
+  today.setHours(0, 0, 0, 0);
+  const lastSessionDate = new Date(dates[dates.length - 1]);
+  lastSessionDate.setHours(0, 0, 0, 0);
   const daysSinceLastSession = Math.floor((today - lastSessionDate) / (1000 * 60 * 60 * 24));
   
   if (daysSinceLastSession <= 1) {
@@ -211,7 +365,7 @@ function calculateMonthlySummaries(sessions) {
   // Calculate averages
   Object.values(summaries).forEach(summary => {
     summary.averageAccuracy = summary.sessionCount > 0
-      ? summary.accuracySum / summary.sessionCount
+      ? Math.round(summary.accuracySum / summary.sessionCount)
       : 0;
     delete summary.accuracySum;
   });
