@@ -22,6 +22,7 @@ export function PredictedScoreCard() {
       const data = await response.json();
       
       if (response.ok) {
+        // Use chapterStats for calculation (legacy format is still provided)
         const scores = calculatePredictedScore(data.chapterStats);
         setPredictedScores(scores);
       }
@@ -83,7 +84,7 @@ export function PredictedScoreCard() {
   const overallStatus = getScoreStatus(predictedScores.overall);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Calculator className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
@@ -124,7 +125,7 @@ export function PredictedScoreCard() {
       </div>
 
       {/* Paper-wise Breakdown */}
-      <div className="space-y-3">
+      <div className="space-y-3 flex-1">
         {Object.entries(predictedScores.papers).map(([paper, data]) => (
           <div key={paper} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <button
