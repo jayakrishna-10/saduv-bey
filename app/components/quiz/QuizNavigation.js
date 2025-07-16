@@ -1,4 +1,4 @@
-// app/components/quiz/QuizNavigation.js - Always show 4 buttons with icons and swipe instructions for mobile
+// app/components/quiz/QuizNavigation.js - Always show 4 buttons with icons for mobile
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -79,25 +79,13 @@ export function QuizNavigation({
                   <ChevronLeft className="h-5 w-5" />
                 </motion.button>
 
-                {/* Swipe Instructions - Permanent Display */}
+                {/* Progress Info */}
                 <div className="text-center">
-                  <motion.div 
-                    animate={{ 
-                      opacity: [0.4, 0.7, 0.4] 
-                    }}
-                    transition={{ 
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut"
-                    }}
-                    className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
-                  >
-                    <span className="opacity-60">👈</span>
-                    <span className="font-medium">Swipe to navigate</span>
-                    <span className="opacity-60">👉</span>
-                  </motion.div>
-                  <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    {questionProgress.current}/{questionProgress.total} • {accuracy}%
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {questionProgress.current}/{questionProgress.total}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {accuracy}% accuracy
                   </div>
                 </div>
 
@@ -212,8 +200,6 @@ export function QuizNavigation({
                   : 'bg-white/40 dark:bg-gray-800/40 border-white/10 dark:border-gray-700/30 text-gray-400 dark:text-gray-600 cursor-not-allowed'
               }`}
             >
-              <ChevronLeft className="h-6 w-6" />
-            </motion.button>
               <ChevronLeft className="h-6 w-6" />
             </motion.button>
           </motion.div>
