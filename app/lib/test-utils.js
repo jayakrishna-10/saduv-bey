@@ -1,6 +1,10 @@
+// app/lib/test-utils.js
 // Test-specific utility functions and constants
 
-import { normalizeChapterName, normalizeOptionText, isCorrectAnswer } from './quiz-utils';
+import { normalizeChapterName, normalizeOptionText, isCorrectAnswer, formatTime } from './quiz-utils';
+
+// Re-exporting for convenience in test components
+export { normalizeChapterName, isCorrectAnswer, formatTime };
 
 // Test Configuration
 export const TEST_MODES = {

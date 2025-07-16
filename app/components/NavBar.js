@@ -1,11 +1,12 @@
-// app/components/NavBar.js - Updated with dark mode toggle and fixed AnimatePresence import
+// FILE: app/components/NavBar.js
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion'; // Fixed: Added AnimatePresence import
+import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
+import AuthButton from './AuthButton'; // Import the new AuthButton
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -18,7 +19,6 @@ export default function NavBar() {
       <nav className="fixed top-0 z-[60] w-full bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Logo with Dark Mode Toggle */}
             <div className="flex items-center gap-4">
               <Link href="/" className="flex items-center">
                 <motion.div
@@ -29,7 +29,6 @@ export default function NavBar() {
                 </motion.div>
               </Link>
               
-              {/* Dark Mode Toggle */}
               <motion.button
                 onClick={toggleTheme}
                 disabled={isLoading}
@@ -72,55 +71,28 @@ export default function NavBar() {
               </motion.button>
             </div>
             
-            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6">
               {isNCESection ? (
                 <>
-                  {/* NCE Section Navigation */}
                   <div className="flex items-center gap-4">
                     <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-1 bg-white/50 dark:bg-gray-800/50 rounded-full flex items-center gap-2">
                       <BookOpen className="h-4 w-4" />
                       NCE Preparation
                     </span>
                     
-                    {/* NCE Sub-navigation */}
                     <div className="flex items-center gap-1">
                       <Link href="/nce/quiz">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                            pathname === '/nce/quiz'
-                              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${ pathname === '/nce/quiz' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                           Quiz
                         </motion.button>
                       </Link>
                       <Link href="/nce/test">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                            pathname === '/nce/test'
-                              ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${ pathname === '/nce/test' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                           Test
                         </motion.button>
                       </Link>
                       <Link href="/nce/notes">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                            pathname.startsWith('/nce/notes')
-                              ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                        >
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${ pathname.startsWith('/nce/notes') ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                           Notes
                         </motion.button>
                       </Link>
@@ -128,46 +100,33 @@ export default function NavBar() {
                   </div>
                   
                   <Link href="/">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all"
-                    >
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all">
                       <Home className="h-4 w-4" />
                       Home
                     </motion.button>
                   </Link>
+                  <AuthButton />
                 </>
               ) : (
                 <>
-                  {/* Main Site Navigation */}
                   <div className="flex items-center gap-6">
                     <a href="#features" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm font-medium">
                       Features
                     </a>
-                    <a href="#about" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm font-medium">
-                      About
-                    </a>
-                    <a href="#products" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm font-medium">
-                      Products
-                    </a>
                   </div>
                   
                   <Link href="/nce">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all font-medium"
-                    >
+                    <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-6 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-full hover:bg-gray-800 dark:hover:bg-gray-200 transition-all font-medium">
                       NCE Exam
                     </motion.button>
                   </Link>
+                  <AuthButton />
                 </>
               )}
             </div>
 
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center gap-2">
+              <AuthButton />
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -179,46 +138,29 @@ export default function NavBar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         <motion.div
           initial={false}
-          animate={{
-            height: isMobileMenuOpen ? 'auto' : 0,
-            opacity: isMobileMenuOpen ? 1 : 0
-          }}
+          animate={{ height: isMobileMenuOpen ? 'auto' : 0, opacity: isMobileMenuOpen ? 1 : 0 }}
           transition={{ duration: 0.2, ease: 'easeInOut' }}
           className="md:hidden overflow-hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-700/50"
         >
           <div className="px-6 py-4 space-y-3">
             {isNCESection ? (
               <>
-                {/* NCE Mobile Menu */}
                 <div className="space-y-2">
                   <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide px-3">NCE Preparation</div>
                   <Link href="/nce/quiz" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className={`px-3 py-2 rounded-lg transition-all ${
-                      pathname === '/nce/quiz'
-                        ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}>
+                    <div className={`px-3 py-2 rounded-lg transition-all ${ pathname === '/nce/quiz' ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                       Practice Quiz
                     </div>
                   </Link>
                   <Link href="/nce/test" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className={`px-3 py-2 rounded-lg transition-all ${
-                      pathname === '/nce/test'
-                        ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}>
+                    <div className={`px-3 py-2 rounded-lg transition-all ${ pathname === '/nce/test' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                       Mock Tests
                     </div>
                   </Link>
                   <Link href="/nce/notes" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className={`px-3 py-2 rounded-lg transition-all ${
-                      pathname.startsWith('/nce/notes')
-                        ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}>
+                    <div className={`px-3 py-2 rounded-lg transition-all ${ pathname.startsWith('/nce/notes') ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                       Study Notes
                     </div>
                   </Link>
@@ -235,16 +177,9 @@ export default function NavBar() {
               </>
             ) : (
               <>
-                {/* Main Site Mobile Menu */}
                 <div className="space-y-2">
                   <a href="#features" className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => setIsMobileMenuOpen(false)}>
                     Features
-                  </a>
-                  <a href="#about" className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => setIsMobileMenuOpen(false)}>
-                    About
-                  </a>
-                  <a href="#products" className="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all" onClick={() => setIsMobileMenuOpen(false)}>
-                    Products
                   </a>
                 </div>
                 
@@ -260,8 +195,6 @@ export default function NavBar() {
           </div>
         </motion.div>
       </nav>
-
-      {/* Spacer to prevent content from going under fixed navbar */}
       <div className="h-16" />
     </>
   );

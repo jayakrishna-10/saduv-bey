@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Home } from 'lucide-react';
-import { calculateTestResults, formatTime } from '@/lib/quiz-utils';
+import { calculateTestResults, formatTime } from '@/lib/test-utils';
 
 export function TestResults({ 
   config, 
