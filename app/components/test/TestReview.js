@@ -2,10 +2,10 @@
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Flag } from 'lucide-react';
-import { TestQuestion } from './TestQuestion';
+import { X, ChevronLeft, ChevronRight, CheckCircle, XCircle, Flag } from 'lucide-react';
 import { QuizExplanation } from '../quiz/QuizExplanation';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { normalizeChapterName } from '@/lib/quiz-utils';
+import { TestReviewNavigation } from './TestReviewNavigation';
 
 export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -14,90 +14,95 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const currentQuestionId = currentQuestion.main_id || currentQuestion.id;
   const userAnswer = answers[currentQuestionId];
 
+  const getOptionClass = (option) => {
+    const isCorrect = option === currentQuestion.correct_answer;
+    const isUserChoice = option === userAnswer;
+
+    if (isCorrect) {
+      return "bg-emerald-100/90 dark:bg-emerald-900/60 border-emerald-300/80 dark:border-emerald-600/80 text-emerald-800 dark:text-emerald-200";
+    }
+    if (isUserChoice && !isCorrect) {
+      return "bg-red-100/90 dark:bg-red-900/60 border-red-300/80 dark:border-red-600/80 text-red-800 dark:text-red-200";
+    }
+    return "bg-gray-100/80 dark:bg-gray-700/80 border-gray-200/60 dark:border-gray-600/60 text-gray-600 dark:text-gray-400 opacity-75";
+  };
+  
+  const getOptionIcon = (option) => {
+    const isCorrect = option === currentQuestion.correct_answer;
+    const isUserChoice = option === userAnswer;
+
+    if (isCorrect) return <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
+    if (isUserChoice && !isCorrect) return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
+    return null;
+  };
+
   return (
-    <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 z-50 flex flex-col">
-      <header className="bg-white dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Test Review</h2>
-        <button onClick={onExit} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><X /></button>
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 z-50 flex flex-col font-sans">
+      <header className="sticky top-0 z-20 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Test Review</h2>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+            Question {currentIndex + 1} of {questions.length}
+        </div>
+        <motion.button whileHover={{ scale: 1.1 }} onClick={onExit} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><X /></motion.button>
       </header>
       
-      <div className="flex-1 flex overflow-hidden">
-        {/* Question List */}
-        <aside className="w-1/4 hidden md:block border-r border-gray-200 dark:border-gray-700">
-          <ScrollArea className="h-full p-4">
-            <div className="space-y-2">
-              {questions.map((q, index) => {
-                const qId = q.main_id || q.id;
-                const isCorrect = answers[qId] === q.correct_answer;
-                const isAnswered = qId in answers;
-                return (
-                  <button key={qId} onClick={() => setCurrentIndex(index)} className={`w-full text-left p-3 rounded-lg flex items-center justify-between ${currentIndex === index ? 'bg-indigo-100 dark:bg-indigo-900/50' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
-                    <span className="truncate">Q{index + 1}: {q.question_text}</span>
-                    <div className="flex items-center gap-2">
-                      {flaggedQuestions.has(qId) && <Flag className="h-4 w-4 text-yellow-500" />}
-                      {isAnswered ? (isCorrect ? <div className="w-3 h-3 rounded-full bg-green-500" /> : <div className="w-3 h-3 rounded-full bg-red-500" />) : <div className="w-3 h-3 rounded-full bg-gray-400" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        </aside>
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentIndex}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl p-8 mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                Question {currentIndex + 1}
+                                {flaggedQuestions.has(currentQuestionId) && <Flag className="inline-block h-4 w-4 ml-2 text-yellow-500" />}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{normalizeChapterName(currentQuestion.tag)}</p>
+                        </div>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-            >
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-6">
-                <p className="text-indigo-600 dark:text-indigo-400 font-semibold mb-2">Question {currentIndex + 1}</p>
-                <p className="text-lg text-gray-800 dark:text-gray-200 mb-6">{currentQuestion.question_text}</p>
-                
-                <div className="space-y-3">
-                  {['a', 'b', 'c', 'd'].map(opt => {
-                    const isCorrect = opt === currentQuestion.correct_answer;
-                    const isUserChoice = opt === userAnswer;
-                    let classes = "border-gray-300 dark:border-gray-600";
-                    if(isCorrect) classes = "border-green-500 bg-green-50 dark:bg-green-900/30";
-                    if(isUserChoice && !isCorrect) classes = "border-red-500 bg-red-50 dark:bg-red-900/30";
+                        <p className="text-xl text-gray-800 dark:text-gray-200 mb-8 leading-relaxed">{currentQuestion.question_text}</p>
+                        
+                        <div className="space-y-4">
+                            {['a', 'b', 'c', 'd'].map(opt => (
+                                <div key={opt} className={`p-4 rounded-xl border-2 flex items-center justify-between ${getOptionClass(opt)}`}>
+                                    <span>{opt.toUpperCase()}. {currentQuestion[`option_${opt}`]}</span>
+                                    {getOptionIcon(opt)}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                     
-                    return (
-                      <div key={opt} className={`p-4 rounded-lg border-2 ${classes}`}>
-                        {opt.toUpperCase()}. {currentQuestion[`option_${opt}`]}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              <QuizExplanation
-                isVisible={true}
-                isExpanded={true}
-                explanation={{ explanation: currentQuestion.explanation }}
-                questionText={currentQuestion.question_text}
-                options={{
-                  option_a: currentQuestion.option_a,
-                  option_b: currentQuestion.option_b,
-                  option_c: currentQuestion.option_c,
-                  option_d: currentQuestion.option_d
-                }}
-                correctAnswer={currentQuestion.correct_answer}
-                userAnswer={userAnswer}
-              />
-            </motion.div>
-          </AnimatePresence>
-        </main>
+                    <QuizExplanation
+                        isVisible={true}
+                        isExpanded={true}
+                        explanation={currentQuestion.explanation}
+                        questionText={currentQuestion.question_text}
+                        options={{
+                            option_a: currentQuestion.option_a,
+                            option_b: currentQuestion.option_b,
+                            option_c: currentQuestion.option_c,
+                            option_d: currentQuestion.option_d
+                        }}
+                        correctAnswer={currentQuestion.correct_answer}
+                        userAnswer={userAnswer}
+                    />
+                </motion.div>
+            </AnimatePresence>
+        </div>
       </div>
 
-      <footer className="bg-white dark:bg-gray-800 p-4 border-t border-gray-200 dark:border-gray-700 flex justify-center items-center gap-4">
-        <button onClick={() => setCurrentIndex(p => Math.max(0, p - 1))} disabled={currentIndex === 0} className="px-4 py-2 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-700 disabled:opacity-50"><ChevronLeft /> Prev</button>
-        <span>{currentIndex + 1} / {questions.length}</span>
-        <button onClick={() => setCurrentIndex(p => Math.min(questions.length - 1, p + 1))} disabled={currentIndex === questions.length - 1} className="px-4 py-2 rounded-lg flex items-center gap-2 bg-gray-200 dark:bg-gray-700 disabled:opacity-50">Next <ChevronRight /></button>
-      </footer>
+      <TestReviewNavigation
+        onPrevious={() => setCurrentIndex(p => Math.max(0, p - 1))}
+        onNext={() => setCurrentIndex(p => Math.min(questions.length - 1, p + 1))}
+        onFinishReview={onExit}
+        hasPrev={currentIndex > 0}
+        hasNext={currentIndex < questions.length - 1}
+      />
     </div>
   );
 }
