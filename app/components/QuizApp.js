@@ -22,8 +22,7 @@ import {
   isCorrectAnswer,
   generateQuizSummary,
   getNextAvailableQuestion,
-  getPreviousAvailableQuestion,
-  getTopicDistribution
+  getPreviousAvailableQuestion
 } from '@/lib/quiz-utils';
 
 export function QuizApp() {
@@ -55,8 +54,6 @@ export function QuizApp() {
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('all');
   const [questionCount, setQuestionCount] = useState(20);
-
-
   
   // Progress state
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
@@ -213,17 +210,10 @@ export function QuizApp() {
       setAnsweredQuestions([]);
       setCurrentQuestionIndex(0);
       resetQuestionState();
-      
-      // Track randomization metrics
-      const distribution = getTopicDistribution(fetchedQuestions);
-      setTopicDistribution(distribution);
-      setQuestionsPool(fetchedQuestions.length * 3); // Approximate pool size based on our fetch strategy
-      
-      
       setIsLoading(false);
       setHasQuizStarted(true);
       
-      logDebug(`Successfully loaded ${fetchedQuestions.length} questions with variety score calculated`);
+      logDebug(`Successfully loaded ${fetchedQuestions.length} questions`);
     } catch (err) {
       logDebug('Fetch questions error:', err);
       setIsLoading(false);
@@ -427,30 +417,13 @@ export function QuizApp() {
     setShowCompletionModal(true);
   };
 
-  const handleRegenerateQuiz = async () => {
-    if (isLoading) return;
-    
-    logDebug('Regenerating quiz with new random questions');
-    setIsTransitioning(true);
-    
-    // Small delay for visual feedback
-    setTimeout(async () => {
-      await fetchQuestions();
-      setIsTransitioning(false);
-    }, 300);
-  };
-
   const resetQuiz = () => {
     setSelectedTopic('all');
-    // Removed setSelectedYear
     setShowCompletionModal(false);
     setShowFinishConfirmation(false);
     setSaveStatus(null);
     setSaveError(null);
     setHasQuizStarted(false);
-    
-    setQuestionsPool(0);
-    setTopicDistribution({});
     setShowModifyQuiz(true); // Show selector again for new quiz
   };
 
@@ -590,9 +563,7 @@ export function QuizApp() {
         <main className="relative z-10 min-h-screen flex flex-col">
           {/* Question Content */}
           <div className="flex-1 px-4 md:px-8 py-8 pb-32 md:pb-8">
-            <div className="max-w-4xl mx-auto space-y-6">
-              
-
+            <div className="max-w-4xl mx-auto">
               <AnimatePresence mode="wait">
                 <motion.div 
                   key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`}
