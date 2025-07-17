@@ -1,4 +1,4 @@
-// app/components/quiz/QuizFinishConfirmation.js - Finish quiz with summary and confirmation
+// app/components/quiz/QuizFinishConfirmation.js - Updated to remove year references
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -136,7 +136,7 @@ export function QuizFinishConfirmation({
                 {/* Chapter Performance (if multiple chapters) */}
                 {Object.keys(summary.chapterPerformance).length > 1 && (
                   <div className="mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Chapter Performance</h3>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Topic Performance</h3>
                     <div className="space-y-3">
                       {Object.entries(summary.chapterPerformance).map(([chapter, performance]) => (
                         <div key={chapter} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
