@@ -1,4 +1,4 @@
-// app/components/QuizSelector.js - Fixed to handle paper changes properly
+// app/components/QuizSelector.js - Streamlined 2-screen approach
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,7 +14,8 @@ import {
   Sparkles,
   Zap,
   Target,
-  Clock
+  Clock,
+  ChevronRight
 } from 'lucide-react';
 
 const PAPERS = {
@@ -53,18 +54,16 @@ export function QuizSelector({
   currentConfig, 
   onApply,
   topics = [],
-  years = [],
-  onPaperChange // New prop for handling paper changes
+  onPaperChange
 }) {
   const [config, setConfig] = useState({
     selectedPaper: 'paper1',
     selectedTopic: 'all',
-    selectedYear: 'all',
     questionCount: 20,
     showExplanations: true
   });
 
-  const [step, setStep] = useState(1); // 1: Paper, 2: Filters, 3: Settings
+  const [step, setStep] = useState(1); // 1: Paper + Topic, 2: Settings
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize config when modal opens
@@ -73,7 +72,6 @@ export function QuizSelector({
       setConfig({
         selectedPaper: currentConfig?.selectedPaper || 'paper1',
         selectedTopic: currentConfig?.selectedTopic || 'all',
-        selectedYear: currentConfig?.selectedYear || 'all',
         questionCount: currentConfig?.questionCount || 20,
         showExplanations: currentConfig?.showExplanations !== undefined ? currentConfig.showExplanations : true
       });
@@ -88,19 +86,18 @@ export function QuizSelector({
     setConfig(prev => ({
       ...prev,
       selectedPaper: paperId,
-      // Reset topic and year when paper changes
-      selectedTopic: 'all',
-      selectedYear: 'all'
+      // Reset topic when paper changes
+      selectedTopic: 'all'
     }));
     
-    // Call the onPaperChange callback to update topics and years
+    // Call the onPaperChange callback to update topics
     if (onPaperChange) {
       await onPaperChange(paperId);
     }
   }, [onPaperChange]);
 
   const handleNext = () => {
-    if (step < 3) setStep(step + 1);
+    if (step < 2) setStep(step + 1);
   };
 
   const handlePrevious = () => {
@@ -116,20 +113,19 @@ export function QuizSelector({
     const resetConfig = {
       selectedPaper: 'paper1',
       selectedTopic: 'all',
-      selectedYear: 'all', 
       questionCount: 20,
       showExplanations: true
     };
     setConfig(resetConfig);
     setStep(1);
     
-    // Reset to paper1 topics/years
+    // Reset to paper1 topics
     if (onPaperChange) {
       onPaperChange('paper1');
     }
   }, [onPaperChange]);
 
-  const getStepProgress = () => (step / 3) * 100;
+  const getStepProgress = () => (step / 2) * 100;
 
   const getQuestionCountLabel = (count) => {
     if (count <= 10) return { label: 'Quick', icon: Zap, color: 'text-yellow-600 dark:text-yellow-400' };
@@ -154,7 +150,7 @@ export function QuizSelector({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl"
+          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl"
         >
           {/* Header */}
           <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
@@ -177,7 +173,7 @@ export function QuizSelector({
                     Customize Your Quiz
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Step {step} of 3: {step === 1 ? 'Choose Paper' : step === 2 ? 'Apply Filters' : 'Configure Settings'}
+                    Step {step} of 2: {step === 1 ? 'Choose Paper & Topic' : 'Configure Settings'}
                   </p>
                 </div>
               </div>
@@ -197,140 +193,153 @@ export function QuizSelector({
           {/* Content */}
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
             <AnimatePresence mode="wait">
-              {/* Step 1: Paper Selection */}
+              {/* Step 1: Paper & Topic Selection */}
               {step === 1 && (
                 <motion.div
                   key="step1"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="space-y-4"
-                >
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Select Your Paper
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      Choose which NCE paper you'd like to practice
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    {Object.values(PAPERS).map((paper) => (
-                      <motion.button
-                        key={paper.id}
-                        onClick={() => handlePaperSelect(paper.id)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className={`w-full p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
-                          config.selectedPaper === paper.id
-                            ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
-                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
-                        } ${paper.gradient}`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`p-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg`}>
-                            {paper.icon}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-gray-900 dark:text-gray-100">
-                                {paper.name}
-                              </span>
-                              <span className="px-2 py-1 bg-white/60 dark:bg-gray-800/60 rounded-full text-xs font-medium text-gray-600 dark:text-gray-400">
-                                {paper.topics} topics
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                              {paper.description}
-                            </p>
-                          </div>
-                          {config.selectedPaper === paper.id && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ type: "spring", stiffness: 300 }}
-                            >
-                              <CheckCircle2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                            </motion.div>
-                          )}
-                        </div>
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 2: Filters */}
-              {step === 2 && (
-                <motion.div
-                  key="step2"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Filter Questions
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      Narrow down your practice scope
-                    </p>
-                  </div>
+                  {/* Paper Selection */}
+                  <div>
+                    <div className="text-center mb-6">
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                        Select Your Paper
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        Choose which NCE paper you'd like to practice
+                      </p>
+                    </div>
 
-                  {/* Topic Filter */}
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-                      <Filter className="h-4 w-4" />
-                      Topic Focus
-                    </label>
-                    <select
-                      value={config.selectedTopic}
-                      onChange={(e) => setConfig(prev => ({ ...prev, selectedTopic: e.target.value }))}
-                      className="w-full p-4 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="all">All Topics ({topics.length} available)</option>
-                      {topics.map(topic => (
-                        <option key={topic} value={topic}>{topic}</option>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                      {Object.values(PAPERS).map((paper) => (
+                        <motion.button
+                          key={paper.id}
+                          onClick={() => handlePaperSelect(paper.id)}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          className={`p-6 rounded-2xl text-center transition-all duration-300 border-2 ${
+                            config.selectedPaper === paper.id
+                              ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
+                          } ${paper.gradient}`}
+                        >
+                          <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>
+                            {paper.icon}
+                          </div>
+                          <div className="mb-2">
+                            <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                              {paper.name}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              {paper.topics} topics available
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {paper.description}
+                          </p>
+                          {config.selectedPaper === paper.id && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ type: "spring", stiffness: 300 }}
+                              className="mt-3"
+                            >
+                              <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mx-auto" />
+                            </motion.div>
+                          )}
+                        </motion.button>
                       ))}
-                    </select>
+                    </div>
                   </div>
 
-                  {/* Year Filter */}
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-                      <BookOpen className="h-4 w-4" />
-                      Year Range
-                    </label>
-                    <select
-                      value={config.selectedYear}
-                      onChange={(e) => setConfig(prev => ({ ...prev, selectedYear: e.target.value }))}
-                      className="w-full p-4 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="all">All Years ({years.length} available)</option>
-                      {years.map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
+                  {/* Topic Selection */}
+                  <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6">
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+                        <Filter className="h-5 w-5" />
+                        Choose Topic Focus
+                      </label>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                        Select a specific topic or practice all topics from {PAPERS[config.selectedPaper]?.name}
+                      </p>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* All Topics Option */}
+                        <motion.button
+                          onClick={() => setConfig(prev => ({ ...prev, selectedTopic: 'all' }))}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          className={`p-4 rounded-xl text-left transition-all border-2 ${
+                            config.selectedTopic === 'all'
+                              ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-md'
+                              : 'border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 hover:border-gray-300 dark:hover:border-gray-600'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">
+                                All Topics
+                              </div>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Practice questions from all {topics.length} available topics
+                              </div>
+                            </div>
+                            {config.selectedTopic === 'all' && (
+                              <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                            )}
+                          </div>
+                        </motion.button>
+
+                        {/* Individual Topic Options */}
+                        <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                          {topics.map((topic, index) => (
+                            <motion.button
+                              key={topic}
+                              onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
+                              whileHover={{ scale: 1.01 }}
+                              whileTap={{ scale: 0.99 }}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                              className={`w-full p-3 rounded-lg text-left transition-all border ${
+                                config.selectedTopic === topic
+                                  ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
+                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {topic}
+                                </span>
+                                {config.selectedTopic === topic && (
+                                  <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                )}
+                              </div>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Filter Summary */}
+                  {/* Selection Summary */}
                   <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-200 dark:border-indigo-700">
-                    <h4 className="font-medium text-indigo-900 dark:text-indigo-100 mb-2">Filter Summary</h4>
+                    <h4 className="font-medium text-indigo-900 dark:text-indigo-100 mb-2">Current Selection</h4>
                     <div className="space-y-1 text-sm text-indigo-800 dark:text-indigo-200">
-                      <div>Paper: {PAPERS[config.selectedPaper]?.name}</div>
-                      <div>Topic: {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</div>
-                      <div>Year: {config.selectedYear === 'all' ? 'All Years' : config.selectedYear}</div>
+                      <div>📄 Paper: {PAPERS[config.selectedPaper]?.name}</div>
+                      <div>🎯 Topic: {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</div>
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* Step 3: Settings */}
-              {step === 3 && (
+              {/* Step 2: Settings */}
+              {step === 2 && (
                 <motion.div
-                  key="step3"
+                  key="step2"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -352,7 +361,7 @@ export function QuizSelector({
                       Number of Questions: {config.questionCount}
                     </label>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <input
                         type="range"
                         min="5"
@@ -364,19 +373,22 @@ export function QuizSelector({
                       />
                       
                       <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                        <span>5</span>
-                        <span>25</span>
-                        <span>50</span>
+                        <span>5 (Quick)</span>
+                        <span>25 (Standard)</span>
+                        <span>50 (Comprehensive)</span>
                       </div>
 
                       {/* Question Count Indicator */}
-                      <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                      <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                         {(() => {
                           const { label, icon: Icon, color } = getQuestionCountLabel(config.questionCount);
                           return (
                             <>
-                              <Icon className={`h-4 w-4 ${color}`} />
+                              <Icon className={`h-5 w-5 ${color}`} />
                               <span className={`text-sm font-medium ${color}`}>{label} Session</span>
+                              <span className="text-gray-600 dark:text-gray-400 text-sm">
+                                (~{Math.round(config.questionCount * 1.5)} minutes)
+                              </span>
                             </>
                           );
                         })()}
@@ -422,15 +434,19 @@ export function QuizSelector({
                         <div className="text-indigo-700 dark:text-indigo-300 font-medium">Questions</div>
                         <div className="text-indigo-900 dark:text-indigo-100">{config.questionCount}</div>
                       </div>
-                      <div>
+                      <div className="col-span-2">
                         <div className="text-indigo-700 dark:text-indigo-300 font-medium">Topic</div>
-                        <div className="text-indigo-900 dark:text-indigo-100 truncate">
+                        <div className="text-indigo-900 dark:text-indigo-100">
                           {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}
                         </div>
                       </div>
                       <div>
                         <div className="text-indigo-700 dark:text-indigo-300 font-medium">Explanations</div>
                         <div className="text-indigo-900 dark:text-indigo-100">{config.showExplanations ? 'Enabled' : 'Disabled'}</div>
+                      </div>
+                      <div>
+                        <div className="text-indigo-700 dark:text-indigo-300 font-medium">Duration</div>
+                        <div className="text-indigo-900 dark:text-indigo-100">~{Math.round(config.questionCount * 1.5)} min</div>
                       </div>
                     </div>
                   </div>
@@ -461,7 +477,7 @@ export function QuizSelector({
             </div>
             
             <div className="flex items-center gap-3">
-              {step < 3 ? (
+              {step < 2 ? (
                 <motion.button
                   onClick={handleNext}
                   whileHover={{ scale: 1.05 }}
@@ -469,12 +485,7 @@ export function QuizSelector({
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
                 >
                   Next Step
-                  <motion.div
-                    animate={{ x: [0, 4, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    →
-                  </motion.div>
+                  <ChevronRight className="h-4 w-4" />
                 </motion.button>
               ) : (
                 <motion.button
