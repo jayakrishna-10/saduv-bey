@@ -1,4 +1,4 @@
-// app/lib/quiz-utils.js - Fixed fetchTopicsAndYears function
+// app/lib/quiz-utils.js - Removed year filtering, streamlined for topics only
 import { clsx } from 'clsx';
 
 // Common utility functions for quiz and test components
@@ -161,20 +161,27 @@ export const getRandomQuestionIndex = (questions, completedQuestionIds, excludeI
   return availableIndices[Math.floor(Math.random() * availableIndices.length)];
 };
 
-// Enhanced question fetching with better error handling
-export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedTopic = 'all', selectedYear = 'all') => {
+// Enhanced question fetching with smart randomization - removed year parameter
+export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedTopic = 'all') => {
   try {
+    // Calculate how many questions to fetch for better randomization
+    // Fetch 3x the requested amount (minimum 50, maximum 500) to ensure variety
+    const fetchMultiplier = 3;
+    const minFetch = Math.max(50, questionCount);
+    const maxFetch = 500;
+    const fetchLimit = Math.min(maxFetch, Math.max(minFetch, questionCount * fetchMultiplier));
+
     const params = new URLSearchParams({
       paper: selectedPaper,
-      limit: questionCount.toString()
+      limit: fetchLimit.toString()
     });
 
     if (selectedTopic !== 'all') {
       params.append('topic', selectedTopic);
     }
-    if (selectedYear !== 'all') {
-      params.append('year', selectedYear);
-    }
+
+    console.log(`Fetching ${fetchLimit} questions to randomly select ${questionCount} for better variety`);
+    console.log('Fetching questions with params:', params.toString());
 
     const response = await fetch(`/api/quiz?${params}`);
     
@@ -189,6 +196,9 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
       throw new Error('Invalid response format: questions array not found');
     }
 
+    console.log(`Successfully fetched ${result.questions.length} questions from ${selectedPaper}`);
+
+    // Normalize the data
     const normalizedData = result.questions.map(q => ({
       ...q,
       option_a: normalizeOptionText(q.option_a),
@@ -197,54 +207,141 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
       option_d: normalizeOptionText(q.option_d)
     }));
     
-    // Shuffle questions for better practice experience
-    const shuffledQuestions = [...normalizedData].sort(() => Math.random() - 0.5);
+    // Advanced randomization strategy
+    const randomizedQuestions = getRandomizedQuestionSet(normalizedData, questionCount);
     
-    return shuffledQuestions;
+    console.log(`Selected ${randomizedQuestions.length} randomized questions from pool of ${normalizedData.length}`);
+    
+    return randomizedQuestions;
   } catch (err) {
     console.error('Fetch questions error:', err);
     throw new Error(`Failed to fetch questions: ${err.message}`);
   }
 };
 
-// Fixed to properly fetch topics and years for each paper
-export const fetchTopicsAndYears = async (selectedPaper) => {
-  try {
-    console.log('Fetching topics and years for paper:', selectedPaper);
+// Advanced randomization function to ensure variety across quiz attempts
+export const getRandomizedQuestionSet = (questions, targetCount) => {
+  if (!questions || questions.length === 0) {
+    return [];
+  }
+
+  // If we have fewer questions than requested, return all shuffled
+  if (questions.length <= targetCount) {
+    return [...questions].sort(() => Math.random() - 0.5);
+  }
+
+  // Strategy 1: Try to get diverse questions across different topics/years
+  const questionsByTopic = {};
+  const questionsByYear = {};
+  
+  questions.forEach(q => {
+    const normalizedTopic = normalizeChapterName(q.tag) || 'Unknown';
+    const year = q.year || 'Unknown';
     
-    // Fetch a large sample to get all unique topics and years for this paper
-    const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=5000`);
+    if (!questionsByTopic[normalizedTopic]) {
+      questionsByTopic[normalizedTopic] = [];
+    }
+    if (!questionsByYear[year]) {
+      questionsByYear[year] = [];
+    }
+    
+    questionsByTopic[normalizedTopic].push(q);
+    questionsByYear[year].push(q);
+  });
+
+  const topics = Object.keys(questionsByTopic);
+  const years = Object.keys(questionsByYear);
+  
+  console.log(`Randomizing from ${topics.length} topics and ${years.length} years`);
+
+  // Strategy: Balanced selection across topics when possible
+  const selectedQuestions = [];
+  const usedQuestionIds = new Set();
+  
+  // First pass: Try to get at least one question from each topic
+  if (topics.length > 1 && targetCount >= topics.length) {
+    topics.forEach(topic => {
+      const topicQuestions = questionsByTopic[topic];
+      if (topicQuestions.length > 0 && selectedQuestions.length < targetCount) {
+        const randomQuestion = topicQuestions[Math.floor(Math.random() * topicQuestions.length)];
+        const questionId = randomQuestion.main_id || randomQuestion.id;
+        
+        if (!usedQuestionIds.has(questionId)) {
+          selectedQuestions.push(randomQuestion);
+          usedQuestionIds.add(questionId);
+        }
+      }
+    });
+  }
+
+  // Second pass: Fill remaining slots with random questions
+  const remainingQuestions = questions.filter(q => {
+    const questionId = q.main_id || q.id;
+    return !usedQuestionIds.has(questionId);
+  });
+
+  while (selectedQuestions.length < targetCount && remainingQuestions.length > 0) {
+    const randomIndex = Math.floor(Math.random() * remainingQuestions.length);
+    const randomQuestion = remainingQuestions[randomIndex];
+    const questionId = randomQuestion.main_id || randomQuestion.id;
+    
+    selectedQuestions.push(randomQuestion);
+    usedQuestionIds.add(questionId);
+    
+    // Remove the selected question from remaining pool
+    remainingQuestions.splice(randomIndex, 1);
+  }
+
+  // Final shuffle of the selected questions
+  const finalQuestions = selectedQuestions.sort(() => Math.random() - 0.5);
+  
+  // Log the distribution for debugging
+  const finalTopicDistribution = {};
+  finalQuestions.forEach(q => {
+    const topic = normalizeChapterName(q.tag) || 'Unknown';
+    finalTopicDistribution[topic] = (finalTopicDistribution[topic] || 0) + 1;
+  });
+  
+  console.log('Final question distribution by topic:', finalTopicDistribution);
+  
+  return finalQuestions;
+};
+
+// Streamlined to only fetch topics - removed years entirely
+export const fetchTopics = async (selectedPaper) => {
+  try {
+    console.log('Fetching topics for paper:', selectedPaper);
+    
+    // Fetch all questions to get comprehensive topic list (no limit to ensure we get all topics)
+    const response = await fetch(`/api/quiz?paper=${selectedPaper}`);
     if (response.ok) {
       const result = await response.json();
       const questions = result.questions || [];
       
-      console.log(`Fetched ${questions.length} questions for ${selectedPaper}`);
+      console.log(`Fetched ${questions.length} questions for topic analysis for ${selectedPaper}`);
       
-      // Extract unique topics
+      // Extract unique topics and normalize them
       const uniqueTopics = [...new Set(questions.map(q => normalizeChapterName(q.tag)))]
         .filter(Boolean)
         .sort();
       
-      // Extract unique years and ensure they're valid
-      const uniqueYears = [...new Set(questions.map(q => {
-        const year = parseInt(q.year);
-        return !isNaN(year) && year > 2000 && year < 2030 ? year : null;
-      }))]
-        .filter(year => year !== null)
-        .sort((a, b) => b - a); // Sort in descending order (newest first)
-      
-      console.log(`Found ${uniqueTopics.length} topics and ${uniqueYears.length} years for ${selectedPaper}`);
+      console.log(`Found ${uniqueTopics.length} unique topics for ${selectedPaper}`);
       console.log('Topics:', uniqueTopics);
-      console.log('Years:', uniqueYears);
       
-      return { topics: uniqueTopics, years: uniqueYears };
+      return uniqueTopics;
     } else {
-      console.error('Failed to fetch topics and years:', response.status);
+      console.error('Failed to fetch topics:', response.status);
     }
   } catch (error) {
-    console.error('Error fetching topics and years:', error);
+    console.error('Error fetching topics:', error);
   }
-  return { topics: [], years: [] };
+  return [];
+};
+
+// Legacy function name kept for backward compatibility - now only returns topics
+export const fetchTopicsAndYears = async (selectedPaper) => {
+  const topics = await fetchTopics(selectedPaper);
+  return { topics, years: [] }; // Always return empty years array
 };
 
 export const generateQuizSummary = (answeredQuestions, startTime) => {
@@ -365,7 +462,7 @@ export const analyzePerformance = (answeredQuestions) => {
   };
 };
 
-// Utility for creating custom question sets
+// Utility for creating custom question sets with advanced randomization
 export const createCustomQuestionSet = (questions, filters = {}) => {
   let filteredQuestions = [...questions];
 
@@ -378,27 +475,140 @@ export const createCustomQuestionSet = (questions, filters = {}) => {
     );
   }
 
-  if (filters.years && filters.years.length > 0) {
-    filteredQuestions = filteredQuestions.filter(q => 
-      filters.years.includes(q.year)
-    );
-  }
-
   if (filters.difficulty) {
     // If we had difficulty ratings, we could filter by them here
   }
 
-  // Apply limit
+  // Apply smart randomization instead of simple limit
   if (filters.limit && filters.limit > 0) {
-    filteredQuestions = filteredQuestions.slice(0, filters.limit);
-  }
-
-  // Shuffle if requested
-  if (filters.shuffle !== false) {
+    filteredQuestions = getRandomizedQuestionSet(filteredQuestions, filters.limit);
+  } else if (filters.shuffle !== false) {
+    // If no limit but shuffle requested, just shuffle all
     filteredQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
   }
 
   return filteredQuestions;
+};
+
+// Utility to generate different question sets for repeat attempts
+export const generateQuizVariations = (allQuestions, baseConfig) => {
+  const variations = [];
+  const { questionCount, selectedTopic } = baseConfig;
+  
+  // Filter questions based on topic
+  let availableQuestions = allQuestions;
+  if (selectedTopic !== 'all') {
+    availableQuestions = allQuestions.filter(q => 
+      normalizeChapterName(q.tag).toLowerCase().includes(selectedTopic.toLowerCase())
+    );
+  }
+
+  // Generate 5 different variations
+  for (let i = 0; i < 5; i++) {
+    const variation = getRandomizedQuestionSet(availableQuestions, questionCount);
+    variations.push({
+      id: i + 1,
+      questions: variation,
+      topicDistribution: getTopicDistribution(variation),
+      yearDistribution: getYearDistribution(variation)
+    });
+  }
+
+  return variations;
+};
+
+// Helper function to analyze topic distribution
+export const getTopicDistribution = (questions) => {
+  const distribution = {};
+  questions.forEach(q => {
+    const topic = normalizeChapterName(q.tag) || 'Unknown';
+    distribution[topic] = (distribution[topic] || 0) + 1;
+  });
+  return distribution;
+};
+
+// Helper function to analyze year distribution  
+export const getYearDistribution = (questions) => {
+  const distribution = {};
+  questions.forEach(q => {
+    const year = q.year || 'Unknown';
+    distribution[year] = (distribution[year] || 0) + 1;
+  });
+  return distribution;
+};
+
+// Function to ensure no repeated questions across sessions (if we implement session tracking)
+export const getUniqueQuestionSet = (allQuestions, targetCount, previousQuestionIds = []) => {
+  // Filter out previously seen questions
+  const unseenQuestions = allQuestions.filter(q => {
+    const questionId = q.main_id || q.id;
+    return !previousQuestionIds.includes(questionId);
+  });
+
+  console.log(`Found ${unseenQuestions.length} unseen questions out of ${allQuestions.length} total`);
+
+  // If we don't have enough unseen questions, mix in some previous ones
+  if (unseenQuestions.length < targetCount) {
+    const additionalNeeded = targetCount - unseenQuestions.length;
+    const seenQuestions = allQuestions.filter(q => {
+      const questionId = q.main_id || q.id;
+      return previousQuestionIds.includes(questionId);
+    });
+
+    // Add random selection from previously seen questions
+    const additionalQuestions = getRandomizedQuestionSet(seenQuestions, additionalNeeded);
+    return getRandomizedQuestionSet([...unseenQuestions, ...additionalQuestions], targetCount);
+  }
+
+  return getRandomizedQuestionSet(unseenQuestions, targetCount);
+};
+
+// Enhanced performance analysis with randomization insights
+export const analyzeQuizRandomization = (quizAttempts) => {
+  if (!quizAttempts || quizAttempts.length < 2) {
+    return {
+      uniquenessScore: 100,
+      overlapPercentage: 0,
+      recommendations: ['Take more quizzes to analyze question variety']
+    };
+  }
+
+  // Calculate question overlap between attempts
+  let totalComparisons = 0;
+  let totalOverlap = 0;
+
+  for (let i = 0; i < quizAttempts.length - 1; i++) {
+    for (let j = i + 1; j < quizAttempts.length; j++) {
+      const attempt1Ids = quizAttempts[i].questions.map(q => q.main_id || q.id);
+      const attempt2Ids = quizAttempts[j].questions.map(q => q.main_id || q.id);
+      
+      const overlap = attempt1Ids.filter(id => attempt2Ids.includes(id)).length;
+      const maxPossibleOverlap = Math.min(attempt1Ids.length, attempt2Ids.length);
+      
+      totalOverlap += overlap;
+      totalComparisons += maxPossibleOverlap;
+    }
+  }
+
+  const overlapPercentage = totalComparisons > 0 ? Math.round((totalOverlap / totalComparisons) * 100) : 0;
+  const uniquenessScore = Math.max(0, 100 - overlapPercentage);
+
+  const recommendations = [];
+  if (overlapPercentage > 50) {
+    recommendations.push('Try different topic selections for more variety');
+    recommendations.push('Increase question count to access more questions');
+  } else if (overlapPercentage > 30) {
+    recommendations.push('Good variety! Consider exploring different papers');
+  } else {
+    recommendations.push('Excellent question variety across attempts');
+  }
+
+  return {
+    uniquenessScore,
+    overlapPercentage,
+    totalAttempts: quizAttempts.length,
+    recommendations
+  };
 };
 
 // Utility functions for UI state management
@@ -524,10 +734,17 @@ export default {
   getQuestionsByStatus,
   getRandomQuestionIndex,
   fetchQuizQuestions,
-  fetchTopicsAndYears,
+  fetchTopics,
+  fetchTopicsAndYears, // Legacy function for backward compatibility
+  getRandomizedQuestionSet,
   generateQuizSummary,
   analyzePerformance,
   createCustomQuestionSet,
+  generateQuizVariations,
+  getTopicDistribution,
+  getYearDistribution,
+  getUniqueQuestionSet,
+  analyzeQuizRandomization,
   cn,
   getProgressColor,
   getAccuracyColor,
