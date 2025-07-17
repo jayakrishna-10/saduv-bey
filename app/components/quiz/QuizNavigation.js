@@ -1,4 +1,4 @@
-// app/components/quiz/QuizNavigation.js - Always show 4 buttons with icons for mobile
+// app/components/quiz/QuizNavigation.js - Updated with swipe instructions
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -10,7 +10,8 @@ import {
   Target,
   Award,
   Flag,
-  CheckSquare
+  CheckSquare,
+  MoveHorizontal
 } from 'lucide-react';
 
 export function QuizNavigation({
@@ -44,7 +45,7 @@ export function QuizNavigation({
   const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
   const accuracy = answeredQuestions.length > 0 ? Math.round((correctAnswers / answeredQuestions.length) * 100) : 0;
 
-  // Mobile Floating Navigation - Always show 4 buttons
+  // Mobile Floating Navigation - With swipe instructions
   if (isMobile) {
     return (
       <AnimatePresence>
@@ -62,7 +63,7 @@ export function QuizNavigation({
               whileHover={{ scale: 1.01 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
             >
-              {/* Navigation Arrows */}
+              {/* Navigation Arrows with Swipe Instructions */}
               <div className="flex items-center justify-between p-3 border-b border-gray-200/30 dark:border-gray-700/30">
                 {/* Previous */}
                 <motion.button
@@ -79,15 +80,18 @@ export function QuizNavigation({
                   <ChevronLeft className="h-5 w-5" />
                 </motion.button>
 
-                {/* Progress Info */}
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {questionProgress.current}/{questionProgress.total}
-                  </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {accuracy}% accuracy
-                  </div>
-                </div>
+                {/* Swipe Instructions */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.5 }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                  className="flex items-center gap-2 text-gray-500 dark:text-gray-400"
+                >
+                  <span className="text-xs opacity-70">👈</span>
+                  <MoveHorizontal className="h-4 w-4 opacity-60" />
+                  <span className="text-xs font-medium opacity-70">Swipe to navigate</span>
+                  <span className="text-xs opacity-70">👉</span>
+                </motion.div>
 
                 {/* Next */}
                 <motion.button
@@ -177,7 +181,7 @@ export function QuizNavigation({
     );
   }
 
-  // Desktop Ambient Navigation - Keep existing behavior
+  // Desktop Ambient Navigation - Keep existing behavior with centered bottom bar
   return (
     <AnimatePresence>
       {isVisible && (
@@ -229,12 +233,12 @@ export function QuizNavigation({
             </motion.button>
           </motion.div>
 
-          {/* Bottom Action Bar - Show all 4 buttons for desktop */}
+          {/* Bottom Action Bar - Properly centered */}
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
+            className="fixed bottom-6 inset-x-0 flex justify-center z-50"
           >
             <div className="flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-2">
               {/* Show Answer */}
