@@ -1,7 +1,7 @@
 // FILE: app/components/TestApp.js
 'use client';
 
-import React, auseState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchQuizQuestions } from '@/lib/quiz-utils';
