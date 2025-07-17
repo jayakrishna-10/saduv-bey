@@ -15,7 +15,6 @@ import { QuizStats } from './quiz/QuizStats';
 import { QuizSummary } from './quiz/QuizSummary';
 import { QuizCompletion } from './quiz/QuizCompletion';
 import { QuizFinishConfirmation } from './quiz/QuizFinishConfirmation';
-import { QuizVarietyIndicator } from './quiz/QuizVarietyIndicator';
 import { 
   fetchQuizQuestions, 
   fetchTopics, 
@@ -56,11 +55,8 @@ export function QuizApp() {
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('all');
   const [questionCount, setQuestionCount] = useState(20);
-  
-  // Randomization and variety tracking
-  const [questionsPool, setQuestionsPool] = useState(0);
-  const [topicDistribution, setTopicDistribution] = useState({});
-  const [showVarietyIndicator, setShowVarietyIndicator] = useState(false);
+
+
   
   // Progress state
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
@@ -222,7 +218,7 @@ export function QuizApp() {
       const distribution = getTopicDistribution(fetchedQuestions);
       setTopicDistribution(distribution);
       setQuestionsPool(fetchedQuestions.length * 3); // Approximate pool size based on our fetch strategy
-      setShowVarietyIndicator(true);
+      
       
       setIsLoading(false);
       setHasQuizStarted(true);
@@ -452,7 +448,7 @@ export function QuizApp() {
     setSaveStatus(null);
     setSaveError(null);
     setHasQuizStarted(false);
-    setShowVarietyIndicator(false);
+    
     setQuestionsPool(0);
     setTopicDistribution({});
     setShowModifyQuiz(true); // Show selector again for new quiz
@@ -596,14 +592,6 @@ export function QuizApp() {
           <div className="flex-1 px-4 md:px-8 py-8 pb-32 md:pb-8">
             <div className="max-w-4xl mx-auto space-y-6">
               
-              {/* Variety Indicator */}
-              <QuizVarietyIndicator
-                questionsPool={questionsPool}
-                requestedCount={questionCount}
-                topicDistribution={topicDistribution}
-                isVisible={showVarietyIndicator && !isTransitioning}
-                onRegenerateQuiz={handleRegenerateQuiz}
-              />
 
               <AnimatePresence mode="wait">
                 <motion.div 
