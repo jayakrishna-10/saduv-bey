@@ -21,7 +21,8 @@ import {
   isCorrectAnswer,
   generateTestSummary,
   getNextAvailableQuestion,
-  getPreviousAvailableQuestion
+  getPreviousAvailableQuestion,
+  TEST_KEYBOARD_SHORTCUTS // Added this import
 } from '@/lib/test-utils';
 
 export function TestApp() {
@@ -134,34 +135,34 @@ export function TestApp() {
     };
   }, [isTestActive, timeRemaining]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - Fixed to use TEST_KEYBOARD_SHORTCUTS
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (showTestSelector || showReview || showFinishConfirmation) return;
       
       switch (e.key) {
-        case 'ArrowLeft':
+        case TEST_KEYBOARD_SHORTCUTS.PREVIOUS_QUESTION:
           e.preventDefault();
           handlePreviousQuestion();
           break;
-        case 'ArrowRight':
-        case ' ':
+        case TEST_KEYBOARD_SHORTCUTS.NEXT_QUESTION:
+        case TEST_KEYBOARD_SHORTCUTS.SUBMIT:
           e.preventDefault();
           handleNextQuestion();
           break;
-        case 'f':
+        case TEST_KEYBOARD_SHORTCUTS.FLAG_QUESTION:
           e.preventDefault();
           handleToggleFlag();
           break;
-        case 'a':
-        case 'b':
-        case 'c':
-        case 'd':
+        case TEST_KEYBOARD_SHORTCUTS.OPTION_A:
+        case TEST_KEYBOARD_SHORTCUTS.OPTION_B:
+        case TEST_KEYBOARD_SHORTCUTS.OPTION_C:
+        case TEST_KEYBOARD_SHORTCUTS.OPTION_D:
           if (!selectedOption) {
             handleOptionSelect(e.key);
           }
           break;
-        case 'p':
+        case TEST_KEYBOARD_SHORTCUTS.SHOW_PALETTE:
           e.preventDefault();
           setShowPalette(!showPalette);
           break;
@@ -353,26 +354,25 @@ export function TestApp() {
       const summary = generateTestSummary(submittedAnswers, questions, startTime);
       
       const attemptData = {
-        testType,
-        paper: selectedPaper,
-        selectedTopic: selectedTopic,
-        questionCount: questionCount,
-        timeAllotted: totalTimeAllotted,
-        timeTaken,
+        testMode: testType,
+        testType: testType === 'mock' ? 'mock' : 'practice',
+        testConfig: {
+          paper: selectedPaper,
+          topic: selectedTopic,
+          questionCount: questionCount
+        },
         questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag }) => ({ 
           id, main_id, question_text, correct_answer, tag 
         })),
-        answers: Array.from(submittedAnswers.entries()).map(([questionId, answerData]) => ({
-          questionId,
-          selectedOption: answerData.selectedOption,
-          isCorrect: isCorrectAnswer(answerData.selectedOption, questions.find(q => (q.main_id || q.id) === questionId)?.correct_answer),
-          timestamp: answerData.timestamp
-        })),
+        answers: Array.from(submittedAnswers.entries()).map(([questionId, answerData]) => answerData.selectedOption),
         flaggedQuestions: Array.from(flaggedQuestions),
-        correctAnswers: summary.correctAnswers,
-        totalAttempted: submittedAnswers.size,
-        score: summary.score,
-        percentage: summary.percentage,
+        correct: summary.correctAnswers,
+        incorrect: summary.incorrectAnswers,
+        unanswered: summary.unanswered,
+        totalQuestions: questions.length,
+        score: summary.percentage,
+        timeTaken,
+        timeLimit: totalTimeAllotted
       };
 
       const response = await fetch('/api/user/attempts', {
