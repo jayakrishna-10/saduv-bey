@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Clock, RotateCw, Eye, Loader2, AlertTriangle } from 'lucide-react';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart-js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { formatTime } from '@/lib/quiz-utils';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -13,7 +13,7 @@ export function TestSummary({ questions, answers, timeTaken, onReview, onRestart
   const correct = questions.reduce((acc, q) => answers[q.main_id || q.id] === q.correct_answer ? acc + 1 : acc, 0);
   const incorrect = Object.keys(answers).length - correct;
   const unanswered = questions.length - Object.keys(answers).length;
-  const score = Math.round((correct / questions.length) * 100);
+  const score = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
 
   const chartData = {
     labels: ['Correct', 'Incorrect', 'Unanswered'],
@@ -32,9 +32,9 @@ export function TestSummary({ questions, answers, timeTaken, onReview, onRestart
   };
 
   const SaveStatusIndicator = () => {
-    if(saveStatus === 'saving') return <div className="flex items-center gap-2 text-sm text-blue-500"><Loader2 className="animate-spin h-4 w-4" /> Saving results...</div>;
-    if(saveStatus === 'success') return <div className="flex items-center gap-2 text-sm text-green-500"><Check className="h-4 w-4" /> Results saved.</div>;
-    if(saveStatus === 'error') return <div className="flex items-center gap-2 text-sm text-red-500"><AlertTriangle className="h-4 w-4" /> Failed to save.</div>;
+    if(saveStatus === 'saving') return <div className="flex items-center justify-center gap-2 text-sm text-blue-500"><Loader2 className="animate-spin h-4 w-4" /> Saving results...</div>;
+    if(saveStatus === 'success') return <div className="flex items-center justify-center gap-2 text-sm text-green-500"><Check className="h-4 w-4" /> Results saved.</div>;
+    if(saveStatus === 'error') return <div className="flex items-center justify-center gap-2 text-sm text-red-500"><AlertTriangle className="h-4 w-4" /> Failed to save.</div>;
     return null;
   }
 
@@ -47,7 +47,7 @@ export function TestSummary({ questions, answers, timeTaken, onReview, onRestart
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="relative w-full max-w-xs mx-auto">
             <Doughnut data={chartData} options={chartOptions} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <p className="text-gray-600 dark:text-gray-400 text-sm">Your Score</p>
                 <p className={`text-6xl font-bold ${score >= 50 ? 'text-green-500' : 'text-red-500'}`}>{score}%</p>
             </div>
