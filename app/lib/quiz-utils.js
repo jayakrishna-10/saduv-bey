@@ -1,4 +1,4 @@
-// app/lib/quiz-utils.js - Extended with navigation utilities
+// app/lib/quiz-utils.js - Fixed fetchTopicsAndYears function
 import { clsx } from 'clsx';
 
 // Common utility functions for quiz and test components
@@ -207,21 +207,39 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
   }
 };
 
+// Fixed to properly fetch topics and years for each paper
 export const fetchTopicsAndYears = async (selectedPaper) => {
   try {
-    const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=1000`);
+    console.log('Fetching topics and years for paper:', selectedPaper);
+    
+    // Fetch a large sample to get all unique topics and years for this paper
+    const response = await fetch(`/api/quiz?paper=${selectedPaper}&limit=5000`);
     if (response.ok) {
       const result = await response.json();
-      const sampleQuestions = result.questions || [];
+      const questions = result.questions || [];
       
-      const uniqueTopics = [...new Set(sampleQuestions.map(q => normalizeChapterName(q.tag)))]
+      console.log(`Fetched ${questions.length} questions for ${selectedPaper}`);
+      
+      // Extract unique topics
+      const uniqueTopics = [...new Set(questions.map(q => normalizeChapterName(q.tag)))]
         .filter(Boolean)
         .sort();
-      const uniqueYears = [...new Set(sampleQuestions.map(q => Number(q.year)))]
-        .filter(year => !isNaN(year) && year > 1900)
-        .sort((a, b) => a - b);
+      
+      // Extract unique years and ensure they're valid
+      const uniqueYears = [...new Set(questions.map(q => {
+        const year = parseInt(q.year);
+        return !isNaN(year) && year > 2000 && year < 2030 ? year : null;
+      }))]
+        .filter(year => year !== null)
+        .sort((a, b) => b - a); // Sort in descending order (newest first)
+      
+      console.log(`Found ${uniqueTopics.length} topics and ${uniqueYears.length} years for ${selectedPaper}`);
+      console.log('Topics:', uniqueTopics);
+      console.log('Years:', uniqueYears);
       
       return { topics: uniqueTopics, years: uniqueYears };
+    } else {
+      console.error('Failed to fetch topics and years:', response.status);
     }
   } catch (error) {
     console.error('Error fetching topics and years:', error);
