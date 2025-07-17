@@ -1,7 +1,7 @@
 // FILE: app/components/test/TestSelector.js
 'use client';
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // Corrected Import
 import { FileText, Edit, Play, Loader2, BookOpen, Clock, Hash, ChevronRight } from 'lucide-react';
 import { fetchTopics, PAPERS } from '@/lib/quiz-utils';
 
