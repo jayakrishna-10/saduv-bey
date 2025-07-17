@@ -21,6 +21,41 @@ const isCorrectAnswer = (selectedOption, correctAnswer) => {
   return selectedOption.toLowerCase() === correctAnswer.toLowerCase();
 };
 
+// Test modes configuration
+export const TEST_MODES = {
+  mock: {
+    id: 'mock',
+    name: 'Mock Exam',
+    description: 'Simulates real exam conditions with strict timing',
+    icon: '🎯',
+    timer: true,
+    review: false,
+    showAnswers: false,
+    defaultTime: 60,
+    recommended: true
+  },
+  practice: {
+    id: 'practice',
+    name: 'Practice Mode',
+    description: 'Learn at your own pace with unlimited time',
+    icon: '📚',
+    timer: false,
+    review: true,
+    showAnswers: true,
+    defaultTime: null
+  },
+  timed: {
+    id: 'timed',
+    name: 'Timed Practice',
+    description: 'Practice with timer but can review answers',
+    icon: '⏱️',
+    timer: true,
+    review: true,
+    showAnswers: true,
+    defaultTime: 90
+  }
+};
+
 // Test-specific constants
 export const TEST_TYPES = {
   mock: {
@@ -33,7 +68,8 @@ export const TEST_TYPES = {
     showChapterInfo: false,
     showYearInfo: false,
     color: 'from-red-500 to-pink-600',
-    gradient: 'bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30'
+    gradient: 'bg-gradient-to-br from-red-50 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30',
+    fixed: true
   },
   practice: {
     id: 'practice',
@@ -44,7 +80,58 @@ export const TEST_TYPES = {
     showChapterInfo: true,
     showYearInfo: false,
     color: 'from-blue-500 to-cyan-600',
-    gradient: 'bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30'
+    gradient: 'bg-gradient-to-br from-blue-50 to-cyan-100 dark:from-blue-900/30 dark:to-cyan-900/30',
+    fixed: false
+  },
+  topic: {
+    id: 'topic',
+    name: 'Topic-wise',
+    description: 'Practice specific topics',
+    icon: '📑',
+    questionCount: 20,
+    color: 'from-purple-500 to-indigo-600',
+    gradient: 'bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30',
+    fixed: false
+  },
+  custom: {
+    id: 'custom',
+    name: 'Custom Test',
+    description: 'Create your own test configuration',
+    icon: '⚙️',
+    questionCount: 25,
+    color: 'from-emerald-500 to-teal-600',
+    gradient: 'bg-gradient-to-br from-emerald-50 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30',
+    fixed: false
+  },
+  paper1: {
+    id: 'paper1',
+    name: 'Paper 1',
+    description: 'General Aspects (50 questions)',
+    icon: '📊',
+    questionCount: 50,
+    color: 'from-blue-500 to-indigo-600',
+    gradient: 'bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30',
+    fixed: true
+  },
+  paper2: {
+    id: 'paper2',
+    name: 'Paper 2',
+    description: 'Thermal Utilities (50 questions)',
+    icon: '🔥',
+    questionCount: 50,
+    color: 'from-orange-500 to-red-600',
+    gradient: 'bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/30 dark:to-red-900/30',
+    fixed: true
+  },
+  paper3: {
+    id: 'paper3',
+    name: 'Paper 3',
+    description: 'Electrical Utilities (50 questions)',
+    icon: '⚡',
+    questionCount: 50,
+    color: 'from-emerald-500 to-cyan-600',
+    gradient: 'bg-gradient-to-br from-emerald-50 to-cyan-100 dark:from-emerald-900/30 dark:to-cyan-900/30',
+    fixed: true
   }
 };
 
@@ -76,6 +163,15 @@ export const PAPERS = {
     icon: '⚡',
     topics: 10
   }
+};
+
+// Helper functions to get test mode and type
+export const getTestMode = (modeId) => {
+  return TEST_MODES[modeId] || TEST_MODES.mock;
+};
+
+export const getTestType = (typeId) => {
+  return TEST_TYPES[typeId] || TEST_TYPES.mock;
 };
 
 // Test question status
@@ -456,6 +552,7 @@ export { normalizeChapterName, normalizeOptionText, isCorrectAnswer };
 
 // Default export
 export default {
+  TEST_MODES,
   TEST_TYPES,
   PAPERS,
   QUESTION_STATUS,
@@ -480,6 +577,8 @@ export default {
   normalizeChapterName,
   normalizeOptionText,
   isCorrectAnswer,
+  getTestMode,
+  getTestType,
   cn,
   testSlideVariants,
   testFadeVariants
