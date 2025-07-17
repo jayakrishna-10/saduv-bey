@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Updated with finish quiz flow and removed overview
+// app/components/QuizApp.js - Updated to show selector by default and fix paper changes
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -33,11 +33,11 @@ export function QuizApp() {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
-  // UI state
-  const [showModifyQuiz, setShowModifyQuiz] = useState(false);
+  // UI state - Show modify quiz by default
+  const [showModifyQuiz, setShowModifyQuiz] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
@@ -71,6 +71,9 @@ export function QuizApp() {
   // Save state
   const [saveStatus, setSaveStatus] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  
+  // Track if quiz has started
+  const [hasQuizStarted, setHasQuizStarted] = useState(false);
   
   // Refs
   const containerRef = useRef(null);
@@ -152,16 +155,16 @@ export function QuizApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedOption, showAnswer, showFeedback, showModifyQuiz, showSummary, showFinishConfirmation]);
 
-  // Initialize quiz
+  // Don't fetch questions on initial load anymore
   useEffect(() => {
-    fetchQuestions();
+    // Only fetch topics and years on initial load for the default paper
     fetchTopicsAndYears(selectedPaper).then(data => {
       if (data) {
         setTopics(data.topics);
         setYears(data.years);
       }
     });
-  }, [selectedPaper]);
+  }, []); // Empty dependency array - only run once
 
   // Update progress
   useEffect(() => {
@@ -172,10 +175,10 @@ export function QuizApp() {
 
   // Set start time
   useEffect(() => {
-    if (questions.length > 0) {
+    if (questions.length > 0 && hasQuizStarted) {
       setStartTime(new Date());
     }
-  }, [questions]);
+  }, [questions, hasQuizStarted]);
 
   const updateProgress = () => {
     const totalQuestions = questions.length;
@@ -210,6 +213,7 @@ export function QuizApp() {
       setCurrentQuestionIndex(0);
       resetQuestionState();
       setIsLoading(false);
+      setHasQuizStarted(true);
     } catch (err) {
       logDebug('Fetch questions error:', err);
       setIsLoading(false);
@@ -376,11 +380,21 @@ export function QuizApp() {
   const handleSwipeLeft = () => handleNextQuestion();
   const handleSwipeRight = () => handlePreviousQuestion();
 
-  const handleQuizConfiguration = (config) => {
+  const handleQuizConfiguration = async (config) => {
+    // Update all configuration state
     setSelectedPaper(config.selectedPaper);
     setSelectedTopic(config.selectedTopic);
     setSelectedYear(config.selectedYear);
     setQuestionCount(config.questionCount);
+    
+    // Update topics and years based on selected paper
+    logDebug('Fetching topics and years for paper:', config.selectedPaper);
+    const data = await fetchTopicsAndYears(config.selectedPaper);
+    if (data) {
+      setTopics(data.topics);
+      setYears(data.years);
+    }
+    
     setShowModifyQuiz(false);
     fetchQuestions();
   };
@@ -411,7 +425,8 @@ export function QuizApp() {
     setShowFinishConfirmation(false);
     setSaveStatus(null);
     setSaveError(null);
-    fetchQuestions();
+    setHasQuizStarted(false);
+    setShowModifyQuiz(true); // Show selector again for new quiz
   };
 
   const currentQuestion = questions[currentQuestionIndex] || {};
@@ -467,6 +482,7 @@ export function QuizApp() {
     );
   };
 
+  // Show loading only when actually loading questions
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -479,6 +495,36 @@ export function QuizApp() {
           <p className="text-lg font-light text-gray-700 dark:text-gray-300">Loading quiz...</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Preparing your practice session</p>
         </motion.div>
+      </div>
+    );
+  }
+
+  // Show selector if quiz hasn't started yet
+  if (!hasQuizStarted || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <QuizSelector 
+          isOpen={true} 
+          onClose={() => {}} // Can't close when it's the initial view
+          currentConfig={{ 
+            selectedPaper, 
+            selectedTopic, 
+            selectedYear, 
+            questionCount, 
+            showExplanations: true 
+          }} 
+          onApply={handleQuizConfiguration} 
+          topics={topics} 
+          years={years} 
+          onPaperChange={async (paperId) => {
+            // Update topics and years when paper changes
+            const data = await fetchTopicsAndYears(paperId);
+            if (data) {
+              setTopics(data.topics);
+              setYears(data.years);
+            }
+          }}
+        />
       </div>
     );
   }
@@ -596,7 +642,15 @@ export function QuizApp() {
         }} 
         onApply={handleQuizConfiguration} 
         topics={topics} 
-        years={years} 
+        years={years}
+        onPaperChange={async (paperId) => {
+          // Update topics and years when paper changes
+          const data = await fetchTopicsAndYears(paperId);
+          if (data) {
+            setTopics(data.topics);
+            setYears(data.years);
+          }
+        }}
       />
       
       <QuizSummary 
