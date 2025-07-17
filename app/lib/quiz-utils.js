@@ -490,127 +490,6 @@ export const createCustomQuestionSet = (questions, filters = {}) => {
   return filteredQuestions;
 };
 
-// Utility to generate different question sets for repeat attempts
-export const generateQuizVariations = (allQuestions, baseConfig) => {
-  const variations = [];
-  const { questionCount, selectedTopic } = baseConfig;
-  
-  // Filter questions based on topic
-  let availableQuestions = allQuestions;
-  if (selectedTopic !== 'all') {
-    availableQuestions = allQuestions.filter(q => 
-      normalizeChapterName(q.tag).toLowerCase().includes(selectedTopic.toLowerCase())
-    );
-  }
-
-  // Generate 5 different variations
-  for (let i = 0; i < 5; i++) {
-    const variation = getRandomizedQuestionSet(availableQuestions, questionCount);
-    variations.push({
-      id: i + 1,
-      questions: variation,
-      topicDistribution: getTopicDistribution(variation),
-      yearDistribution: getYearDistribution(variation)
-    });
-  }
-
-  return variations;
-};
-
-// Helper function to analyze topic distribution
-export const getTopicDistribution = (questions) => {
-  const distribution = {};
-  questions.forEach(q => {
-    const topic = normalizeChapterName(q.tag) || 'Unknown';
-    distribution[topic] = (distribution[topic] || 0) + 1;
-  });
-  return distribution;
-};
-
-// Helper function to analyze year distribution  
-export const getYearDistribution = (questions) => {
-  const distribution = {};
-  questions.forEach(q => {
-    const year = q.year || 'Unknown';
-    distribution[year] = (distribution[year] || 0) + 1;
-  });
-  return distribution;
-};
-
-// Function to ensure no repeated questions across sessions (if we implement session tracking)
-export const getUniqueQuestionSet = (allQuestions, targetCount, previousQuestionIds = []) => {
-  // Filter out previously seen questions
-  const unseenQuestions = allQuestions.filter(q => {
-    const questionId = q.main_id || q.id;
-    return !previousQuestionIds.includes(questionId);
-  });
-
-  console.log(`Found ${unseenQuestions.length} unseen questions out of ${allQuestions.length} total`);
-
-  // If we don't have enough unseen questions, mix in some previous ones
-  if (unseenQuestions.length < targetCount) {
-    const additionalNeeded = targetCount - unseenQuestions.length;
-    const seenQuestions = allQuestions.filter(q => {
-      const questionId = q.main_id || q.id;
-      return previousQuestionIds.includes(questionId);
-    });
-
-    // Add random selection from previously seen questions
-    const additionalQuestions = getRandomizedQuestionSet(seenQuestions, additionalNeeded);
-    return getRandomizedQuestionSet([...unseenQuestions, ...additionalQuestions], targetCount);
-  }
-
-  return getRandomizedQuestionSet(unseenQuestions, targetCount);
-};
-
-// Enhanced performance analysis with randomization insights
-export const analyzeQuizRandomization = (quizAttempts) => {
-  if (!quizAttempts || quizAttempts.length < 2) {
-    return {
-      uniquenessScore: 100,
-      overlapPercentage: 0,
-      recommendations: ['Take more quizzes to analyze question variety']
-    };
-  }
-
-  // Calculate question overlap between attempts
-  let totalComparisons = 0;
-  let totalOverlap = 0;
-
-  for (let i = 0; i < quizAttempts.length - 1; i++) {
-    for (let j = i + 1; j < quizAttempts.length; j++) {
-      const attempt1Ids = quizAttempts[i].questions.map(q => q.main_id || q.id);
-      const attempt2Ids = quizAttempts[j].questions.map(q => q.main_id || q.id);
-      
-      const overlap = attempt1Ids.filter(id => attempt2Ids.includes(id)).length;
-      const maxPossibleOverlap = Math.min(attempt1Ids.length, attempt2Ids.length);
-      
-      totalOverlap += overlap;
-      totalComparisons += maxPossibleOverlap;
-    }
-  }
-
-  const overlapPercentage = totalComparisons > 0 ? Math.round((totalOverlap / totalComparisons) * 100) : 0;
-  const uniquenessScore = Math.max(0, 100 - overlapPercentage);
-
-  const recommendations = [];
-  if (overlapPercentage > 50) {
-    recommendations.push('Try different topic selections for more variety');
-    recommendations.push('Increase question count to access more questions');
-  } else if (overlapPercentage > 30) {
-    recommendations.push('Good variety! Consider exploring different papers');
-  } else {
-    recommendations.push('Excellent question variety across attempts');
-  }
-
-  return {
-    uniquenessScore,
-    overlapPercentage,
-    totalAttempts: quizAttempts.length,
-    recommendations
-  };
-};
-
 // Utility functions for UI state management
 export const cn = (...classes) => {
   return clsx(classes);
@@ -740,11 +619,6 @@ export default {
   generateQuizSummary,
   analyzePerformance,
   createCustomQuestionSet,
-  generateQuizVariations,
-  getTopicDistribution,
-  getYearDistribution,
-  getUniqueQuestionSet,
-  analyzeQuizRandomization,
   cn,
   getProgressColor,
   getAccuracyColor,
