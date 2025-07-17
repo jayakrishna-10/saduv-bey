@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Updated to show selector by default and fix paper changes
+// app/components/QuizApp.js - Updated to remove year filtering and work with streamlined selector
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -15,14 +15,16 @@ import { QuizStats } from './quiz/QuizStats';
 import { QuizSummary } from './quiz/QuizSummary';
 import { QuizCompletion } from './quiz/QuizCompletion';
 import { QuizFinishConfirmation } from './quiz/QuizFinishConfirmation';
+import { QuizVarietyIndicator } from './quiz/QuizVarietyIndicator';
 import { 
   fetchQuizQuestions, 
-  fetchTopicsAndYears, 
+  fetchTopics, 
   normalizeChapterName, 
   isCorrectAnswer,
   generateQuizSummary,
   getNextAvailableQuestion,
-  getPreviousAvailableQuestion
+  getPreviousAvailableQuestion,
+  getTopicDistribution
 } from '@/lib/quiz-utils';
 
 export function QuizApp() {
@@ -50,12 +52,15 @@ export function QuizApp() {
   const [currentExplanation, setCurrentExplanation] = useState(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   
-  // Configuration state
+  // Configuration state - removed year-related state
   const [topics, setTopics] = useState([]);
-  const [years, setYears] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedYear, setSelectedYear] = useState('all');
   const [questionCount, setQuestionCount] = useState(20);
+  
+  // Randomization and variety tracking
+  const [questionsPool, setQuestionsPool] = useState(0);
+  const [topicDistribution, setTopicDistribution] = useState({});
+  const [showVarietyIndicator, setShowVarietyIndicator] = useState(false);
   
   // Progress state
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
@@ -155,13 +160,12 @@ export function QuizApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedOption, showAnswer, showFeedback, showModifyQuiz, showSummary, showFinishConfirmation]);
 
-  // Don't fetch questions on initial load anymore
+  // Initial setup - only fetch topics for the default paper
   useEffect(() => {
-    // Only fetch topics and years on initial load for the default paper
-    fetchTopicsAndYears(selectedPaper).then(data => {
-      if (data) {
-        setTopics(data.topics);
-        setYears(data.years);
+    fetchTopics(selectedPaper).then(data => {
+      if (data && Array.isArray(data)) {
+        setTopics(data);
+        logDebug(`Loaded ${data.length} topics for initial paper ${selectedPaper}`);
       }
     });
   }, []); // Empty dependency array - only run once
@@ -203,17 +207,27 @@ export function QuizApp() {
   const fetchQuestions = async () => {
     try {
       setIsLoading(true);
-      logDebug('Fetching questions...', { selectedPaper, questionCount, selectedTopic, selectedYear });
+      logDebug('Fetching questions...', { selectedPaper, questionCount, selectedTopic });
       
-      const fetchedQuestions = await fetchQuizQuestions(selectedPaper, questionCount, selectedTopic, selectedYear);
+      // Updated function call - removed selectedYear parameter
+      const fetchedQuestions = await fetchQuizQuestions(selectedPaper, questionCount, selectedTopic);
       
       setQuestions(fetchedQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
       setCurrentQuestionIndex(0);
       resetQuestionState();
+      
+      // Track randomization metrics
+      const distribution = getTopicDistribution(fetchedQuestions);
+      setTopicDistribution(distribution);
+      setQuestionsPool(fetchedQuestions.length * 3); // Approximate pool size based on our fetch strategy
+      setShowVarietyIndicator(true);
+      
       setIsLoading(false);
       setHasQuizStarted(true);
+      
+      logDebug(`Successfully loaded ${fetchedQuestions.length} questions with variety score calculated`);
     } catch (err) {
       logDebug('Fetch questions error:', err);
       setIsLoading(false);
@@ -265,7 +279,7 @@ export function QuizApp() {
       const attemptData = {
         paper: selectedPaper,
         selectedTopic: selectedTopic,
-        selectedYear: selectedYear,
+        // Removed selectedYear from attemptData
         questionCount: questionCount,
         questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
           id, main_id, question_text, correct_answer, tag, year 
@@ -381,18 +395,17 @@ export function QuizApp() {
   const handleSwipeRight = () => handlePreviousQuestion();
 
   const handleQuizConfiguration = async (config) => {
-    // Update all configuration state
+    // Update all configuration state - removed selectedYear
     setSelectedPaper(config.selectedPaper);
     setSelectedTopic(config.selectedTopic);
-    setSelectedYear(config.selectedYear);
     setQuestionCount(config.questionCount);
     
-    // Update topics and years based on selected paper
-    logDebug('Fetching topics and years for paper:', config.selectedPaper);
-    const data = await fetchTopicsAndYears(config.selectedPaper);
-    if (data) {
-      setTopics(data.topics);
-      setYears(data.years);
+    // Update topics based on selected paper
+    logDebug('Fetching topics for paper:', config.selectedPaper);
+    const topicsData = await fetchTopics(config.selectedPaper);
+    if (topicsData && Array.isArray(topicsData)) {
+      setTopics(topicsData);
+      logDebug(`Updated topics: ${topicsData.length} topics loaded`);
     }
     
     setShowModifyQuiz(false);
@@ -418,14 +431,30 @@ export function QuizApp() {
     setShowCompletionModal(true);
   };
 
+  const handleRegenerateQuiz = async () => {
+    if (isLoading) return;
+    
+    logDebug('Regenerating quiz with new random questions');
+    setIsTransitioning(true);
+    
+    // Small delay for visual feedback
+    setTimeout(async () => {
+      await fetchQuestions();
+      setIsTransitioning(false);
+    }, 300);
+  };
+
   const resetQuiz = () => {
     setSelectedTopic('all');
-    setSelectedYear('all');
+    // Removed setSelectedYear
     setShowCompletionModal(false);
     setShowFinishConfirmation(false);
     setSaveStatus(null);
     setSaveError(null);
     setHasQuizStarted(false);
+    setShowVarietyIndicator(false);
+    setQuestionsPool(0);
+    setTopicDistribution({});
     setShowModifyQuiz(true); // Show selector again for new quiz
   };
 
@@ -509,19 +538,18 @@ export function QuizApp() {
           currentConfig={{ 
             selectedPaper, 
             selectedTopic, 
-            selectedYear, 
             questionCount, 
             showExplanations: true 
           }} 
           onApply={handleQuizConfiguration} 
           topics={topics} 
-          years={years} 
           onPaperChange={async (paperId) => {
-            // Update topics and years when paper changes
-            const data = await fetchTopicsAndYears(paperId);
-            if (data) {
-              setTopics(data.topics);
-              setYears(data.years);
+            // Update topics when paper changes
+            logDebug('Paper changed to:', paperId);
+            const topicsData = await fetchTopics(paperId);
+            if (topicsData && Array.isArray(topicsData)) {
+              setTopics(topicsData);
+              logDebug(`Topics updated for ${paperId}: ${topicsData.length} topics`);
             }
           }}
         />
@@ -561,12 +589,22 @@ export function QuizApp() {
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
         disabled={isTransitioning || showModifyQuiz}
-        currentQuestionIndex={currentQuestionIndex} // Pass current question index for hint tracking
+        currentQuestionIndex={currentQuestionIndex}
       >
         <main className="relative z-10 min-h-screen flex flex-col">
           {/* Question Content */}
           <div className="flex-1 px-4 md:px-8 py-8 pb-32 md:pb-8">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto space-y-6">
+              
+              {/* Variety Indicator */}
+              <QuizVarietyIndicator
+                questionsPool={questionsPool}
+                requestedCount={questionCount}
+                topicDistribution={topicDistribution}
+                isVisible={showVarietyIndicator && !isTransitioning}
+                onRegenerateQuiz={handleRegenerateQuiz}
+              />
+
               <AnimatePresence mode="wait">
                 <motion.div 
                   key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`}
@@ -636,19 +674,18 @@ export function QuizApp() {
         currentConfig={{ 
           selectedPaper, 
           selectedTopic, 
-          selectedYear, 
           questionCount, 
           showExplanations: true 
         }} 
         onApply={handleQuizConfiguration} 
-        topics={topics} 
-        years={years}
+        topics={topics}
         onPaperChange={async (paperId) => {
-          // Update topics and years when paper changes
-          const data = await fetchTopicsAndYears(paperId);
-          if (data) {
-            setTopics(data.topics);
-            setYears(data.years);
+          // Update topics when paper changes
+          logDebug('Paper changed in modal to:', paperId);
+          const topicsData = await fetchTopics(paperId);
+          if (topicsData && Array.isArray(topicsData)) {
+            setTopics(topicsData);
+            logDebug(`Topics updated in modal for ${paperId}: ${topicsData.length} topics`);
           }
         }}
       />
