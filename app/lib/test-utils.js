@@ -1,6 +1,25 @@
 // app/lib/test-utils.js
 import { clsx } from 'clsx';
-import { normalizeChapterName, normalizeOptionText, isCorrectAnswer } from './quiz-utils';
+
+// Import functions from quiz-utils that we need to re-export
+const normalizeChapterName = (chapter) => {
+  if (!chapter || typeof chapter !== 'string') return 'Unknown';
+  
+  return chapter
+    .replace(/[_-]/g, ' ')
+    .replace(/\b\w/g, l => l.toUpperCase())
+    .trim();
+};
+
+const normalizeOptionText = (text) => {
+  if (!text) return '';
+  return text.trim();
+};
+
+const isCorrectAnswer = (selectedOption, correctAnswer) => {
+  if (!selectedOption || !correctAnswer) return false;
+  return selectedOption.toLowerCase() === correctAnswer.toLowerCase();
+};
 
 // Test-specific constants
 export const TEST_TYPES = {
@@ -151,6 +170,38 @@ export const getFirstUnansweredQuestion = (answeredQuestions, totalQuestions) =>
     }
   }
   return null;
+};
+
+// Fetch topics function
+export const fetchTopics = async (paper) => {
+  try {
+    const response = await fetch(`/api/quiz/topics?paper=${paper}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Failed to fetch topics`);
+    }
+    
+    const result = await response.json();
+    
+    if (!result.topics || !Array.isArray(result.topics)) {
+      throw new Error('Invalid response format: topics array not found');
+    }
+    
+    return result.topics;
+  } catch (err) {
+    console.error('Fetch topics error:', err);
+    // Return default topics if fetch fails
+    return [
+      'Energy Management Fundamentals',
+      'Energy Audit Principles',
+      'Thermal Systems',
+      'Electrical Systems',
+      'Renewable Energy',
+      'Energy Conservation',
+      'Energy Economics',
+      'Environmental Impact'
+    ];
+  }
 };
 
 // Test data fetching
@@ -400,6 +451,9 @@ export const clearTestProgress = (testType, paper) => {
   }
 };
 
+// Re-export functions from quiz-utils that TestApp needs
+export { normalizeChapterName, normalizeOptionText, isCorrectAnswer };
+
 // Default export
 export default {
   TEST_TYPES,
@@ -414,6 +468,7 @@ export default {
   getNextQuestion,
   getPreviousQuestion,
   getFirstUnansweredQuestion,
+  fetchTopics,
   fetchTestQuestions,
   analyzeTestPerformance,
   calculateProgress,
@@ -422,6 +477,9 @@ export default {
   saveTestProgress,
   loadTestProgress,
   clearTestProgress,
+  normalizeChapterName,
+  normalizeOptionText,
+  isCorrectAnswer,
   cn,
   testSlideVariants,
   testFadeVariants
