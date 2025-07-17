@@ -1,4 +1,4 @@
-// app/components/QuizSelector.js - Minimalist redesign with enhanced UX
+// app/components/QuizSelector.js - Fixed to handle paper changes properly
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,7 +53,8 @@ export function QuizSelector({
   currentConfig, 
   onApply,
   topics = [],
-  years = []
+  years = [],
+  onPaperChange // New prop for handling paper changes
 }) {
   const [config, setConfig] = useState({
     selectedPaper: 'paper1',
@@ -83,12 +84,20 @@ export function QuizSelector({
     }
   }, [isOpen, currentConfig]);
 
-  const handlePaperSelect = useCallback((paperId) => {
+  const handlePaperSelect = useCallback(async (paperId) => {
     setConfig(prev => ({
       ...prev,
-      selectedPaper: paperId
+      selectedPaper: paperId,
+      // Reset topic and year when paper changes
+      selectedTopic: 'all',
+      selectedYear: 'all'
     }));
-  }, []);
+    
+    // Call the onPaperChange callback to update topics and years
+    if (onPaperChange) {
+      await onPaperChange(paperId);
+    }
+  }, [onPaperChange]);
 
   const handleNext = () => {
     if (step < 3) setStep(step + 1);
@@ -100,7 +109,7 @@ export function QuizSelector({
 
   const handleApply = useCallback(() => {
     onApply(config);
-    onClose();
+    if (onClose) onClose();
   }, [config, onApply, onClose]);
 
   const handleReset = useCallback(() => {
@@ -113,7 +122,12 @@ export function QuizSelector({
     };
     setConfig(resetConfig);
     setStep(1);
-  }, []);
+    
+    // Reset to paper1 topics/years
+    if (onPaperChange) {
+      onPaperChange('paper1');
+    }
+  }, [onPaperChange]);
 
   const getStepProgress = () => (step / 3) * 100;
 
@@ -122,6 +136,8 @@ export function QuizSelector({
     if (count <= 30) return { label: 'Standard', icon: Target, color: 'text-blue-600 dark:text-blue-400' };
     return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
   };
+
+  const canClose = onClose !== undefined;
 
   if (!isOpen) return null;
 
@@ -132,7 +148,7 @@ export function QuizSelector({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={(e) => e.target === e.currentTarget && onClose()}
+        onClick={(e) => e.target === e.currentTarget && canClose && onClose()}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -142,12 +158,14 @@ export function QuizSelector({
         >
           {/* Header */}
           <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-            <button
-              onClick={onClose}
-              className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
-            >
-              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            </button>
+            {canClose && (
+              <button
+                onClick={onClose}
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            )}
 
             <div className="pr-12">
               <div className="flex items-center gap-3 mb-4">
