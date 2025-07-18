@@ -41,7 +41,10 @@ function normalizeChapterName(tag) {
     .replace(/\s+/g, ' ')
     .trim();
 }
-
+function isAnswerCorrect(userAnswer, correctAnswer) {
+  if (!userAnswer || !correctAnswer) return false;
+  return userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+}
 // Helper function to update chapter performance
 async function updateChapterPerformance(userId, attemptData, type) {
   try {
@@ -92,7 +95,7 @@ async function updateChapterPerformance(userId, attemptData, type) {
         const questionId = question.main_id || question.id;
         if(attemptData.answers[questionId]) { // only count answered questions
             chapterStats[key].attempted++;
-            if (attemptData.answers[questionId] === question.correct_answer) {
+            if (isAnswerCorrect(attemptData.answers[questionId], question.correct_answer)) {
               chapterStats[key].correct++;
             }
         }
