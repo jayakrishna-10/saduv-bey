@@ -1,180 +1,614 @@
 // FILE: app/components/test/TestSelector.js
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
   Settings, 
+  BookOpen, 
+  Filter, 
+  Hash, 
   Play, 
   RotateCcw,
   CheckCircle2,
-  FileText,
-  Edit,
+  Sparkles,
+  Zap,
+  Target,
+  Clock,
   ChevronRight,
-  Filter,
-  Hash,
-  Clock
+  FileText,
+  Edit
 } from 'lucide-react';
-import { fetchTopics, PAPERS } from '@/lib/quiz-utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
+const PAPERS = {
+  paper1: {
+    id: 'paper1',
+    name: 'Paper 1',
+    description: 'General Aspects of Energy Management and Energy Audit',
+    color: 'from-blue-500 to-indigo-600',
+    gradient: 'bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30',
+    icon: '📊',
+    topics: 9
+  },
+  paper2: {
+    id: 'paper2',
+    name: 'Paper 2', 
+    description: 'Energy Efficiency in Thermal Utilities',
+    color: 'from-orange-500 to-red-600',
+    gradient: 'bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/30 dark:to-red-900/30',
+    icon: '🔥',
+    topics: 8
+  },
+  paper3: {
+    id: 'paper3',
+    name: 'Paper 3',
+    description: 'Energy Efficiency in Electrical Utilities',
+    color: 'from-emerald-500 to-cyan-600',
+    gradient: 'bg-gradient-to-br from-emerald-50 to-cyan-100 dark:from-emerald-900/30 dark:to-cyan-900/30',
+    icon: '⚡',
+    topics: 10
+  }
+};
 
 export function TestSelector({ onStartTest, isLoading }) {
-  const [mode, setMode] = useState('mock');
-  const [step, setStep] = useState(1);
-  const [config, setConfig] = useState({ paper: 'paper1', topic: 'all', questionCount: 10 });
+  const [config, setConfig] = useState({
+    mode: 'mock', // 'mock' or 'practice'
+    selectedPaper: 'paper1',
+    selectedTopic: 'all',
+    questionCount: 50, // Default for mock, will change for practice
+  });
+
+  const [step, setStep] = useState(1); // 1: Mode + Paper + Topic (if practice), 2: Settings (if practice)
+  const [isInitialized, setIsInitialized] = useState(false);
   const [topics, setTopics] = useState([]);
-  const [isTopicsLoading, setTopicsLoading] = useState(false);
+  const [isTopicsLoading, setIsTopicsLoading] = useState(false);
 
+  // Fetch topics when paper changes in practice mode
   useEffect(() => {
-    // Fetch topics whenever the paper changes in practice mode
-    if (mode === 'practice') {
-      setTopicsLoading(true);
-      fetchTopics(config.paper)
-        .then(data => setTopics(data || []))
-        .finally(() => setTopicsLoading(false));
+    if (config.mode === 'practice' && config.selectedPaper) {
+      setIsTopicsLoading(true);
+      import('@/lib/quiz-utils').then(({ fetchTopics }) => {
+        fetchTopics(config.selectedPaper)
+          .then(data => {
+            setTopics(data || []);
+            setIsTopicsLoading(false);
+          })
+          .catch(() => {
+            setTopics([]);
+            setIsTopicsLoading(false);
+          });
+      });
     }
-  }, [mode, config.paper]);
+  }, [config.mode, config.selectedPaper]);
 
-  const handleStart = () => {
-    const testConfig = mode === 'mock'
-      ? { mode: 'mock', paper: config.paper, topic: 'all', questionCount: 50, timeLimit: 60 * 60 }
-      : { mode: 'practice', paper: config.paper, topic: config.topic, questionCount: config.questionCount, timeLimit: config.questionCount * 72 };
+  const handlePaperSelect = useCallback((paperId) => {
+    setConfig(prev => ({
+      ...prev,
+      selectedPaper: paperId,
+      selectedTopic: 'all' // Reset topic when paper changes
+    }));
+  }, []);
+
+  const handleNext = () => {
+    // For mock tests, we can start directly after paper selection
+    if (config.mode === 'mock') {
+      handleApply();
+    } else if (step < 2) {
+      setStep(step + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
+  const handleApply = useCallback(() => {
+    // Build test configuration
+    let testConfig;
+    
+    if (config.mode === 'mock') {
+      testConfig = {
+        mode: 'mock',
+        paper: config.selectedPaper,
+        topic: 'all',
+        questionCount: 50,
+        timeLimit: 60 * 60 // 60 minutes in seconds
+      };
+    } else {
+      testConfig = {
+        mode: 'practice',
+        paper: config.selectedPaper,
+        topic: config.selectedTopic,
+        questionCount: config.questionCount,
+        timeLimit: config.questionCount * 72 // 72 seconds per question
+      };
+    }
+    
     onStartTest(testConfig);
+  }, [config, onStartTest]);
+
+  const handleReset = useCallback(() => {
+    const resetConfig = {
+      mode: 'mock',
+      selectedPaper: 'paper1',
+      selectedTopic: 'all',
+      questionCount: 50
+    };
+    setConfig(resetConfig);
+    setStep(1);
+    setTopics([]);
+  }, []);
+
+  const getStepProgress = () => {
+    if (config.mode === 'mock') {
+      return 100; // Mock test has only 1 step
+    }
+    return (step / 2) * 100;
   };
 
-  const handleReset = () => {
-    setMode('mock');
-    setStep(1);
-    setConfig({ paper: 'paper1', topic: 'all', questionCount: 10 });
+  const getQuestionCountLabel = (count) => {
+    if (count <= 10) return { label: 'Quick', icon: Zap, color: 'text-yellow-600 dark:text-yellow-400' };
+    if (count <= 30) return { label: 'Standard', icon: Target, color: 'text-blue-600 dark:text-blue-400' };
+    return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
   };
+
+  const getStepText = () => {
+    if (config.mode === 'mock') {
+      return 'Choose Paper for Mock Test';
+    }
+    return step === 1 ? 'Choose Mode, Paper & Topic' : 'Configure Test Settings';
+  };
+
+  const getTotalSteps = () => config.mode === 'mock' ? 1 : 2;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-3xl bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl"
+      >
+        {/* Header */}
         <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl"><Settings className="h-6 w-6 text-white" /></div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Customize Your Test</h2>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">Step {step} of 2: {step === 1 ? 'Choose Mode' : 'Configure Test'}</p>
+          <div className="pr-12">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl">
+                <Settings className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  Customize Your Test
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  Step {step} of {getTotalSteps()}: {getStepText()}
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <motion.div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" animate={{ width: `${(step / 2) * 100}%` }} transition={{ duration: 0.3 }} />
+
+            {/* Progress Bar */}
+            <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${getStepProgress()}%` }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="p-6">
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
           <AnimatePresence mode="wait">
-            {step === 1 && <Step1_ModeSelection key="step1" mode={mode} setMode={setMode} />}
-            {step === 2 && <Step2_Configuration key="step2" mode={mode} config={config} setConfig={setConfig} topics={topics} isTopicsLoading={isTopicsLoading} />}
+            {/* Step 1: Mode Selection + Paper + Topic (for practice) */}
+            {step === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                {/* Mode Selection */}
+                <div>
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      Select Your Test Mode
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      Choose between a realistic exam simulation or a flexible practice session
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <motion.button
+                      onClick={() => setConfig(prev => ({ ...prev, mode: 'mock', questionCount: 50 }))}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
+                        config.mode === 'mock'
+                          ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
+                      } bg-gradient-to-br from-red-50 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30`}
+                    >
+                      <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white text-2xl shadow-lg flex items-center justify-center">
+                        <FileText className="h-8 w-8" />
+                      </div>
+                      <div className="mb-2">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                          Mock Test
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          Real exam simulation
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        50 questions, 60 minutes timer. Experience the actual exam conditions.
+                      </p>
+                      {config.mode === 'mock' && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                          className="mt-3"
+                        >
+                          <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        </motion.div>
+                      )}
+                    </motion.button>
+
+                    <motion.button
+                      onClick={() => setConfig(prev => ({ ...prev, mode: 'practice', questionCount: 20 }))}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
+                        config.mode === 'practice'
+                          ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
+                      } bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30`}
+                    >
+                      <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl shadow-lg flex items-center justify-center">
+                        <Edit className="h-8 w-8" />
+                      </div>
+                      <div className="mb-2">
+                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                          Practice Test
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          Custom practice session
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                        Choose your topics and question count. 72 seconds per question.
+                      </p>
+                      {config.mode === 'practice' && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                          className="mt-3"
+                        >
+                          <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                        </motion.div>
+                      )}
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Paper Selection */}
+                <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      Select Your Paper
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
+                      Choose which NCE paper you'd like to practice
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    {Object.values(PAPERS).map((paper) => (
+                      <motion.button
+                        key={paper.id}
+                        onClick={() => handlePaperSelect(paper.id)}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`p-6 rounded-2xl text-center transition-all duration-300 border-2 ${
+                          config.selectedPaper === paper.id
+                            ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
+                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
+                        } ${paper.gradient}`}
+                      >
+                        <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>
+                          {paper.icon}
+                        </div>
+                        <div className="mb-2">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            {paper.name}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            {paper.topics} topics available
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          {paper.description}
+                        </p>
+                        {config.selectedPaper === paper.id && (
+                          <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            className="mt-3"
+                          >
+                            <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mx-auto" />
+                          </motion.div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Topic Selection (Only for Practice Mode) */}
+                {config.mode === 'practice' && (
+                  <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6">
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+                        <Filter className="h-5 w-5" />
+                        Choose Topic Focus
+                      </label>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                        Select a specific topic or practice all topics from {PAPERS[config.selectedPaper]?.name}
+                      </p>
+                      
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* All Topics Option */}
+                        <motion.button
+                          onClick={() => setConfig(prev => ({ ...prev, selectedTopic: 'all' }))}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          className={`p-4 rounded-xl text-left transition-all border-2 ${
+                            config.selectedTopic === 'all'
+                              ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-md'
+                              : 'border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 hover:border-gray-300 dark:hover:border-gray-600'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-gray-900 dark:text-gray-100">
+                                All Topics
+                              </div>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Practice questions from all {topics.length} available topics
+                              </div>
+                            </div>
+                            {config.selectedTopic === 'all' && (
+                              <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                            )}
+                          </div>
+                        </motion.button>
+
+                        {/* Individual Topic Options */}
+                        {topics.length > 0 && (
+                          <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                            {topics.map((topic, index) => (
+                              <motion.button
+                                key={topic}
+                                onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                className={`w-full p-3 rounded-lg text-left transition-all border ${
+                                  config.selectedTopic === topic
+                                    ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {topic}
+                                  </span>
+                                  {config.selectedTopic === topic && (
+                                    <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                  )}
+                                </div>
+                              </motion.button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Selection Summary */}
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-200 dark:border-indigo-700">
+                  <h4 className="font-medium text-indigo-900 dark:text-indigo-100 mb-2">Current Selection</h4>
+                  <div className="space-y-1 text-sm text-indigo-800 dark:text-indigo-200">
+                    <div>🎯 Mode: {config.mode === 'mock' ? 'Mock Test' : 'Practice Test'}</div>
+                    <div>📄 Paper: {PAPERS[config.selectedPaper]?.name}</div>
+                    {config.mode === 'practice' && (
+                      <div>🎯 Topic: {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</div>
+                    )}
+                    {config.mode === 'mock' && (
+                      <>
+                        <div>📊 Questions: 50</div>
+                        <div>⏱️ Time: 60 minutes</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 2: Settings (Only for Practice Mode) */}
+            {step === 2 && config.mode === 'practice' && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="text-center mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    Practice Test Settings
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">
+                    Configure your practice session
+                  </p>
+                </div>
+
+                {/* Question Count */}
+                <div className="space-y-4">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                    <Hash className="h-4 w-4" />
+                    Number of Questions: {config.questionCount}
+                  </label>
+                  
+                  <div className="space-y-4">
+                    <input
+                      type="range"
+                      min="5"
+                      max="50"
+                      step="5"
+                      value={config.questionCount}
+                      onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
+                      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    
+                    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span>5 (Quick)</span>
+                      <span>25 (Standard)</span>
+                      <span>50 (Comprehensive)</span>
+                    </div>
+
+                    {/* Question Count Indicator */}
+                    <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
+                      {(() => {
+                        const { label, icon: Icon, color } = getQuestionCountLabel(config.questionCount);
+                        const totalTime = config.questionCount * 72; // 72 seconds per question
+                        const minutes = Math.floor(totalTime / 60);
+                        const seconds = totalTime % 60;
+                        return (
+                          <>
+                            <Icon className={`h-5 w-5 ${color}`} />
+                            <span className={`text-sm font-medium ${color}`}>{label} Session</span>
+                            <span className="text-gray-600 dark:text-gray-400 text-sm">
+                              ({minutes} min {seconds > 0 ? `${seconds} sec` : ''})
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time Information */}
+                <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    <div>
+                      <span className="text-gray-900 dark:text-gray-100 font-medium">Time Allotment</span>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">72 seconds per question</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {Math.floor((config.questionCount * 72) / 60)} min {(config.questionCount * 72) % 60} sec
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Total test duration
+                    </div>
+                  </div>
+                </div>
+
+                {/* Final Summary */}
+                <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-2xl border border-indigo-200 dark:border-indigo-700">
+                  <h4 className="font-semibold text-indigo-900 dark:text-indigo-100 mb-4 flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Ready to Start Practice Test
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Paper</div>
+                      <div className="text-indigo-900 dark:text-indigo-100">{PAPERS[config.selectedPaper]?.name}</div>
+                    </div>
+                    <div>
+                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Questions</div>
+                      <div className="text-indigo-900 dark:text-indigo-100">{config.questionCount}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Topic</div>
+                      <div className="text-indigo-900 dark:text-indigo-100">
+                        {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Time per Question</div>
+                      <div className="text-indigo-900 dark:text-indigo-100">72 seconds</div>
+                    </div>
+                    <div>
+                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Total Duration</div>
+                      <div className="text-indigo-900 dark:text-indigo-100">
+                        {Math.floor((config.questionCount * 72) / 60)} min {(config.questionCount * 72) % 60} sec
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
+        {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-900/50">
           <div className="flex items-center gap-3">
-            {step > 1 && <button onClick={() => setStep(1)} className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl font-medium">Previous</button>}
-            <button onClick={handleReset} className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl"><RotateCcw className="h-4 w-4" /> Reset</button>
+            {step > 1 && (
+              <button
+                onClick={handlePrevious}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors font-medium"
+              >
+                Previous
+              </button>
+            )}
+            
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset
+            </button>
           </div>
-          {step < 2 ? (
-            <motion.button onClick={() => setStep(2)} whileHover={{ scale: 1.05 }} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl shadow-lg"><ChevronRight className="h-4 w-4" /> Next Step</motion.button>
-          ) : (
-            <motion.button onClick={handleStart} disabled={isLoading} whileHover={{ scale: 1.05 }} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-medium rounded-xl shadow-lg disabled:opacity-50">{isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <Play className="h-4 w-4" />} Start Test</motion.button>
-          )}
+          
+          <div className="flex items-center gap-3">
+            {(config.mode === 'mock' || (config.mode === 'practice' && step === 2)) ? (
+              <motion.button
+                onClick={handleApply}
+                disabled={isLoading}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-medium rounded-xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 shadow-lg disabled:opacity-50"
+              >
+                <Play className="h-4 w-4" />
+                Start Test
+              </motion.button>
+            ) : (
+              <motion.button
+                onClick={handleNext}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
+              >
+                Next Step
+                <ChevronRight className="h-4 w-4" />
+              </motion.button>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>
   );
 }
-
-const Step1_ModeSelection = ({ mode, setMode }) => (
-  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-    <div className="text-center mb-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Select Your Test Mode</h3>
-      <p className="text-gray-600 dark:text-gray-400 text-sm">Choose between a realistic exam simulation or a flexible practice session.</p>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <ModeCard icon={FileText} title="Mock Test" description="Real exam simulation: 50 Qs, 60 mins." selected={mode === 'mock'} onClick={() => setMode('mock')} />
-      <ModeCard icon={Edit} title="Practice Test" description="Custom session with topic & length choice." selected={mode === 'practice'} onClick={() => setMode('practice')} />
-    </div>
-  </motion.div>
-);
-
-const Step2_Configuration = ({ mode, config, setConfig, topics, isTopicsLoading }) => (
-  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-    {mode === 'mock' ? (
-      <MockOptions config={config} setConfig={setConfig} />
-    ) : (
-      <PracticeOptions config={config} setConfig={setConfig} topics={topics} isTopicsLoading={isTopicsLoading} />
-    )}
-  </motion.div>
-);
-
-const MockOptions = ({ config, setConfig }) => (
-  <div className="space-y-6">
-    <div className="text-center mb-6"><h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Select Your Paper</h3></div>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {Object.values(PAPERS).map(p => <PaperCard key={p.id} paper={p} selected={config.paper === p.id} onClick={() => setConfig(prev => ({...prev, paper: p.id}))} />)}
-    </div>
-  </div>
-);
-
-const PracticeOptions = ({ config, setConfig, topics, isTopicsLoading }) => (
-  <div className="space-y-6">
-    <div className="text-center"><h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Select Your Paper</h3></div>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {Object.values(PAPERS).map(p => <PaperCard key={p.id} paper={p} selected={config.paper === p.id} onClick={() => setConfig(prev => ({...prev, paper: p.id, topic: 'all'}))} />)}
-    </div>
-
-    <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6 space-y-4">
-      <label className="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-gray-100"><Filter className="h-5 w-5" /> Choose Topic Focus</label>
-      <div className="grid grid-cols-1 gap-3">
-        <TopicButton label="All Topics" description={`Practice from all ${topics.length} available topics`} selected={config.topic === 'all'} onClick={() => setConfig(prev => ({ ...prev, topic: 'all' }))} />
-        <ScrollArea className="max-h-48 space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
-          {isTopicsLoading ? <Loader2 className="mx-auto animate-spin" /> : topics.map(topic => <TopicButton key={topic} label={topic} selected={config.topic === topic} onClick={() => setConfig(prev => ({ ...prev, topic: topic }))} />)}
-        </ScrollArea>
-      </div>
-    </div>
-    
-    <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6 space-y-4">
-        <label className="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-gray-100"><Hash className="h-5 w-5" /> Number of Questions: {config.questionCount}</label>
-        <input type="range" min="5" max="50" step="5" value={config.questionCount} onChange={e => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider" />
-        <div className="text-sm text-gray-600 dark:text-gray-400"><Clock className="inline h-4 w-4 mr-1" />Time Allotment: {Math.floor((config.questionCount * 72) / 60)} min { (config.questionCount * 72) % 60} sec</div>
-    </div>
-  </div>
-);
-
-const ModeCard = ({ icon: Icon, title, description, selected, onClick }) => (
-    <motion.button onClick={onClick} whileHover={{ y: -5 }} className={`p-6 rounded-2xl text-left transition-all border-2 h-full relative ${selected ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-md' : 'bg-white/70 dark:bg-gray-800/70 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}>
-        <Icon className="h-8 w-8 text-indigo-600 dark:text-indigo-400 mb-3" />
-        <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{title}</h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{description}</p>
-        {selected && <CheckCircle2 className="h-5 w-5 text-indigo-500 absolute top-4 right-4" />}
-    </motion.button>
-);
-
-const PaperCard = ({ paper, selected, onClick }) => (
-    <motion.button onClick={onClick} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={`p-6 rounded-2xl text-center transition-all duration-300 border-2 relative h-full flex flex-col justify-center items-center ${selected ? 'border-indigo-300 dark:border-indigo-600 shadow-lg transform scale-[1.02]' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'} ${paper.gradient}`}>
-        <div className={`w-16 h-16 mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>{paper.icon}</div>
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{paper.name}</h3>
-        <p className="text-xs text-gray-600 dark:text-gray-400">{paper.description}</p>
-        {selected && <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="mt-2"><CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /></motion.div>}
-    </motion.button>
-);
-
-const TopicButton = ({ label, description, selected, onClick }) => (
-    <motion.button onClick={onClick} whileHover={{ scale: 1.01 }} className={`w-full p-4 rounded-xl text-left transition-all border-2 flex items-center justify-between ${selected ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-md' : 'border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 hover:border-gray-300 dark:hover:border-gray-600'}`}>
-        <div>
-            <div className="font-medium text-gray-900 dark:text-gray-100">{label}</div>
-            {description && <div className="text-sm text-gray-600 dark:text-gray-400">{description}</div>}
-        </div>
-        {selected && <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />}
-    </motion.button>
-);
-
-const Select = ({ id, label, children, ...props }) => (
-    <div className="space-y-2">
-        <label htmlFor={id} className="font-medium text-gray-900 dark:text-gray-100">{label}</label>
-        <select id={id} {...props} className="w-full p-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" />
-    </div>
-);
