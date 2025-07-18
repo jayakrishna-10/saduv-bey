@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, CheckCircle, XCircle, Flag } from 'lucide-react';
 import { QuizExplanation } from '../quiz/QuizExplanation';
-import { normalizeChapterName } from '@/lib/quiz-utils';
+import { normalizeChapterName, isCorrectAnswer } from '@/lib/quiz-utils';
 import { TestReviewNavigation } from './TestReviewNavigation';
 
 export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
@@ -15,7 +15,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const userAnswer = answers[currentQuestionId];
 
   const getOptionClass = (option) => {
-    const isCorrect = option === currentQuestion.correct_answer;
+    const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     const isUserChoice = option === userAnswer;
 
     if (isCorrect) {
@@ -28,7 +28,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   };
   
   const getOptionIcon = (option) => {
-    const isCorrect = option === currentQuestion.correct_answer;
+    const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
     const isUserChoice = option === userAnswer;
 
     if (isCorrect) return <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
@@ -88,7 +88,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                             option_c: currentQuestion.option_c,
                             option_d: currentQuestion.option_d
                         }}
-                        correctAnswer={currentQuestion.correct_answer}
+                        correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
                         userAnswer={userAnswer}
                     />
                 </motion.div>
