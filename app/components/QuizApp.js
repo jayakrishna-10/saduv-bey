@@ -1,331 +1,233 @@
-// FILE: app/components/QuizApp.js
+// app/components/QuizApp.js - Updated to remove year filtering and work with streamlined selector
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Loader2, AlertTriangle, RefreshCw, Lightbulb } from 'lucide-react';
+import { CheckCircle, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 
-import { QuizHeader } from './quiz/QuizHeader';
+import { QuizNavigation } from './quiz/QuizNavigation';
 import { QuizQuestion } from './quiz/QuizQuestion';
-import { QuizActions } from './quiz/QuizActions';
+import { QuizExplanation } from './quiz/QuizExplanation';
+import { QuizSelector } from './QuizSelector';
+import { QuizSwipeHandler } from './quiz/QuizSwipeHandler';
 import { QuizStats } from './quiz/QuizStats';
 import { QuizSummary } from './quiz/QuizSummary';
 import { QuizCompletion } from './quiz/QuizCompletion';
-import { ExplanationDisplay } from './ExplanationDisplay';
-import { QuizSelector } from './QuizSelector';
+import { QuizFinishConfirmation } from './quiz/QuizFinishConfirmation';
 import { 
   fetchQuizQuestions, 
-  fetchTopicsAndYears, 
+  fetchTopics, 
   normalizeChapterName, 
   isCorrectAnswer,
-  generateQuizSummary
+  generateQuizSummary,
+  getNextAvailableQuestion,
+  getPreviousAvailableQuestion
 } from '@/lib/quiz-utils';
 
 export function QuizApp() {
   const { data: session, status } = useSession();
   
-  // Quiz state - maintaining existing structure
+  // Core quiz state
   const [selectedPaper, setSelectedPaper] = useState('paper1');
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showModifyQuiz, setShowModifyQuiz] = useState(false);
+  
+  // UI state - Show modify quiz by default
+  const [showModifyQuiz, setShowModifyQuiz] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
+  const [isExplanationExpanded, setIsExplanationExpanded] = useState(false);
+  const [navigationMode, setNavigationMode] = useState('floating');
+  
+  // Feedback and explanation state
   const [showFeedback, setShowFeedback] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [showMobileStats, setShowMobileStats] = useState(false);
   const [currentExplanation, setCurrentExplanation] = useState(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
-  const [topics, setTopics] = useState([]);
-  const [years, setYears] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedYear, setSelectedYear] = useState('all');
-  const [questionCount, setQuestionCount] = useState(20);
-  const [answeredQuestions, setAnsweredQuestions] = useState([]);
-  const [showSummary, setShowSummary] = useState(false);
-  const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-  const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0 });
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [startTime, setStartTime] = useState(null);
-  const [isExplanationVisible, setIsExplanationVisible] = useState(false);
-  const explanationRef = useRef(null);
   
-  // Debug and error state - NEW
-  const [saveStatus, setSaveStatus] = useState(null); // 'saving', 'success', 'error'
+  // Configuration state - removed year-related state
+  const [topics, setTopics] = useState([]);
+  const [selectedTopic, setSelectedTopic] = useState('all');
+  const [questionCount, setQuestionCount] = useState(20);
+  
+  // Progress state
+  const [answeredQuestions, setAnsweredQuestions] = useState([]);
+  const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
+  const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0, current: 1 });
+  const [startTime, setStartTime] = useState(null);
+  
+  // Animation and interaction state
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isUserIdle, setIsUserIdle] = useState(false);
+  const [lastInteraction, setLastInteraction] = useState(Date.now());
+  
+  // Save state
+  const [saveStatus, setSaveStatus] = useState(null);
   const [saveError, setSaveError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState({});
+  
+  // Track if quiz has started
+  const [hasQuizStarted, setHasQuizStarted] = useState(false);
+  
+  // Refs
+  const containerRef = useRef(null);
+  const idleTimeoutRef = useRef(null);
 
-  // Enhanced logging function
-  const logDebug = (message, data = null) => {
+  // Enhanced logging
+  const logDebug = useCallback((message, data = null) => {
     const timestamp = new Date().toISOString();
     const logMessage = `[QuizApp] [${timestamp}] ${message}`;
-    
     if (data) {
       console.log(logMessage, data);
     } else {
       console.log(logMessage);
     }
-  };
+  }, []);
 
+  // Mouse position tracking for ambient effects
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePosition({
         x: (e.clientX / window.innerWidth) * 100,
         y: (e.clientY / window.innerHeight) * 100
       });
+      setLastInteraction(Date.now());
+      setIsUserIdle(false);
+      
+      // Reset idle timeout
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+      idleTimeoutRef.current = setTimeout(() => {
+        setIsUserIdle(true);
+      }, 5000);
     };
+    
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+      }
+    };
   }, []);
 
+  // Keyboard shortcuts
   useEffect(() => {
-    fetchQuestions();
-    fetchTopicsAndYears(selectedPaper).then(data => {
-        if(data) {
-            setTopics(data.topics);
-            setYears(data.years);
-        }
-    });
-  }, [selectedPaper]);
+    const handleKeyDown = (e) => {
+      if (showModifyQuiz || showSummary || showFinishConfirmation) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          handlePreviousQuestion();
+          break;
+        case 'ArrowRight':
+        case ' ':
+          e.preventDefault();
+          if (selectedOption || showAnswer) {
+            handleNextQuestion();
+          }
+          break;
+        case 'h':
+          if (!showFeedback && !showAnswer) {
+            handleShowAnswer();
+          }
+          break;
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+          if (!selectedOption && !showAnswer) {
+            handleOptionSelect(e.key);
+          }
+          break;
+      }
+    };
 
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedOption, showAnswer, showFeedback, showModifyQuiz, showSummary, showFinishConfirmation]);
+
+  // Initial setup - only fetch topics for the default paper
+  useEffect(() => {
+    fetchTopics(selectedPaper).then(data => {
+      if (data && Array.isArray(data)) {
+        setTopics(data);
+        logDebug(`Loaded ${data.length} topics for initial paper ${selectedPaper}`);
+      }
+    });
+  }, []); // Empty dependency array - only run once
+
+  // Update progress
   useEffect(() => {
     if (questions.length > 0) {
       updateProgress();
     }
-  }, [questions, completedQuestionIds]);
+  }, [questions, completedQuestionIds, currentQuestionIndex]);
 
+  // Set start time
   useEffect(() => {
-    setIsExplanationVisible(showFeedback || showAnswer);
-  }, [showFeedback, showAnswer]);
-
-  useEffect(() => {
-    if (isExplanationVisible && explanationRef.current && window.innerWidth < 768) {
-      setTimeout(() => {
-        explanationRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
-        });
-      }, 300);
-    }
-  }, [isExplanationVisible]);
-
-  useEffect(() => {
-    if (questions.length > 0) {
+    if (questions.length > 0 && hasQuizStarted) {
       setStartTime(new Date());
     }
-  }, [questions]);
-
-  // Enhanced session debugging
-  useEffect(() => {
-    logDebug('Session status change:', {
-      status,
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      hasUserId: !!session?.user?.id,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email
-    });
-    
-    setDebugInfo(prev => ({
-      ...prev,
-      sessionStatus: status,
-      hasSession: !!session,
-      userId: session?.user?.id || null,
-      userEmail: session?.user?.email || null
-    }));
-  }, [session, status]);
-
-  const saveQuizAttempt = async () => {
-    logDebug('=== STARTING SAVE QUIZ ATTEMPT ===');
-    
-    // Pre-flight checks
-    if (!session) {
-      logDebug('Cannot save: No session');
-      setSaveStatus('error');
-      setSaveError('No active session');
-      return;
-    }
-
-    if (!session.user) {
-      logDebug('Cannot save: No user in session');
-      setSaveStatus('error');
-      setSaveError('No user data in session');
-      return;
-    }
-
-    if (!session.user.id) {
-      logDebug('Cannot save: No user ID in session');
-      setSaveStatus('error');
-      setSaveError('No user ID in session');
-      return;
-    }
-
-    if (answeredQuestions.length === 0) {
-      logDebug('Cannot save: No answered questions');
-      setSaveStatus('error');
-      setSaveError('No answered questions to save');
-      return;
-    }
-
-    setSaveStatus('saving');
-    setSaveError(null);
-
-    try {
-      logDebug('Generating quiz summary...');
-      const summary = generateQuizSummary(answeredQuestions, startTime);
-      
-      logDebug('Quiz summary generated:', summary);
-
-      const attemptData = {
-        paper: selectedPaper,
-        selectedTopic: selectedTopic,
-        selectedYear: selectedYear,
-        questionCount: questionCount,
-        questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
-          id, main_id, question_text, correct_answer, tag, year 
-        })),
-        answers: answeredQuestions.map(({ questionId, selectedOption, isCorrect }) => ({ 
-          questionId, selectedOption, isCorrect 
-        })),
-        correctAnswers: summary.correctAnswers,
-        totalQuestions: answeredQuestions.length,
-        score: summary.score,
-        timeTaken: summary.timeTaken,
-      };
-
-      logDebug('Prepared attempt data:', {
-        paper: attemptData.paper,
-        selectedTopic: attemptData.selectedTopic,
-        questionCount: attemptData.questionCount,
-        questionsDataLength: attemptData.questionsData.length,
-        answersLength: attemptData.answers.length,
-        correctAnswers: attemptData.correctAnswers,
-        totalQuestions: attemptData.totalQuestions,
-        score: attemptData.score,
-        timeTaken: attemptData.timeTaken
-      });
-
-      logDebug('Making API request to save attempt...');
-      
-      const response = await fetch('/api/user/attempts', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          type: 'quiz', 
-          attemptData: attemptData 
-        }),
-      });
-
-      logDebug('API response received:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      });
-
-      const responseData = await response.json();
-      
-      logDebug('API response data:', responseData);
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} - ${responseData.error || 'Unknown error'}`);
-      }
-
-      if (responseData.error) {
-        throw new Error(`Server Error: ${responseData.error}`);
-      }
-
-      logDebug('Quiz attempt saved successfully:', responseData);
-      setSaveStatus('success');
-      
-      // Update debug info
-      setDebugInfo(prev => ({
-        ...prev,
-        lastSaveAttempt: {
-          success: true,
-          timestamp: new Date().toISOString(),
-          insertedId: responseData.data?.id,
-          responseData
-        }
-      }));
-
-    } catch (error) {
-      logDebug('Error saving quiz attempt:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
-      
-      setSaveStatus('error');
-      setSaveError(error.message);
-      
-      // Update debug info
-      setDebugInfo(prev => ({
-        ...prev,
-        lastSaveAttempt: {
-          success: false,
-          timestamp: new Date().toISOString(),
-          error: error.message,
-          stack: error.stack
-        }
-      }));
-    }
-  };
+  }, [questions, hasQuizStarted]);
 
   const updateProgress = () => {
     const totalQuestions = questions.length;
     const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
-    setQuestionProgress({ total: totalQuestions, attempted: attemptedQuestions });
+    const currentPosition = currentQuestionIndex + 1;
+    
+    setQuestionProgress({ 
+      total: totalQuestions, 
+      attempted: attemptedQuestions,
+      current: currentPosition
+    });
 
     if (totalQuestions > 0 && attemptedQuestions === totalQuestions) {
-      logDebug('All questions completed, showing completion modal');
+      logDebug('All questions completed');
       setShowCompletionModal(true);
-      if(session) {
-        logDebug('Session exists, attempting to save quiz attempt');
+      if (session) {
         saveQuizAttempt();
-      } else {
-        logDebug('No session, skipping save');
       }
     }
   };
-  
+
   const fetchQuestions = async () => {
     try {
       setIsLoading(true);
-      logDebug('Fetching questions...', {
-        selectedPaper,
-        questionCount,
-        selectedTopic,
-        selectedYear
-      });
+      logDebug('Fetching questions...', { selectedPaper, questionCount, selectedTopic });
       
-      const fetchedQuestions = await fetchQuizQuestions(selectedPaper, questionCount, selectedTopic, selectedYear);
-      
-      logDebug('Questions fetched:', {
-        count: fetchedQuestions.length,
-        firstQuestionId: fetchedQuestions[0]?.id || fetchedQuestions[0]?.main_id
-      });
+      // Updated function call - removed selectedYear parameter
+      const fetchedQuestions = await fetchQuizQuestions(selectedPaper, questionCount, selectedTopic);
       
       setQuestions(fetchedQuestions);
       setCompletedQuestionIds(new Set());
       setAnsweredQuestions([]);
       setCurrentQuestionIndex(0);
-      setSelectedOption(null);
-      setShowFeedback(false);
-      setShowAnswer(false);
-      setCurrentExplanation(null);
-      setSaveStatus(null);
-      setSaveError(null);
+      resetQuestionState();
       setIsLoading(false);
+      setHasQuizStarted(true);
+      
+      logDebug(`Successfully loaded ${fetchedQuestions.length} questions`);
     } catch (err) {
       logDebug('Fetch questions error:', err);
       setIsLoading(false);
     }
+  };
+
+  const resetQuestionState = () => {
+    setSelectedOption(null);
+    setShowFeedback(false);
+    setShowAnswer(false);
+    setCurrentExplanation(null);
+    setIsExplanationExpanded(false);
+    setSaveStatus(null);
+    setSaveError(null);
   };
 
   const loadExplanation = async (questionId) => {
@@ -350,14 +252,52 @@ export function QuizApp() {
     }
     setIsLoadingExplanation(false);
   };
-  
-  const handleQuizConfiguration = (config) => {
-    setSelectedPaper(config.selectedPaper);
-    setSelectedTopic(config.selectedTopic);
-    setSelectedYear(config.selectedYear);
-    setQuestionCount(config.questionCount);
-    setShowModifyQuiz(false);
-    fetchQuestions();
+
+  const saveQuizAttempt = async () => {
+    if (!session?.user?.id || answeredQuestions.length === 0) return;
+    
+    setSaveStatus('saving');
+    setSaveError(null);
+
+    try {
+      const summary = generateQuizSummary(answeredQuestions, startTime);
+      
+      const attemptData = {
+        paper: selectedPaper,
+        selectedTopic: selectedTopic,
+        // Removed selectedYear from attemptData
+        questionCount: questionCount,
+        questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
+          id, main_id, question_text, correct_answer, tag, year 
+        })),
+        answers: answeredQuestions.map(({ questionId, selectedOption, isCorrect }) => ({ 
+          questionId, selectedOption, isCorrect 
+        })),
+        correctAnswers: summary.correctAnswers,
+        totalQuestions: answeredQuestions.length,
+        score: summary.score,
+        timeTaken: summary.timeTaken,
+      };
+
+      const response = await fetch('/api/user/attempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'quiz', attemptData }),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} - ${responseData.error || 'Unknown error'}`);
+      }
+
+      setSaveStatus('success');
+      logDebug('Quiz attempt saved successfully');
+    } catch (error) {
+      logDebug('Error saving quiz attempt:', error);
+      setSaveStatus('error');
+      setSaveError(error.message);
+    }
   };
 
   const handleOptionSelect = async (option) => {
@@ -368,6 +308,7 @@ export function QuizApp() {
     
     setSelectedOption(option);
     setShowFeedback(true);
+    setIsExplanationExpanded(true);
     
     const answerData = {
       questionId,
@@ -385,17 +326,17 @@ export function QuizApp() {
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
     
     loadExplanation(questionId);
-    
     logDebug('Answer submitted:', answerData);
   };
 
-  const handleGetAnswer = () => {
+  const handleShowAnswer = () => {
     if (showAnswer || showFeedback || isTransitioning) return;
     
     const questionId = currentQuestion.main_id || currentQuestion.id;
     
     setShowAnswer(true);
     setShowFeedback(true);
+    setIsExplanationExpanded(true);
     loadExplanation(questionId);
     setCompletedQuestionIds(prev => new Set([...prev, questionId]));
     setAnsweredQuestions(prev => [...prev, {
@@ -410,235 +351,302 @@ export function QuizApp() {
   };
 
   const handleNextQuestion = () => {
+    const nextIndex = getNextAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds);
+    if (nextIndex === null) {
+      setShowCompletionModal(true);
+      return;
+    }
+    
     setIsTransitioning(true);
     setTimeout(() => {
-      setSelectedOption(null);
-      setShowFeedback(false);
-      setShowAnswer(false);
-      setCurrentExplanation(null);
-      
-      const remaining = questions.filter(q => !completedQuestionIds.has(q.main_id || q.id));
-      if (remaining.length === 0) {
-        setShowCompletionModal(true);
-      } else {
-        let nextIndex = (currentQuestionIndex + 1) % questions.length;
-        while(completedQuestionIds.has(questions[nextIndex].main_id || questions[nextIndex].id)) {
-            nextIndex = (nextIndex + 1) % questions.length;
-        }
-        setCurrentQuestionIndex(nextIndex);
-      }
+      setCurrentQuestionIndex(nextIndex);
+      resetQuestionState();
       setIsTransitioning(false);
-    }, 100);
+    }, 150);
+  };
+
+  const handlePreviousQuestion = () => {
+    const prevIndex = getPreviousAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds);
+    if (prevIndex === null) return;
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentQuestionIndex(prevIndex);
+      resetQuestionState();
+      setIsTransitioning(false);
+    }, 150);
+  };
+
+  const handleSwipeLeft = () => handleNextQuestion();
+  const handleSwipeRight = () => handlePreviousQuestion();
+
+  const handleQuizConfiguration = async (config) => {
+    // Update all configuration state - removed selectedYear
+    setSelectedPaper(config.selectedPaper);
+    setSelectedTopic(config.selectedTopic);
+    setQuestionCount(config.questionCount);
+    
+    // Update topics based on selected paper
+    logDebug('Fetching topics for paper:', config.selectedPaper);
+    const topicsData = await fetchTopics(config.selectedPaper);
+    if (topicsData && Array.isArray(topicsData)) {
+      setTopics(topicsData);
+      logDebug(`Updated topics: ${topicsData.length} topics loaded`);
+    }
+    
+    setShowModifyQuiz(false);
+    fetchQuestions();
   };
 
   const handleViewSummary = () => {
-    if (session) {
-      logDebug('Viewing summary, attempting to save if not already saved');
-      if (saveStatus !== 'success') {
-        saveQuizAttempt();
-      }
+    if (session && saveStatus !== 'success') {
+      saveQuizAttempt();
     }
     setShowSummary(true);
   };
 
-  const resetFilters = () => {
+  const handleFinishQuiz = () => {
+    setShowFinishConfirmation(true);
+  };
+
+  const handleConfirmFinishQuiz = () => {
+    setShowFinishConfirmation(false);
+    if (session) {
+      saveQuizAttempt();
+    }
+    setShowCompletionModal(true);
+  };
+
+  const resetQuiz = () => {
     setSelectedTopic('all');
-    setSelectedYear('all');
     setShowCompletionModal(false);
+    setShowFinishConfirmation(false);
     setSaveStatus(null);
     setSaveError(null);
-    fetchQuestions();
+    setHasQuizStarted(false);
+    setShowModifyQuiz(true); // Show selector again for new quiz
   };
-  
-  const currentQuestion = questions[currentQuestionIndex] || {};
 
-  // Save Status Indicator Component
+  const currentQuestion = questions[currentQuestionIndex] || {};
+  const hasNextQuestion = getNextAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds) !== null;
+  const hasPrevQuestion = getPreviousAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds) !== null;
+
+  // Save Status Indicator
   const SaveStatusIndicator = () => {
     if (!session) return null;
     
     return (
-      <div className="fixed bottom-4 right-4 z-50">
-        {saveStatus === 'saving' && (
-          <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-3 rounded shadow-lg flex items-center">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            <span className="text-sm">Saving progress...</span>
-          </div>
+      <AnimatePresence>
+        {saveStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-20 md:bottom-6 right-4 z-50"
+          >
+            {saveStatus === 'saving' && (
+              <div className="bg-blue-100/90 dark:bg-blue-900/90 backdrop-blur-xl border border-blue-200/50 dark:border-blue-700/50 text-blue-700 dark:text-blue-300 p-3 rounded-2xl shadow-lg flex items-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span className="text-sm font-medium">Saving progress...</span>
+              </div>
+            )}
+            
+            {saveStatus === 'success' && (
+              <div className="bg-emerald-100/90 dark:bg-emerald-900/90 backdrop-blur-xl border border-emerald-200/50 dark:border-emerald-700/50 text-emerald-700 dark:text-emerald-300 p-3 rounded-2xl shadow-lg flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                <span className="text-sm font-medium">Progress saved!</span>
+              </div>
+            )}
+            
+            {saveStatus === 'error' && (
+              <div className="bg-red-100/90 dark:bg-red-900/90 backdrop-blur-xl border border-red-200/50 dark:border-red-700/50 text-red-700 dark:text-red-300 p-3 rounded-2xl shadow-lg">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">Save failed!</span>
+                </div>
+                <p className="text-xs mt-1 opacity-90">{saveError}</p>
+                <button 
+                  onClick={saveQuizAttempt}
+                  className="text-xs bg-red-600/80 dark:bg-red-500/80 text-white px-2 py-1 rounded-lg mt-2 hover:bg-red-700/80 dark:hover:bg-red-600/80 flex items-center transition-all"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Retry
+                </button>
+              </div>
+            )}
+          </motion.div>
         )}
-        
-        {saveStatus === 'success' && (
-          <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-3 rounded shadow-lg flex items-center">
-            <CheckCircle className="h-4 w-4 mr-2" />
-            <span className="text-sm">Progress saved!</span>
-          </div>
-        )}
-        
-        {saveStatus === 'error' && (
-          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded shadow-lg">
-            <div className="flex items-center">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">Save failed!</span>
-            </div>
-            <p className="text-xs mt-1">{saveError}</p>
-            <button 
-              onClick={saveQuizAttempt}
-              className="text-xs bg-red-600 text-white px-2 py-1 rounded mt-2 hover:bg-red-700 flex items-center"
-            >
-              <RefreshCw className="h-3 w-3 mr-1" />
-              Retry
-            </button>
-          </div>
-        )}
-      </div>
+      </AnimatePresence>
     );
   };
 
-  // Debug Panel Component (only show in development)
-  const DebugPanel = () => {
-    if (process.env.NODE_ENV !== 'development') return null;
-    
-    return (
-      <div className="fixed top-4 left-4 bg-gray-900 text-white p-4 rounded-lg shadow-lg text-xs max-w-sm z-50">
-        <h3 className="font-bold mb-2">Debug Info</h3>
-        <div className="space-y-1">
-          <div>Session Status: {debugInfo.sessionStatus}</div>
-          <div>Has Session: {debugInfo.hasSession ? '✓' : '✗'}</div>
-          <div>User ID: {debugInfo.userId || 'None'}</div>
-          <div>Save Status: {saveStatus || 'None'}</div>
-          <div>Questions: {questions.length}</div>
-          <div>Answered: {answeredQuestions.length}</div>
-          {debugInfo.lastSaveAttempt && (
-            <div className="mt-2 pt-2 border-t border-gray-700">
-              <div>Last Save: {debugInfo.lastSaveAttempt.success ? '✓' : '✗'}</div>
-              <div>Time: {new Date(debugInfo.lastSaveAttempt.timestamp).toLocaleTimeString()}</div>
-              {debugInfo.lastSaveAttempt.insertedId && (
-                <div>ID: {debugInfo.lastSaveAttempt.insertedId}</div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
+  // Show loading only when actually loading questions
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center p-8 bg-white/70 dark:bg-gray-800/70 rounded-3xl">
-          <Loader2 className="h-8 w-8 mx-auto animate-spin" />
-          <p className="mt-4">Loading quiz...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl"
+        >
+          <Loader2 className="h-12 w-12 mx-auto animate-spin text-indigo-600 dark:text-indigo-400 mb-4" />
+          <p className="text-lg font-light text-gray-700 dark:text-gray-300">Loading quiz...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Preparing your practice session</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Show selector if quiz hasn't started yet
+  if (!hasQuizStarted || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <QuizSelector 
+          isOpen={true} 
+          onClose={() => {}} // Can't close when it's the initial view
+          currentConfig={{ 
+            selectedPaper, 
+            selectedTopic, 
+            questionCount, 
+            showExplanations: true 
+          }} 
+          onApply={handleQuizConfiguration} 
+          topics={topics} 
+          onPaperChange={async (paperId) => {
+            // Update topics when paper changes
+            logDebug('Paper changed to:', paperId);
+            const topicsData = await fetchTopics(paperId);
+            if (topicsData && Array.isArray(topicsData)) {
+              setTopics(topicsData);
+              logDebug(`Topics updated for ${paperId}: ${topicsData.length} topics`);
+            }
+          }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans relative overflow-hidden transition-colors duration-300">
-      {/* Background Effects */}
+    <div 
+      ref={containerRef}
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 font-sans relative overflow-hidden transition-all duration-500"
+    >
+      {/* Dynamic Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div 
-          animate={{ x: mousePosition.x * 0.1, y: mousePosition.y * 0.1 }} 
+          animate={{ 
+            x: mousePosition.x * 0.1, 
+            y: mousePosition.y * 0.1,
+            scale: isUserIdle ? 1.1 : 1
+          }} 
           transition={{ type: "spring", stiffness: 50, damping: 15 }} 
-          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 opacity-40 blur-3xl" 
+          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-200/40 to-purple-200/40 dark:from-indigo-900/30 dark:to-purple-900/30 blur-3xl" 
         />
         <motion.div 
-          animate={{ x: -mousePosition.x * 0.05, y: -mousePosition.y * 0.05 }} 
+          animate={{ 
+            x: -mousePosition.x * 0.05, 
+            y: -mousePosition.y * 0.05,
+            scale: isUserIdle ? 0.9 : 1
+          }} 
           transition={{ type: "spring", stiffness: 30, damping: 15 }} 
-          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-100 to-cyan-100 dark:from-emerald-900/20 dark:to-cyan-900/20 opacity-30 blur-3xl" 
+          className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-gradient-to-br from-emerald-200/30 to-cyan-200/30 dark:from-emerald-900/20 dark:to-cyan-900/20 blur-3xl" 
         />
       </div>
 
-      <QuizHeader 
-        selectedPaper={selectedPaper} 
-        questionProgress={questionProgress} 
-        answeredQuestions={answeredQuestions} 
-        showMobileStats={showMobileStats} 
-        setShowMobileStats={setShowMobileStats} 
-        setShowModifyQuiz={setShowModifyQuiz} 
+      {/* Quiz Container */}
+      <QuizSwipeHandler
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
+        disabled={isTransitioning || showModifyQuiz}
+        currentQuestionIndex={currentQuestionIndex}
+      >
+        <main className="relative z-10 min-h-screen flex flex-col">
+          {/* Question Content */}
+          <div className="flex-1 px-4 md:px-8 py-8 pb-32 md:pb-8">
+            <div className="max-w-4xl mx-auto">
+              <AnimatePresence mode="wait">
+                <motion.div 
+                  key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`}
+                  initial={{ opacity: 0, y: 20, scale: 0.98 }} 
+                  animate={{ opacity: 1, y: 0, scale: 1 }} 
+                  exit={{ opacity: 0, y: -20, scale: 0.98 }} 
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl overflow-hidden"
+                >
+                  <QuizQuestion 
+                    question={currentQuestion} 
+                    questionIndex={currentQuestionIndex} 
+                    totalQuestions={questions.length} 
+                    selectedOption={selectedOption} 
+                    showFeedback={showFeedback} 
+                    showAnswer={showAnswer} 
+                    onOptionSelect={handleOptionSelect} 
+                    isTransitioning={isTransitioning}
+                    questionProgress={questionProgress}
+                  />
+                  
+                  <QuizExplanation
+                    isVisible={showFeedback || showAnswer}
+                    isExpanded={isExplanationExpanded}
+                    onToggleExpanded={setIsExplanationExpanded}
+                    isLoading={isLoadingExplanation}
+                    explanation={currentExplanation}
+                    questionText={currentQuestion.question_text}
+                    options={{
+                      option_a: currentQuestion.option_a,
+                      option_b: currentQuestion.option_b,
+                      option_c: currentQuestion.option_c,
+                      option_d: currentQuestion.option_d
+                    }}
+                    correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
+                    userAnswer={selectedOption}
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </main>
+      </QuizSwipeHandler>
+
+      {/* Navigation */}
+      <QuizNavigation
+        mode={navigationMode}
+        isVisible={!isTransitioning}
+        questionProgress={questionProgress}
+        answeredQuestions={answeredQuestions}
+        hasNextQuestion={hasNextQuestion}
+        hasPrevQuestion={hasPrevQuestion}
+        showFeedback={showFeedback}
+        showAnswer={showAnswer}
+        onPrevious={handlePreviousQuestion}
+        onNext={handleNextQuestion}
+        onShowAnswer={handleShowAnswer}
+        onShowSummary={handleViewSummary}
+        onShowConfig={() => setShowModifyQuiz(true)}
+        onFinishQuiz={handleFinishQuiz}
       />
 
-      <main className={`relative z-10 px-4 md:px-8 py-6 md:py-12 transition-all duration-300 ${
-        isExplanationVisible ? 'pb-32 md:pb-12' : 'pb-20 md:pb-12' 
-      }`}>
-        <div className="max-w-4xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div 
-              key={`${currentQuestionIndex}-${currentQuestion.main_id || currentQuestion.id}`} 
-              initial={{ opacity: 0, y: 20 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              exit={{ opacity: 0, y: -20 }} 
-              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-6 md:p-12 mb-8"
-            >
-              <QuizQuestion 
-                question={currentQuestion} 
-                questionIndex={currentQuestionIndex} 
-                totalQuestions={questions.length} 
-                selectedOption={selectedOption} 
-                showFeedback={showFeedback} 
-                showAnswer={showAnswer} 
-                onOptionSelect={handleOptionSelect} 
-                isTransitioning={isTransitioning} 
-              />
-              <AnimatePresence>
-                {(showFeedback || showAnswer) && (
-                  <motion.div 
-                    ref={explanationRef} 
-                    initial={{ opacity: 0, height: 0 }} 
-                    animate={{ opacity: 1, height: 'auto' }} 
-                    exit={{ opacity: 0, height: 0 }} 
-                    className="mb-6 md:mb-8"
-                  >
-                     {isLoadingExplanation ? (
-                        <div className="p-4 md:p-6 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
-                          <Loader2 className="h-5 w-5 animate-spin"/>
-                        </div>
-                     ) : (
-                        <ExplanationDisplay 
-                          explanationData={currentExplanation} 
-                          questionText={currentQuestion.question_text} 
-                          options={{ 
-                            option_a: currentQuestion.option_a, 
-                            option_b: currentQuestion.option_b, 
-                            option_c: currentQuestion.option_c, 
-                            option_d: currentQuestion.option_d 
-                          }} 
-                          correctAnswer={currentQuestion.correct_answer?.toLowerCase()} 
-                          userAnswer={selectedOption} 
-                        />
-                     )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <QuizActions 
-                answeredQuestions={answeredQuestions} 
-                showFeedback={showFeedback} 
-                showAnswer={showAnswer} 
-                isTransitioning={isTransitioning} 
-                onGetAnswer={handleGetAnswer} 
-                onNextQuestion={handleNextQuestion} 
-                onViewSummary={handleViewSummary} 
-              />
-            </motion.div>
-          </AnimatePresence>
-          <QuizStats 
-            questionProgress={questionProgress} 
-            answeredQuestions={answeredQuestions} 
-          />
-        </div>
-      </main>
-
+      {/* Modals */}
       <QuizSelector 
         isOpen={showModifyQuiz} 
         onClose={() => setShowModifyQuiz(false)} 
         currentConfig={{ 
           selectedPaper, 
           selectedTopic, 
-          selectedYear, 
           questionCount, 
           showExplanations: true 
         }} 
         onApply={handleQuizConfiguration} 
-        topics={topics} 
-        years={years} 
+        topics={topics}
+        onPaperChange={async (paperId) => {
+          // Update topics when paper changes
+          logDebug('Paper changed in modal to:', paperId);
+          const topicsData = await fetchTopics(paperId);
+          if (topicsData && Array.isArray(topicsData)) {
+            setTopics(topicsData);
+            logDebug(`Topics updated in modal for ${paperId}: ${topicsData.length} topics`);
+          }
+        }}
       />
       
       <QuizSummary 
@@ -648,17 +656,22 @@ export function QuizApp() {
         startTime={startTime} 
       />
       
+      <QuizFinishConfirmation
+        isOpen={showFinishConfirmation}
+        onClose={() => setShowFinishConfirmation(false)}
+        onConfirmFinish={handleConfirmFinishQuiz}
+        answeredQuestions={answeredQuestions}
+        startTime={startTime}
+        questionProgress={questionProgress}
+      />
+      
       <QuizCompletion 
         isOpen={showCompletionModal} 
         onViewSummary={handleViewSummary} 
-        onStartNewQuiz={resetFilters} 
+        onStartNewQuiz={resetQuiz} 
       />
 
-      {/* Save Status Indicator */}
       <SaveStatusIndicator />
-      
-      {/* Debug Panel */}
-      <DebugPanel />
     </div>
   );
 }

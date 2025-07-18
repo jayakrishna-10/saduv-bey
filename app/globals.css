@@ -1,549 +1,453 @@
-/* app/globals.css - Fixed z-index hierarchy and mobile bottom bar accessibility */
+/* app/globals.css - Enhanced with new animations and gesture support */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --radio-dot-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(17,21,23)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3ccircle cx=%278%27 cy=%278%27 r=%273%27/%3e%3c/svg%3e');
+  
+  /* Enhanced color palette */
+  --primary-50: #eff6ff;
+  --primary-100: #dbeafe;
+  --primary-200: #bfdbfe;
+  --primary-300: #93c5fd;
+  --primary-400: #60a5fa;
+  --primary-500: #3b82f6;
+  --primary-600: #2563eb;
+  --primary-700: #1d4ed8;
+  --primary-800: #1e40af;
+  --primary-900: #1e3a8a;
+  
+  /* Glass-morphism effects */
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  
+  /* Animation durations */
+  --animation-fast: 150ms;
+  --animation-normal: 300ms;
+  --animation-slow: 500ms;
+  
+  /* Gesture feedback */
+  --haptic-light: 10ms;
+  --haptic-medium: 20ms;
+  --haptic-heavy: 30ms;
 }
 
-/* Dark mode color scheme variables */
+/* Dark mode variables */
 .dark {
   --radio-dot-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(243,244,246)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3ccircle cx=%278%27 cy=%278%27 r=%273%27/%3e%3c/svg%3e');
+  
+  --glass-bg: rgba(17, 25, 40, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.125);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* Base styles with dark mode support */
+/* Base styles with enhanced typography */
 html {
   @apply scroll-smooth;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  font-family: Lexend, "Noto Sans", sans-serif;
-  @apply transition-colors duration-300;
+  font-family: 'Inter', 'Lexend', "Noto Sans", system-ui, -apple-system, sans-serif;
+  @apply transition-colors duration-300 bg-gray-50 dark:bg-gray-900;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variant-numeric: oldstyle-nums;
+  line-height: 1.6;
 }
 
-/* UPDATED: Z-index hierarchy to prevent layering issues */
-/* Higher z-index values for critical UI elements */
-.mobile-bottom-bar {
-  z-index: 60 !important; /* Highest priority for mobile action bar */
-}
-
-.sticky-header {
-  z-index: 50 !important; /* Header should be below mobile bar but above content */
-}
-
-.modal-overlay {
-  z-index: 55 !important; /* Modals should be above everything except mobile bar */
-}
-
-.explanation-content {
-  z-index: 10 !important; /* Explanation content should be below fixed elements */
-  position: relative;
-}
-
-/* Ensure explanation content doesn't interfere with fixed elements */
-.explanation-container {
-  max-height: calc(100vh - 200px); /* Account for header and mobile bar */
-  overflow-y: auto;
-  position: relative;
-  z-index: 10;
-}
-
-/* Mobile-specific fixes */
-@media (max-width: 768px) {
-  .explanation-container {
-    max-height: calc(100vh - 160px); /* Adjusted for mobile header and action bar */
-  }
-  
-  /* Ensure mobile bottom bar is always accessible */
-  .mobile-bottom-bar {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 60 !important;
-    pointer-events: auto !important;
-  }
-  
-  /* Prevent any content from overlaying the mobile bottom bar */
-  .explanation-content,
-  .explanation-container,
-  .quiz-content {
-    z-index: 10 !important;
-    position: relative;
-  }
-}
-
-/* KaTeX styling with dark mode support */
-.katex-display {
-  margin: 1.5rem 0 !important;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-.dark .katex-display {
-  @apply text-gray-200;
-}
-
-/* Explanation content styling with improved z-index handling */
-.explanation-content {
-  font-size: 0.875rem;
-  line-height: 1.5;
-  position: relative;
-  z-index: 10;
-}
-
-.explanation-content p {
-  margin-bottom: 1rem;
-}
-
-.explanation-content h1, 
-.explanation-content h2, 
-.explanation-content h3, 
-.explanation-content h4 {
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
-}
-
-.explanation-content ul, 
-.explanation-content ol {
-  margin-bottom: 1rem;
-  padding-left: 1.5rem;
-  list-style: disc;
-}
-
-.explanation-content li {
-  margin-bottom: 0.5rem;
-}
-
-/* Dark mode support for explanation content */
-.dark .explanation-content {
-  @apply text-gray-300;
-}
-
-.dark .explanation-content h1,
-.dark .explanation-content h2,
-.dark .explanation-content h3,
-.dark .explanation-content h4 {
-  @apply text-gray-100;
-}
-
-/* Test Interface Styles with Dark Mode and Fixed Z-index */
-.test-interface {
-  padding-top: 64px;
-}
-
-.test-header {
+/* Enhanced glass-morphism components */
+.glass {
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  position: sticky;
-  top: 64px;
-  z-index: 40;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
-.dark .test-header {
-  background: rgba(17, 24, 39, 0.1);
-  border-bottom: 1px solid rgba(75, 85, 99, 0.2);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+.glass-intense {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.5);
 }
 
-/* Submit button styling */
-.submit-button {
-  min-width: fit-content;
-  white-space: nowrap;
-  background: linear-gradient(45deg, #10b981, #059669);
-  border: none;
-  color: white;
-  font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  z-index: 20;
-  position: relative;
-}
-
-.submit-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-  background: linear-gradient(45deg, #059669, #047857);
-}
-
-.dark .submit-button:hover {
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-}
-
-.submit-button:active {
-  transform: translateY(0);
-}
-
-/* Mobile responsive improvements with z-index fixes */
-@media (max-width: 768px) {
-  .test-interface {
-    padding-top: 56px;
-  }
-  
-  .test-header {
-    top: 56px;
-    padding: 12px 16px;
-    z-index: 50;
-  }
-  
-  .submit-button {
-    padding: 6px 12px;
-    font-size: 14px;
-  }
-  
-  /* Ensure mobile bottom bar is above all content */
-  .fixed.bottom-0 {
-    z-index: 60 !important;
-  }
-}
-
-/* Question palette with dark mode and proper z-index */
-.question-palette {
-  position: fixed;
-  top: 160px;
-  left: 0;
-  height: calc(100vh - 160px);
-  z-index: 45; /* Below mobile bar and header, above content */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.1);
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.dark .question-palette {
-  background: rgba(17, 24, 39, 0.1);
-  border-right: 1px solid rgba(75, 85, 99, 0.2);
-}
-
-/* Progress bar styling */
-.progress-container {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 9999px;
-  height: 8px;
-  overflow: hidden;
-}
-
-.dark .progress-container {
-  background: rgba(75, 85, 99, 0.3);
-}
-
-.progress-bar {
-  background: linear-gradient(45deg, #a855f7, #ec4899);
-  height: 100%;
-  border-radius: 9999px;
-  transition: width 0.5s ease;
-}
-
-/* Timer component with dark mode */
-.timer-component {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+.dark .glass-intense {
+  background: rgba(17, 25, 40, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  z-index: 20;
-  position: relative;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
 }
 
-.dark .timer-component {
-  background: rgba(17, 24, 39, 0.2);
-  border: 1px solid rgba(75, 85, 99, 0.3);
+/* ENHANCED: Z-index hierarchy with gesture-aware layering */
+.z-navigation { z-index: 100; }
+.z-modal { z-index: 90; }
+.z-overlay { z-index: 80; }
+.z-dropdown { z-index: 70; }
+.z-header { z-index: 60; }
+.z-content { z-index: 10; }
+.z-background { z-index: 1; }
+
+/* Mobile gesture navigation */
+.mobile-nav-dock {
+  @apply fixed bottom-6 left-4 right-4 z-navigation;
+  transform: translateY(0);
+  transition: transform var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Button states with dark mode and improved z-index */
-.flag-button {
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
-  z-index: 20;
+.mobile-nav-dock.hidden {
+  transform: translateY(100px);
 }
 
-.flag-button.flagged {
-  background: rgba(234, 179, 8, 0.2);
-  color: #facc15;
-  border: 1px solid rgba(234, 179, 8, 0.5);
+.mobile-nav-dock.gesture-active {
+  transform: translateY(-8px) scale(1.02);
 }
 
-.dark .flag-button.flagged {
-  background: rgba(234, 179, 8, 0.3);
-  color: #fbbf24;
+/* Enhanced swipe gesture support */
+.swipe-container {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
-.flag-button:not(.flagged) {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+.swipe-indicator {
+  @apply fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-overlay;
+  @apply w-16 h-16 rounded-full flex items-center justify-center;
+  @apply glass text-2xl pointer-events-none;
+  animation: swipeIndicator var(--animation-fast) ease-out;
 }
 
-.dark .flag-button:not(.flagged) {
-  background: rgba(75, 85, 99, 0.2);
-  color: rgba(209, 213, 219, 0.7);
+@keyframes swipeIndicator {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
 }
 
-.flag-button:hover {
-  background: rgba(255, 255, 255, 0.2);
+/* Enhanced button interactions */
+.btn-interactive {
+  @apply relative overflow-hidden;
+  transition: all var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
 }
 
-.dark .flag-button:hover {
-  background: rgba(75, 85, 99, 0.3);
+.btn-interactive::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent;
+  transform: translateX(-100%);
+  transition: transform 0.7s ease-out;
 }
 
-/* Navigation buttons with proper z-index */
-.nav-button {
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
-  z-index: 20;
+.btn-interactive:hover::before {
+  transform: translateX(100%);
 }
 
-.nav-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
+.btn-interactive:active {
+  transform: scale(0.95);
 }
 
-.nav-button:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
+/* Ambient navigation orbs */
+.nav-orb {
+  @apply fixed backdrop-blur-xl rounded-full border shadow-2xl;
+  @apply transition-all duration-500 ease-out;
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+  opacity: 0;
+  transform: scale(0.8);
 }
 
-.dark .nav-button:not(:disabled):hover {
-  background: rgba(75, 85, 99, 0.3);
+.nav-orb.visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
-/* Question option improvements with z-index */
+.nav-orb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.nav-orb.left {
+  @apply left-6 top-1/2 -translate-y-1/2;
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.nav-orb.right {
+  @apply right-6 top-1/2 -translate-y-1/2;
+  animation: slideInRight 0.5s ease-out;
+}
+
+/* Enhanced progress indicators */
+.progress-ring {
+  transition: stroke-dasharray var(--animation-slow) ease-out;
+}
+
+.progress-bar-animated {
+  @apply relative overflow-hidden;
+}
+
+.progress-bar-animated::after {
+  content: '';
+  @apply absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/30 to-transparent;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
+/* Enhanced question option styles */
 .question-option {
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-  z-index: 10;
+  @apply relative transition-all duration-300 cursor-pointer;
+  @apply bg-white/80 dark:bg-gray-800/80 border-2 border-gray-200/60 dark:border-gray-700/60;
+  @apply rounded-2xl p-4 md:p-6;
+  transform-origin: center;
+  backdrop-filter: blur(10px);
 }
 
 .question-option:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.dark .question-option:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  @apply bg-white/95 dark:bg-gray-800/95 border-gray-300/60 dark:border-gray-600/60;
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
 .question-option.selected {
-  background: rgba(139, 92, 246, 0.2);
-  border-color: rgba(139, 92, 246, 0.4);
+  @apply border-indigo-300 dark:border-indigo-600;
+  transform: scale(1.02);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.2);
 }
 
-.dark .question-option.selected {
-  background: rgba(139, 92, 246, 0.3);
-  border-color: rgba(139, 92, 246, 0.5);
+.question-option.correct {
+  @apply bg-emerald-100/90 dark:bg-emerald-900/60 border-emerald-300 dark:border-emerald-600;
+  animation: correctAnswer 0.6s ease-out;
 }
 
-/* Palette question states with proper z-index */
-.palette-question {
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
-  z-index: 15;
+.question-option.incorrect {
+  @apply bg-red-100/90 dark:bg-red-900/60 border-red-300 dark:border-red-600;
+  animation: incorrectAnswer 0.6s ease-out;
 }
 
-.palette-question:hover {
-  transform: scale(1.1);
+@keyframes correctAnswer {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 12px 30px rgba(34, 197, 94, 0.3); }
+  100% { transform: scale(1.02); }
 }
 
-.palette-question:active {
-  transform: scale(0.9);
+@keyframes incorrectAnswer {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.02) rotate(1deg); }
+  75% { transform: scale(1.02) rotate(-1deg); }
+  100% { transform: scale(1.02) rotate(0deg); }
 }
 
-.palette-question.current {
-  background: rgb(139 92 246);
-  border-color: rgb(124 58 237);
+/* Enhanced explanation panel */
+.explanation-panel {
+  @apply overflow-hidden transition-all duration-500 ease-out;
+  max-height: 0;
+  opacity: 0;
 }
 
-.palette-question.answered {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.5);
+.explanation-panel.expanded {
+  max-height: 2000px;
+  opacity: 1;
 }
 
-.dark .palette-question.answered {
-  background: rgba(34, 197, 94, 0.3);
+.explanation-content {
+  @apply relative z-content;
+  animation: fadeInUp 0.5s ease-out;
 }
 
-.palette-question.flagged {
-  background: rgba(234, 179, 8, 0.2);
-  border-color: rgba(234, 179, 8, 0.5);
+/* Enhanced modal animations */
+.modal-overlay {
+  @apply fixed inset-0 z-modal;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fadeIn var(--animation-normal) ease-out;
 }
 
-.dark .palette-question.flagged {
-  background: rgba(234, 179, 8, 0.3);
+.modal-content {
+  animation: modalSlideIn var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.palette-question.visited {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.5);
-}
-
-.dark .palette-question.visited {
-  background: rgba(59, 130, 246, 0.3);
-}
-
-.palette-question.not-visited {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.dark .palette-question.not-visited {
-  background: rgba(75, 85, 99, 0.2);
-  border-color: rgba(75, 85, 99, 0.3);
-}
-
-/* Quick actions bar with proper z-index */
-.quick-actions {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 40;
-  position: relative;
-}
-
-.dark .quick-actions {
-  background: rgba(17, 24, 39, 0.05);
-  border-bottom: 1px solid rgba(75, 85, 99, 0.1);
-}
-
-/* Backdrop blur support with dark mode and z-index */
-@supports (backdrop-filter: blur(20px)) {
-  .backdrop-blur-support {
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+@keyframes modalSlideIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 
-@supports not (backdrop-filter: blur(20px)) {
-  .backdrop-blur-support {
-    background: rgba(0, 0, 0, 0.8);
+/* Enhanced loading states */
+.skeleton {
+  @apply bg-gray-200 dark:bg-gray-700 animate-pulse rounded;
+}
+
+.skeleton-text {
+  @apply h-4 bg-gray-200 dark:bg-gray-700 rounded;
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  @apply w-2 h-2 bg-current rounded-full;
+  animation: loadingDots 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loadingDots {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* Enhanced form elements */
+.form-input {
+  @apply w-full px-4 py-3 rounded-xl border transition-all duration-200;
+  @apply bg-white/80 dark:bg-gray-800/80 border-gray-200 dark:border-gray-700;
+  @apply focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+  @apply text-gray-900 dark:text-gray-100;
+  backdrop-filter: blur(10px);
+}
+
+.form-input:focus {
+  @apply bg-white/95 dark:bg-gray-800/95;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+}
+
+/* Enhanced range slider */
+.slider {
+  appearance: none;
+  @apply w-full h-2 rounded-lg outline-none bg-gray-200 dark:bg-gray-700;
+  background-image: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+  background-size: var(--value, 50%) 100%;
+  background-repeat: no-repeat;
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  @apply w-5 h-5 rounded-full cursor-pointer;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  transition: all var(--animation-fast) ease-out;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5);
+}
+
+/* Enhanced toggle switch */
+.toggle-switch {
+  @apply relative inline-flex h-6 w-11 items-center rounded-full;
+  @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  background: linear-gradient(45deg, #e5e7eb, #d1d5db);
+}
+
+.toggle-switch.active {
+  background: linear-gradient(45deg, #6366f1, #8b5cf6);
+}
+
+.toggle-switch .toggle-thumb {
+  @apply inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* Enhanced notification styles */
+.notification {
+  @apply fixed bottom-20 md:bottom-6 right-4 z-navigation;
+  @apply glass rounded-2xl p-4 shadow-2xl;
+  animation: notificationSlideIn var(--animation-normal) ease-out;
+}
+
+@keyframes notificationSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(100px) scale(0.9);
   }
-  
-  .dark .backdrop-blur-support {
-    background: rgba(17, 24, 39, 0.9);
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-/* Results and config cards with proper z-index */
-.results-card {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 10;
-}
-
-.dark .results-card {
-  background: rgba(17, 24, 39, 0.2);
-  border: 1px solid rgba(75, 85, 99, 0.3);
-}
-
-.results-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.dark .results-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-}
-
-.config-card {
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 10;
-}
-
-.dark .config-card {
-  background: rgba(17, 24, 39, 0.2);
-  border: 1px solid rgba(75, 85, 99, 0.3);
-}
-
-.config-card:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.dark .config-card:hover {
-  background: rgba(17, 24, 39, 0.3);
-}
-
-.config-card.selected {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.dark .config-card.selected {
-  background: rgba(17, 24, 39, 0.4);
-  border-color: rgba(75, 85, 99, 0.5);
-}
-
-/* Scrollbar styling with dark mode */
+/* Enhanced scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: rgba(75, 85, 99, 0.2);
+  @apply bg-gray-100 dark:bg-gray-800 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
+  @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  transition: background-color var(--animation-fast) ease-out;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  @apply bg-gray-400 dark:bg-gray-500;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.6);
+/* Enhanced focus states */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+  @apply dark:focus:ring-offset-gray-800;
 }
 
-/* Focus states with dark mode */
-button:focus-visible,
-input:focus-visible,
-select:focus-visible {
-  outline: 2px solid rgba(139, 92, 246, 0.5);
-  outline-offset: 2px;
+/* KaTeX styling with enhanced readability */
+.katex-display {
+  @apply my-6 overflow-x-auto;
+  font-size: 1.1em;
+  line-height: 1.4;
 }
 
-.dark button:focus-visible,
-.dark input:focus-visible,
-.dark select:focus-visible {
-  outline: 2px solid rgba(167, 139, 250, 0.6);
+.dark .katex-display {
+  @apply text-gray-100;
 }
 
-/* Animation improvements */
+/* Enhanced text selection */
+::selection {
+  background: rgba(99, 102, 241, 0.2);
+  color: inherit;
+}
+
+.dark ::selection {
+  background: rgba(167, 139, 250, 0.3);
+}
+
+/* Enhanced animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -551,14 +455,21 @@ select:focus-visible {
   }
 }
 
-.fade-in-up {
-  animation: fadeInUp 0.5s ease-out;
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-300px);
+    transform: translateX(-100px);
   }
   to {
     opacity: 1;
@@ -566,53 +477,64 @@ select:focus-visible {
   }
 }
 
-.slide-in-left {
-  animation: slideInLeft 0.3s ease-out;
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-/* Loading states */
-.loading-spinner {
-  animation: spin 1s linear infinite;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .test-header {
-    background: rgba(0, 0, 0, 0.9);
-    border-color: rgba(255, 255, 255, 0.8);
-  }
-  
-  .dark .test-header {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(0, 0, 0, 0.8);
-  }
-  
-  .submit-button {
-    background: #000;
-    border: 2px solid #fff;
-  }
-  
-  .dark .submit-button {
-    background: #fff;
-    color: #000;
-    border: 2px solid #000;
-  }
-  
-  .question-option {
-    border-width: 2px;
-  }
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
+  40%, 43% { transform: translateY(-10px); }
+  70% { transform: translateY(-5px); }
+  90% { transform: translateY(-2px); }
 }
 
-/* Reduced motion support */
+/* Utility classes */
+.fade-in { animation: fadeIn var(--animation-normal) ease-out; }
+.fade-in-up { animation: fadeInUp var(--animation-normal) ease-out; }
+.fade-in-down { animation: fadeInDown var(--animation-normal) ease-out; }
+.slide-in-left { animation: slideInLeft var(--animation-normal) ease-out; }
+.slide-in-right { animation: slideInRight var(--animation-normal) ease-out; }
+.scale-in { animation: scaleIn var(--animation-normal) ease-out; }
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+.smooth-transform {
+  transition: transform var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -622,105 +544,66 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  
+  .swipe-indicator,
+  .nav-orb,
+  .question-option {
+    transform: none !important;
+  }
 }
 
-/* Print styles (disable dark mode for printing) */
+@media (prefers-contrast: high) {
+  .glass {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.3);
+  }
+  
+  .dark .glass {
+    background: rgba(17, 25, 40, 0.95);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .question-option {
+    border-width: 3px;
+  }
+}
+
+/* Print optimizations */
 @media print {
-  .test-header,
-  .sticky-actions,
-  .question-palette,
-  .mobile-bottom-bar {
+  .nav-orb,
+  .mobile-nav-dock,
+  .notification,
+  .modal-overlay {
     display: none !important;
   }
   
-  .test-interface {
-    padding-top: 0 !important;
-  }
-  
-  /* Force light colors for printing */
-  * {
+  .glass {
     background: white !important;
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+  }
+  
+  * {
     color: black !important;
+    background: white !important;
   }
 }
 
-/* Custom selection colors */
-::selection {
-  background: rgba(139, 92, 246, 0.3);
-}
-
-.dark ::selection {
-  background: rgba(167, 139, 250, 0.4);
-}
-
-/* Ensure proper link styling */
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: none;
-}
-
-/* Interactive elements with proper z-index */
-button, 
-a,
-[role="button"] {
-  cursor: pointer;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  position: relative;
-  z-index: 15;
-}
-
-/* Prevent text selection on interactive elements */
-.interactive-element {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-/* Smooth theme transitions */
-* {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
-/* CRITICAL FIX: Ensure mobile bottom bar is always on top */
-@media (max-width: 768px) {
-  /* Force mobile bottom bar to be the highest z-index */
-  .fixed.bottom-0.left-0.right-0 {
-    z-index: 9999 !important;
-    position: fixed !important;
-    pointer-events: auto !important;
+/* Touch device optimizations */
+@media (hover: none) {
+  .question-option:hover {
+    transform: none;
   }
   
-  /* Ensure no other elements can overlay the mobile bar */
-  .explanation-content,
-  .explanation-container,
-  .quiz-content,
-  .main-content,
-  .content-wrapper {
-    z-index: 10 !important;
-    position: relative;
-    max-height: calc(100vh - 200px);
+  .btn-interactive:hover::before {
+    transform: none;
   }
-  
-  /* Create proper padding for mobile bottom bar */
-  .mobile-safe-area {
-    padding-bottom: 80px; /* Enough space for mobile bottom bar */
-  }
-  
-  .mobile-safe-area.with-explanation {
-    padding-bottom: 100px; /* Extra space when explanations are visible */
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+  .glass {
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
   }
 }

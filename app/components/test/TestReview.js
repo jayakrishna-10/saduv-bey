@@ -1,142 +1,108 @@
-// app/components/test/TestReview.js
+// FILE: app/components/test/TestReview.js
+'use client';
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, CheckCircle, Circle, AlertTriangle } from 'lucide-react';
-import { isCorrectAnswer, getReviewOptionClass } from '@/lib/test-utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, ChevronLeft, ChevronRight, CheckCircle, XCircle, Flag } from 'lucide-react';
+import { QuizExplanation } from '../quiz/QuizExplanation';
+import { normalizeChapterName, isCorrectAnswer } from '@/lib/quiz-utils';
+import { TestReviewNavigation } from './TestReviewNavigation';
 
-export function TestReview({ 
-  config, 
-  testData, 
-  onBack 
-}) {
+export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const currentQuestion = testData.questions[currentIndex];
-  const userAnswer = testData.answers[currentIndex];
-  const isCorrect = isCorrectAnswer(userAnswer, currentQuestion?.correct_answer);
 
-  const getResultIcon = () => {
-    if (!userAnswer) return <AlertTriangle className="h-6 w-6 text-yellow-500" />;
-    return isCorrect ? <CheckCircle className="h-6 w-6 text-emerald-500" /> : <Circle className="h-6 w-6 text-red-500" />;
+  const currentQuestion = questions[currentIndex];
+  const currentQuestionId = currentQuestion.main_id || currentQuestion.id;
+  const userAnswer = answers[currentQuestionId];
+
+  const getOptionClass = (option) => {
+    const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
+    const isUserChoice = option === userAnswer;
+
+    if (isCorrect) {
+      return "bg-emerald-100/90 dark:bg-emerald-900/60 border-emerald-300/80 dark:border-emerald-600/80 text-emerald-800 dark:text-emerald-200";
+    }
+    if (isUserChoice && !isCorrect) {
+      return "bg-red-100/90 dark:bg-red-900/60 border-red-300/80 dark:border-red-600/80 text-red-800 dark:text-red-200";
+    }
+    return "bg-gray-100/80 dark:bg-gray-700/80 border-gray-200/60 dark:border-gray-600/60 text-gray-600 dark:text-gray-400 opacity-75";
+  };
+  
+  const getOptionIcon = (option) => {
+    const isCorrect = isCorrectAnswer(option, currentQuestion.correct_answer);
+    const isUserChoice = option === userAnswer;
+
+    if (isCorrect) return <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
+    if (isUserChoice && !isCorrect) return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
+    return null;
   };
 
-  if (!currentQuestion) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-gray-700 dark:text-gray-300">
-          <p>Loading review...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="relative z-10 min-h-screen p-4 md:p-6 pb-20 md:pb-6"
-    >
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 px-3 md:px-4 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-lg transition-colors border border-gray-200/50 dark:border-gray-700/50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Back to Results</span>
-            <span className="sm:hidden">Back</span>
-          </button>
-          
-          <div className="text-gray-900 dark:text-gray-100 text-center">
-            <h1 className="text-xl md:text-2xl font-light">Review Answers</h1>
-            <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">Question {currentIndex + 1} of {testData.questions.length}</p>
-          </div>
-          
-          <div className="w-16 md:w-32" />
+    <div className="fixed inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 z-50 flex flex-col font-sans">
+      <header className="sticky top-0 z-20 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between shadow-sm">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Test Review</h2>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+            Question {currentIndex + 1} of {questions.length}
         </div>
+        <motion.button whileHover={{ scale: 1.1 }} onClick={onExit} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><X /></motion.button>
+      </header>
+      
+      <div className="flex-1 overflow-y-auto pb-32">
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={currentIndex}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                    <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl p-8 mb-6">
+                        <div className="flex justify-between items-center mb-4">
+                            <p className="font-semibold text-indigo-600 dark:text-indigo-400">
+                                Question {currentIndex + 1}
+                                {flaggedQuestions.has(currentQuestionId) && <Flag className="inline-block h-4 w-4 ml-2 text-yellow-500" />}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{normalizeChapterName(currentQuestion.tag)}</p>
+                        </div>
 
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border border-gray-200/50 dark:border-gray-700/50 p-6 md:p-8 mb-8"
-        >
-          {/* Question Status */}
-          <div className="flex items-center gap-4 mb-6">
-            {getResultIcon()}
-            <div>
-              <span className="text-gray-900 dark:text-gray-100 font-medium text-base md:text-lg">
-                {!userAnswer ? 'Not Attempted' : isCorrect ? 'Correct' : 'Incorrect'}
-              </span>
-              {userAnswer && (
-                <div className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-1">
-                  Your answer: {userAnswer?.toUpperCase()} | Correct answer: {currentQuestion?.correct_answer?.toUpperCase()}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Question */}
-          <h2 className="text-lg md:text-xl font-light text-gray-900 dark:text-gray-100 mb-6 md:mb-8 leading-relaxed">
-            {currentQuestion?.question_text}
-          </h2>
-
-          {/* Options */}
-          <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
-            {['a', 'b', 'c', 'd'].map((option) => (
-              <div
-                key={option}
-                className={`p-4 md:p-6 rounded-xl md:rounded-2xl border-2 transition-all duration-300 ${getReviewOptionClass(option, userAnswer, currentQuestion?.correct_answer)}`}
-              >
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-medium bg-white/50 dark:bg-gray-700/50">
-                    {option.toUpperCase()}
-                  </div>
-                  <span className="flex-1 text-sm md:text-base">{currentQuestion?.[`option_${option}`]}</span>
-                  {userAnswer === option && <span className="text-xs bg-white/70 dark:bg-gray-700/70 px-2 py-1 rounded">Your Answer</span>}
-                  {isCorrectAnswer(option, currentQuestion?.correct_answer) && <span className="text-xs bg-emerald-500 px-2 py-1 rounded text-white">Correct</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Navigation */}
-          <div className="flex justify-between items-center">
-            <button
-              onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
-              disabled={currentIndex === 0}
-              className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 ${
-                currentIndex === 0
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
-              }`}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span className="hidden sm:inline">Previous</span>
-              <span className="sm:hidden">Prev</span>
-            </button>
-
-            <div className="text-gray-600 dark:text-gray-400 text-sm">
-              {currentIndex + 1} of {testData.questions.length}
-            </div>
-
-            <button
-              onClick={() => setCurrentIndex(Math.min(testData.questions.length - 1, currentIndex + 1))}
-              disabled={currentIndex === testData.questions.length - 1}
-              className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg transition-all duration-200 ${
-                currentIndex === testData.questions.length - 1
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50'
-              }`}
-            >
-              <span className="hidden sm:inline">Next</span>
-              <span className="sm:hidden">Next</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        </motion.div>
+                        <p className="text-xl text-gray-800 dark:text-gray-200 mb-8 leading-relaxed">{currentQuestion.question_text}</p>
+                        
+                        <div className="space-y-4">
+                            {['a', 'b', 'c', 'd'].map(opt => (
+                                <div key={opt} className={`p-4 rounded-xl border-2 flex items-center justify-between ${getOptionClass(opt)}`}>
+                                    <span>{opt.toUpperCase()}. {currentQuestion[`option_${opt}`]}</span>
+                                    {getOptionIcon(opt)}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <QuizExplanation
+                        isVisible={true}
+                        isExpanded={true}
+                        explanation={currentQuestion.explanation}
+                        questionText={currentQuestion.question_text}
+                        options={{
+                            option_a: currentQuestion.option_a,
+                            option_b: currentQuestion.option_b,
+                            option_c: currentQuestion.option_c,
+                            option_d: currentQuestion.option_d
+                        }}
+                        correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
+                        userAnswer={userAnswer}
+                    />
+                </motion.div>
+            </AnimatePresence>
+        </div>
       </div>
-    </motion.div>
+
+      <TestReviewNavigation
+        onPrevious={() => setCurrentIndex(p => Math.max(0, p - 1))}
+        onNext={() => setCurrentIndex(p => Math.min(questions.length - 1, p + 1))}
+        onFinishReview={onExit}
+        hasPrev={currentIndex > 0}
+        hasNext={currentIndex < questions.length - 1}
+      />
+    </div>
   );
 }

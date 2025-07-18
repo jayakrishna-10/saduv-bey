@@ -1,81 +1,122 @@
-// app/components/test/QuestionPalette.js
+// FILE: app/components/test/QuestionPalette.js
+'use client';
 import React from 'react';
-import { motion } from 'framer-motion';
-import { CheckCircle, Flag, Circle, ArrowLeft, X } from 'lucide-react';
-import { getQuestionStatusColor } from '@/lib/test-utils';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Flag } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import * as Dialog from '@radix-ui/react-dialog';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 
-export function QuestionPalette({ 
-  questions, 
-  currentIndex, 
-  answers, 
-  flagged, 
-  visited, 
-  onNavigate, 
-  onClose 
-}) {
+export function QuestionPalette({ isOpen, onClose, questions, answers, flaggedQuestions, currentQuestionIndex, onQuestionSelect }) {
+  const getStatus = (index) => {
+    const questionId = questions[index].main_id || questions[index].id;
+    if (index === currentQuestionIndex) return 'current';
+    if (flaggedQuestions.has(questionId)) return 'flagged';
+    if (answers[questionId]) return 'answered';
+    return 'unanswered';
+  };
+
+  const getStatusClasses = (status) => {
+    switch (status) {
+      case 'current': return 'bg-indigo-600 text-white ring-2 ring-indigo-400';
+      case 'answered': return 'bg-green-500 text-white';
+      case 'flagged': return 'bg-yellow-400 text-white';
+      default: return 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
+    }
+  };
+
   return (
-    <>
-      {/* Mobile Overlay */}
-      <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
-      
-      {/* Palette */}
-      <motion.div
-        initial={{ x: -300, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        exit={{ x: -300, opacity: 0 }}
-        className="fixed md:relative top-0 left-0 h-screen w-80 md:w-72 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 p-4 overflow-y-auto z-50 md:z-30"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Questions</h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="h-4 w-4 text-gray-700 dark:text-gray-300 md:hidden" />
-            <ArrowLeft className="h-4 w-4 text-gray-700 dark:text-gray-300 hidden md:block" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-5 gap-2 mb-6">
-          {questions.map((_, index) => (
-            <motion.button
-              key={index}
-              onClick={() => {
-                onNavigate(index);
-                // Auto-close on mobile after selection
-                if (window.innerWidth < 768) {
-                  onClose();
-                }
-              }}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className={`aspect-square p-2 rounded-lg border-2 transition-all duration-200 flex items-center justify-center touch-manipulation ${getQuestionStatusColor(index, currentIndex, answers, flagged, visited)}`}
-            >
-              <span className="text-xs font-medium">{index + 1}</span>
-            </motion.button>
-          ))}
-        </div>
-
-        {/* Legend */}
-        <div className="space-y-3 text-sm">
-          <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-            <CheckCircle className="h-4 w-4 text-emerald-500" />
-            <span>Answered ({Object.keys(answers).length})</span>
-          </div>
-          <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-            <Flag className="h-4 w-4 text-yellow-500" />
-            <span>Flagged ({flagged.size})</span>
-          </div>
-          <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-            <Circle className="h-4 w-4 text-blue-500" />
-            <span>Visited ({visited.size})</span>
-          </div>
-          <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-            <Circle className="h-4 w-4 text-gray-400" />
-            <span>Not visited</span>
-          </div>
-        </div>
-      </motion.div>
-    </>
+    <Dialog.Root open={isOpen} onOpenChange={onClose}>
+      <AnimatePresence>
+        {isOpen && (
+          <Dialog.Portal forceMount>
+            <Dialog.Overlay asChild>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 z-50"
+              />
+            </Dialog.Overlay>
+            <Dialog.Content asChild>
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className="fixed right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-gray-800 shadow-2xl flex flex-col z-50 focus:outline-none"
+              >
+                <VisuallyHidden.Root>
+                  <Dialog.Title>Question Navigation Palette</Dialog.Title>
+                  <Dialog.Description>
+                    Navigate between test questions. Current question is highlighted in blue, answered questions in green, flagged questions in yellow, and unanswered questions in gray.
+                  </Dialog.Description>
+                </VisuallyHidden.Root>
+                
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100" aria-hidden="true">
+                    Question Palette
+                  </h2>
+                  <Dialog.Close asChild>
+                    <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <X className="h-5 w-5" />
+                      <span className="sr-only">Close question palette</span>
+                    </button>
+                  </Dialog.Close>
+                </div>
+                
+                <ScrollArea className="flex-1 p-4">
+                  <div className="grid grid-cols-5 gap-3" role="grid" aria-label="Question grid">
+                    {questions.map((q, index) => {
+                      const status = getStatus(index);
+                      const questionId = q.main_id || q.id;
+                      return (
+                        <button
+                          key={questionId}
+                          onClick={() => onQuestionSelect(index)}
+                          className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg transition-transform relative ${getStatusClasses(status)} hover:scale-110`}
+                          aria-label={`Question ${index + 1}, ${status}`}
+                          aria-current={status === 'current' ? 'true' : undefined}
+                        >
+                          {index + 1}
+                          {status === 'flagged' && (
+                            <Flag 
+                              className="absolute top-1 right-1 h-3 w-3 text-white" 
+                              fill="white" 
+                              aria-label="Flagged"
+                            />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+                
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 gap-2 text-sm" role="list" aria-label="Question status legend">
+                    <div className="flex items-center gap-2" role="listitem">
+                      <div className="w-4 h-4 rounded bg-green-500" aria-hidden="true" /> 
+                      <span>Answered</span>
+                    </div>
+                    <div className="flex items-center gap-2" role="listitem">
+                      <div className="w-4 h-4 rounded bg-gray-200 dark:bg-gray-700" aria-hidden="true" /> 
+                      <span>Unanswered</span>
+                    </div>
+                    <div className="flex items-center gap-2" role="listitem">
+                      <div className="w-4 h-4 rounded bg-yellow-400" aria-hidden="true" /> 
+                      <span>Flagged</span>
+                    </div>
+                    <div className="flex items-center gap-2" role="listitem">
+                      <div className="w-4 h-4 rounded bg-indigo-600" aria-hidden="true" /> 
+                      <span>Current</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        )}
+      </AnimatePresence>
+    </Dialog.Root>
   );
 }

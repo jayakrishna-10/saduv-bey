@@ -41,7 +41,10 @@ function normalizeChapterName(tag) {
     .replace(/\s+/g, ' ')
     .trim();
 }
-
+function isAnswerCorrect(userAnswer, correctAnswer) {
+  if (!userAnswer || !correctAnswer) return false;
+  return userAnswer.toLowerCase() === correctAnswer.toLowerCase();
+}
 // Helper function to update chapter performance
 async function updateChapterPerformance(userId, attemptData, type) {
   try {
@@ -76,7 +79,7 @@ async function updateChapterPerformance(userId, attemptData, type) {
     } else if (type === 'test') {
       attemptData.questionsData.forEach((question, index) => {
         const chapter = normalizeChapterName(question.tag);
-        const paper = attemptData.testType.startsWith('paper') ? attemptData.testType : 'mixed';
+        const paper = attemptData.testConfig.paper;
         const key = `${paper}-${chapter}`;
         
         if (!chapterStats[key]) {
@@ -89,23 +92,26 @@ async function updateChapterPerformance(userId, attemptData, type) {
           };
         }
         
-        chapterStats[key].attempted++;
-        
-        // Check if answer was correct
-        const userAnswer = attemptData.answers[index];
-        if (userAnswer && userAnswer === question.correct_answer) {
-          chapterStats[key].correct++;
+        const questionId = question.main_id || question.id;
+        if(attemptData.answers[questionId]) { // only count answered questions
+            chapterStats[key].attempted++;
+            if (isAnswerCorrect(attemptData.answers[questionId], question.correct_answer)) {
+              chapterStats[key].correct++;
+            }
         }
       });
     }
     
     // Calculate time spent per chapter (distribute total time proportionally)
-    const totalQuestions = type === 'quiz' ? attemptData.totalQuestions : attemptData.questionsData.length;
-    const timePerQuestion = attemptData.timeTaken / totalQuestions;
+    const totalAttemptedQuestions = type === 'quiz' ? attemptData.totalQuestions : Object.keys(attemptData.answers).length;
+    if (totalAttemptedQuestions === 0) return; // Avoid division by zero
+    const timePerQuestion = attemptData.timeTaken / totalAttemptedQuestions;
     
     // Update daily_chapter_performance table
     for (const [key, stats] of Object.entries(chapterStats)) {
-      const accuracy = stats.attempted > 0 ? (stats.correct / stats.attempted) * 100 : 0;
+      if (stats.attempted === 0) continue;
+      
+      const accuracy = (stats.correct / stats.attempted) * 100;
       const timeSpent = Math.round(stats.attempted * timePerQuestion);
       
       // Check if record exists
@@ -194,20 +200,21 @@ async function updateChapterPerformance(userId, attemptData, type) {
       .single();
     
     const uniqueChapters = [...new Set(Object.values(chapterStats).map(s => s.chapter))];
+    const totalQuestionsInAttempt = type === 'quiz' ? attemptData.totalQuestions : attemptData.questionsData.length;
     const avgAccuracy = Object.values(chapterStats).reduce((sum, s) => 
       sum + (s.attempted > 0 ? (s.correct / s.attempted) * 100 : 0), 0
-    ) / Object.keys(chapterStats).length;
+    ) / (Object.keys(chapterStats).length || 1);
     
     if (session) {
       await supabase
         .from('study_sessions')
         .update({
-          questions_answered: session.questions_answered + totalQuestions,
+          questions_answered: session.questions_answered + totalQuestionsInAttempt,
           quiz_attempts: type === 'quiz' ? session.quiz_attempts + 1 : session.quiz_attempts,
           test_attempts: type === 'test' ? session.test_attempts + 1 : session.test_attempts,
           time_spent: session.time_spent + attemptData.timeTaken,
           topics_studied: [...new Set([...session.topics_studied, ...uniqueChapters])],
-          average_accuracy: ((session.average_accuracy * session.questions_answered + avgAccuracy * totalQuestions) / (session.questions_answered + totalQuestions)),
+          average_accuracy: ((session.average_accuracy * session.questions_answered + avgAccuracy * totalQuestionsInAttempt) / (session.questions_answered + totalQuestionsInAttempt)),
           unique_chapters_studied: [...new Set([...session.topics_studied, ...uniqueChapters])].length,
           [type === 'quiz' ? 'quiz_accuracy' : 'test_accuracy']: avgAccuracy
         })
@@ -218,7 +225,7 @@ async function updateChapterPerformance(userId, attemptData, type) {
         .insert({
           user_id: userId,
           session_date: today,
-          questions_answered: totalQuestions,
+          questions_answered: totalQuestionsInAttempt,
           quiz_attempts: type === 'quiz' ? 1 : 0,
           test_attempts: type === 'test' ? 1 : 0,
           time_spent: attemptData.timeTaken,
