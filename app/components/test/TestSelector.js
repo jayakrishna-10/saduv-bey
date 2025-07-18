@@ -1,6 +1,6 @@
 // FILE: app/components/test/TestSelector.js
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -17,8 +17,10 @@ import {
   Clock,
   ChevronRight,
   FileText,
-  Edit
+  Edit,
+  Loader2
 } from 'lucide-react';
+import { fetchTopics, prefetchAllTopics } from '@/lib/quiz-utils';
 
 const PAPERS = {
   paper1: {
@@ -59,27 +61,54 @@ export function TestSelector({ onStartTest, isLoading }) {
   });
 
   const [step, setStep] = useState(1); // 1: Mode + Paper + Topic (if practice), 2: Settings (if practice)
-  const [isInitialized, setIsInitialized] = useState(false);
   const [topics, setTopics] = useState([]);
   const [isTopicsLoading, setIsTopicsLoading] = useState(false);
+  const [topicsCache, setTopicsCache] = useState({});
+  const [hasPrefetched, setHasPrefetched] = useState(false);
+
+  // Prefetch all topics on component mount (only once)
+  useEffect(() => {
+    if (!hasPrefetched) {
+      console.log('[TestSelector] Prefetching all topics...');
+      setHasPrefetched(true);
+      
+      prefetchAllTopics()
+        .then(() => {
+          console.log('[TestSelector] Topics prefetched successfully');
+        })
+        .catch(error => {
+          console.error('[TestSelector] Prefetch error:', error);
+        });
+    }
+  }, [hasPrefetched]);
 
   // Fetch topics when paper changes in practice mode
   useEffect(() => {
     if (config.mode === 'practice' && config.selectedPaper) {
+      // Check cache first
+      if (topicsCache[config.selectedPaper]) {
+        setTopics(topicsCache[config.selectedPaper]);
+        return;
+      }
+
       setIsTopicsLoading(true);
-      import('@/lib/quiz-utils').then(({ fetchTopics }) => {
-        fetchTopics(config.selectedPaper)
-          .then(data => {
-            setTopics(data || []);
-            setIsTopicsLoading(false);
-          })
-          .catch(() => {
-            setTopics([]);
-            setIsTopicsLoading(false);
-          });
-      });
+      fetchTopics(config.selectedPaper)
+        .then(data => {
+          const topicsData = data || [];
+          setTopics(topicsData);
+          // Cache the result
+          setTopicsCache(prev => ({
+            ...prev,
+            [config.selectedPaper]: topicsData
+          }));
+          setIsTopicsLoading(false);
+        })
+        .catch(() => {
+          setTopics([]);
+          setIsTopicsLoading(false);
+        });
     }
-  }, [config.mode, config.selectedPaper]);
+  }, [config.mode, config.selectedPaper, topicsCache]);
 
   const handlePaperSelect = useCallback((paperId) => {
     setConfig(prev => ({
@@ -89,18 +118,18 @@ export function TestSelector({ onStartTest, isLoading }) {
     }));
   }, []);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     // For mock tests, we can start directly after paper selection
     if (config.mode === 'mock') {
       handleApply();
     } else if (step < 2) {
       setStep(step + 1);
     }
-  };
+  }, [config.mode, step]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (step > 1) setStep(step - 1);
-  };
+  }, [step]);
 
   const handleApply = useCallback(() => {
     // Build test configuration
@@ -128,38 +157,52 @@ export function TestSelector({ onStartTest, isLoading }) {
   }, [config, onStartTest]);
 
   const handleReset = useCallback(() => {
-    const resetConfig = {
+    setConfig({
       mode: 'mock',
       selectedPaper: 'paper1',
       selectedTopic: 'all',
       questionCount: 50
-    };
-    setConfig(resetConfig);
+    });
     setStep(1);
-    setTopics([]);
   }, []);
 
-  const getStepProgress = () => {
-    if (config.mode === 'mock') {
-      return 100; // Mock test has only 1 step
-    }
-    return (step / 2) * 100;
-  };
+  const handleModeChange = useCallback((mode) => {
+    setConfig(prev => ({
+      ...prev,
+      mode,
+      questionCount: mode === 'mock' ? 50 : 20
+    }));
+  }, []);
 
-  const getQuestionCountLabel = (count) => {
+  const handleTopicSelect = useCallback((topic) => {
+    setConfig(prev => ({ ...prev, selectedTopic: topic }));
+  }, []);
+
+  const handleQuestionCountChange = useCallback((count) => {
+    setConfig(prev => ({ ...prev, questionCount: count }));
+  }, []);
+
+  // Memoized values
+  const stepProgress = useMemo(() => {
+    if (config.mode === 'mock') return 100;
+    return (step / 2) * 100;
+  }, [config.mode, step]);
+
+  const questionCountLabel = useMemo(() => {
+    const count = config.questionCount;
     if (count <= 10) return { label: 'Quick', icon: Zap, color: 'text-yellow-600 dark:text-yellow-400' };
     if (count <= 30) return { label: 'Standard', icon: Target, color: 'text-blue-600 dark:text-blue-400' };
     return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
-  };
+  }, [config.questionCount]);
 
-  const getStepText = () => {
+  const stepText = useMemo(() => {
     if (config.mode === 'mock') {
       return 'Choose Paper for Mock Test';
     }
     return step === 1 ? 'Choose Mode, Paper & Topic' : 'Configure Test Settings';
-  };
+  }, [config.mode, step]);
 
-  const getTotalSteps = () => config.mode === 'mock' ? 1 : 2;
+  const totalSteps = config.mode === 'mock' ? 1 : 2;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -180,7 +223,7 @@ export function TestSelector({ onStartTest, isLoading }) {
                   Customize Your Test
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  Step {step} of {getTotalSteps()}: {getStepText()}
+                  Step {step} of {totalSteps}: {stepText}
                 </p>
               </div>
             </div>
@@ -190,7 +233,7 @@ export function TestSelector({ onStartTest, isLoading }) {
               <motion.div
                 className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
                 initial={{ width: 0 }}
-                animate={{ width: `${getStepProgress()}%` }}
+                animate={{ width: `${stepProgress}%` }}
                 transition={{ duration: 0.3 }}
               />
             </div>
@@ -222,7 +265,7 @@ export function TestSelector({ onStartTest, isLoading }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                     <motion.button
-                      onClick={() => setConfig(prev => ({ ...prev, mode: 'mock', questionCount: 50 }))}
+                      onClick={() => handleModeChange('mock')}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
@@ -258,7 +301,7 @@ export function TestSelector({ onStartTest, isLoading }) {
                     </motion.button>
 
                     <motion.button
-                      onClick={() => setConfig(prev => ({ ...prev, mode: 'practice', questionCount: 20 }))}
+                      onClick={() => handleModeChange('practice')}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
@@ -363,7 +406,7 @@ export function TestSelector({ onStartTest, isLoading }) {
                       <div className="grid grid-cols-1 gap-3">
                         {/* All Topics Option */}
                         <motion.button
-                          onClick={() => setConfig(prev => ({ ...prev, selectedTopic: 'all' }))}
+                          onClick={() => handleTopicSelect('all')}
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
                           className={`p-4 rounded-xl text-left transition-all border-2 ${
@@ -388,17 +431,22 @@ export function TestSelector({ onStartTest, isLoading }) {
                         </motion.button>
 
                         {/* Individual Topic Options */}
-                        {topics.length > 0 && (
+                        {isTopicsLoading ? (
+                          <div className="flex items-center justify-center p-8 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                            <Loader2 className="h-5 w-5 animate-spin text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Loading topics...</span>
+                          </div>
+                        ) : topics.length > 0 ? (
                           <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
                             {topics.map((topic, index) => (
                               <motion.button
                                 key={topic}
-                                onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
+                                onClick={() => handleTopicSelect(topic)}
                                 whileHover={{ scale: 1.01 }}
                                 whileTap={{ scale: 0.99 }}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.05 }}
+                                transition={{ delay: index * 0.02 }}
                                 className={`w-full p-3 rounded-lg text-left transition-all border ${
                                   config.selectedTopic === topic
                                     ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
@@ -416,7 +464,7 @@ export function TestSelector({ onStartTest, isLoading }) {
                               </motion.button>
                             ))}
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -474,7 +522,7 @@ export function TestSelector({ onStartTest, isLoading }) {
                       max="50"
                       step="5"
                       value={config.questionCount}
-                      onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
+                      onChange={(e) => handleQuestionCountChange(parseInt(e.target.value))}
                       className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                     />
                     
@@ -487,7 +535,7 @@ export function TestSelector({ onStartTest, isLoading }) {
                     {/* Question Count Indicator */}
                     <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                       {(() => {
-                        const { label, icon: Icon, color } = getQuestionCountLabel(config.questionCount);
+                        const { label, icon: Icon, color } = questionCountLabel;
                         const totalTime = config.questionCount * 72; // 72 seconds per question
                         const minutes = Math.floor(totalTime / 60);
                         const seconds = totalTime % 60;

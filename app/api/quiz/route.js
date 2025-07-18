@@ -1,22 +1,24 @@
-// app/api/quiz/route.js - Enhanced with better randomization support
+// app/api/quiz/route.js
 import { createClient } from '@supabase/supabase-js';
+import { getCachedData, generateCacheKey, CACHE_DURATION } from '@/lib/cache';
+import { NextResponse } from 'next/server';
+
+// Enable edge runtime for better performance
+export const runtime = 'edge';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const paper = searchParams.get('paper') || 'paper1';
-    const limit = parseInt(searchParams.get('limit')) || null;
-    const topic = searchParams.get('topic');
-    const randomize = searchParams.get('randomize') !== 'false'; // Default to true
-    
-    console.log('API Quiz Route - Parameters:', { paper, limit, topic, randomize });
-
-    // Get the table name
+/**
+ * Get lightweight question metadata (IDs, tags, years)
+ * This is cached and used for randomization
+ */
+async function getQuestionMetadata(paper, topic) {
+  const key = generateCacheKey('question-meta', { paper, topic });
+  
+  return getCachedData(key, async () => {
     const tableMap = {
       paper1: 'mcqs_p1',
       paper2: 'mcqs_p2', 
@@ -25,99 +27,174 @@ export async function GET(request) {
     
     const tableName = tableMap[paper];
     if (!tableName) {
-      return Response.json({ error: 'Invalid paper' }, { status: 400 });
+      throw new Error('Invalid paper');
     }
-
-    // Build query
+    
     let query = supabase
       .from(tableName)
-      .select('*');
-
-    // Apply topic filter if specified
+      .select('id, main_id, tag, year');
+    
     if (topic && topic !== 'all') {
       query = query.ilike('tag', `%${topic}%`);
     }
-
-    // For better randomization, we might want to fetch more records
-    // and randomize on the client side, but we can also add some
-    // database-level randomization here
-    if (randomize) {
-      // Note: Supabase/PostgreSQL random() function
-      // This is optional - we're mainly doing randomization client-side
-      // query = query.order('random()'); // Uncomment if you want DB-level randomization
-    }
-
-    // Apply limit
-    if (limit && limit > 0) {
-      // Cap the limit to prevent excessive data transfer
-      const maxLimit = 1000; // Reasonable upper bound
-      const effectiveLimit = Math.min(limit, maxLimit);
-      query = query.limit(effectiveLimit);
-      console.log(`Applied limit: ${effectiveLimit} (requested: ${limit})`);
-    } else {
-      console.log('No limit applied - fetching all records');
-    }
-
-    // Execute query
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Database error:', error);
-      return Response.json({ error: 'Database query failed' }, { status: 500 });
-    }
-
-    console.log(`Fetched ${data?.length || 0} records from ${tableName}`);
     
-    // Log distribution for debugging
-    if (data && data.length > 0) {
-      const years = [...new Set(data.map(q => q.year))].filter(Boolean).sort();
-      const topics = [...new Set(data.map(q => q.tag))].filter(Boolean);
-      console.log(`Years found in ${tableName}:`, years);
-      console.log(`Topics found in ${tableName}: ${topics.length} unique topics`);
-      
-      // Log sample of questions for debugging
-      if (data.length > 5) {
-        console.log('Sample questions:', data.slice(0, 3).map(q => ({
-          id: q.id || q.main_id,
-          year: q.year,
-          topic: q.tag?.substring(0, 30) + '...',
-          questionPreview: q.question_text?.substring(0, 50) + '...'
-        })));
-      }
-    }
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    // Return lightweight metadata
+    return data.map(q => ({
+      id: q.id,
+      main_id: q.main_id,
+      tag: q.tag,
+      year: q.year
+    }));
+  }, CACHE_DURATION.QUESTION_IDS);
+}
 
-    return Response.json({
-      questions: data || [],
-      meta: {
-        total: data?.length || 0,
-        paper: paper,
-        table: tableName,
-        limitApplied: limit || 'none',
-        randomized: randomize,
-        topicFilter: topic || 'all'
+/**
+ * Fetch specific questions by their IDs
+ * This is NOT cached to protect your data
+ */
+async function getQuestionsByIds(paper, ids) {
+  const tableMap = {
+    paper1: 'mcqs_p1',
+    paper2: 'mcqs_p2', 
+    paper3: 'mcqs_p3'
+  };
+  
+  const tableName = tableMap[paper];
+  if (!tableName) {
+    throw new Error('Invalid paper');
+  }
+  
+  // Fetch questions without explanations first (lighter payload)
+  const { data: questions, error } = await supabase
+    .from(tableName)
+    .select('id, main_id, question_text, option_a, option_b, option_c, option_d, correct_answer, tag, year')
+    .in('main_id', ids);
+    
+  if (error) throw error;
+  
+  return questions;
+}
+
+/**
+ * Smart randomization that ensures topic diversity
+ */
+function smartRandomSelect(questionMetadata, limit) {
+  // Group by topic
+  const byTopic = {};
+  questionMetadata.forEach(q => {
+    const topic = q.tag || 'Unknown';
+    if (!byTopic[topic]) byTopic[topic] = [];
+    byTopic[topic].push(q);
+  });
+  
+  const selected = [];
+  const topics = Object.keys(byTopic);
+  
+  // First pass: Try to get at least one from each topic
+  if (topics.length > 1 && limit >= topics.length) {
+    topics.forEach(topic => {
+      if (selected.length < limit && byTopic[topic].length > 0) {
+        const randomIndex = Math.floor(Math.random() * byTopic[topic].length);
+        selected.push(byTopic[topic][randomIndex]);
+        byTopic[topic].splice(randomIndex, 1);
       }
     });
+  }
+  
+  // Second pass: Fill remaining slots randomly
+  const allRemaining = Object.values(byTopic).flat();
+  while (selected.length < limit && allRemaining.length > 0) {
+    const randomIndex = Math.floor(Math.random() * allRemaining.length);
+    selected.push(allRemaining[randomIndex]);
+    allRemaining.splice(randomIndex, 1);
+  }
+  
+  // Shuffle final selection
+  return selected.sort(() => Math.random() - 0.5);
+}
 
+export async function GET(request) {
+  const startTime = Date.now();
+  
+  try {
+    const { searchParams } = new URL(request.url);
+    const paper = searchParams.get('paper') || 'paper1';
+    const limit = Math.min(parseInt(searchParams.get('limit')) || 20, 100); // Cap at 100
+    const topic = searchParams.get('topic');
+    
+    console.log(`[QUIZ API] Request: paper=${paper}, limit=${limit}, topic=${topic}`);
+    
+    // Step 1: Get all question metadata (cached)
+    const metadataFetchStart = Date.now();
+    const allQuestionMetadata = await getQuestionMetadata(paper, topic);
+    console.log(`[QUIZ API] Metadata fetch: ${Date.now() - metadataFetchStart}ms, found ${allQuestionMetadata.length} questions`);
+    
+    if (allQuestionMetadata.length === 0) {
+      return NextResponse.json({
+        questions: [],
+        meta: {
+          total: 0,
+          paper: paper,
+          topicFilter: topic || 'all',
+          loadTime: Date.now() - startTime
+        }
+      });
+    }
+    
+    // Step 2: Smart random selection
+    const selectionStart = Date.now();
+    const selectedMetadata = smartRandomSelect(allQuestionMetadata, limit);
+    const selectedIds = selectedMetadata.map(q => q.main_id || q.id);
+    console.log(`[QUIZ API] Selection: ${Date.now() - selectionStart}ms`);
+    
+    // Step 3: Fetch only selected questions (not cached to protect data)
+    const questionsFetchStart = Date.now();
+    const questions = await getQuestionsByIds(paper, selectedIds);
+    console.log(`[QUIZ API] Questions fetch: ${Date.now() - questionsFetchStart}ms`);
+    
+    // Step 4: Final shuffle for randomized order
+    const finalQuestions = questions.sort(() => Math.random() - 0.5);
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`[QUIZ API] Total request time: ${totalTime}ms`);
+    
+    return NextResponse.json({
+      questions: finalQuestions,
+      meta: {
+        total: finalQuestions.length,
+        paper: paper,
+        topicFilter: topic || 'all',
+        loadTime: totalTime,
+        cached: metadataFetchStart - startTime < 50 // Indicates if metadata was cached
+      }
+    });
+    
   } catch (error) {
-    console.error('API Error:', error);
-    return Response.json(
-      { error: 'Internal server error' }, 
+    console.error('[QUIZ API] Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', message: error.message }, 
       { status: 500 }
     );
   }
 }
 
+/**
+ * POST endpoint for fetching explanations
+ * Explanations are fetched separately to keep initial load fast
+ */
 export async function POST(request) {
-  // Handle explanation requests
   try {
     const { questionId, paper } = await request.json();
     
-    if (!questionId) {
-      return Response.json({ error: 'Question ID required' }, { status: 400 });
+    if (!questionId || !paper) {
+      return NextResponse.json(
+        { error: 'Question ID and paper required' }, 
+        { status: 400 }
+      );
     }
-
-    // Here you would typically fetch the explanation from your database
-    // or generate it using AI. For now, returning a placeholder:
     
     const tableMap = {
       paper1: 'mcqs_p1',
@@ -127,33 +204,33 @@ export async function POST(request) {
     
     const tableName = tableMap[paper];
     if (!tableName) {
-      return Response.json({ error: 'Invalid paper' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid paper' }, { status: 400 });
     }
-
-    // Try to fetch existing explanation from database
+    
+    // Fetch explanation for specific question (not cached)
     const { data: questionData, error } = await supabase
       .from(tableName)
       .select('explanation')
       .eq('main_id', questionId)
       .single();
-
+    
     if (error) {
       console.error('Error fetching explanation:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch explanation' }, 
+        { status: 500 }
+      );
     }
-
-    // Return explanation (either from DB or generated)
-    return Response.json({ 
-      explanation: questionData?.explanation || { 
-        explanation: { 
-          concept: { 
-            title: "Explanation Loading...",
-            description: "Detailed explanation will be generated based on the question content."
-          } 
-        } 
-      } 
+    
+    return NextResponse.json({ 
+      explanation: questionData?.explanation || null
     });
+    
   } catch (error) {
     console.error('POST Error:', error);
-    return Response.json({ error: 'Failed to fetch explanation' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch explanation' }, 
+      { status: 500 }
+    );
   }
 }

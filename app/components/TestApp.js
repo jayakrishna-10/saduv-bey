@@ -45,7 +45,19 @@ export default function TestApp() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const timerRef = useRef(null);
+  
+  // Enhanced logging
+  const logDebug = useCallback((message, data = null) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[TestApp] [${timestamp}] ${message}`;
+    if (data) {
+      console.log(logMessage, data);
+    } else {
+      console.log(logMessage);
+    }
+  }, []);
 
+  // Mouse position tracking for ambient effects
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePosition({
@@ -57,9 +69,11 @@ export default function TestApp() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Timer management
   const startTimer = useCallback((duration) => {
     setStartTime(Date.now());
     setTimeRemaining(duration);
+    
     timerRef.current = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
@@ -72,21 +86,31 @@ export default function TestApp() {
     }, 1000);
   }, []);
 
+  // Cleanup timer on unmount
   useEffect(() => {
-    return () => clearInterval(timerRef.current);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, []);
 
-  const startTest = async (config) => {
+  // Start test with optimized fetching
+  const startTest = useCallback(async (config) => {
     setIsLoading(true);
     setTestConfig(config);
     
     try {
+      logDebug('Starting test with config:', config);
+      
       // Fetch questions based on configuration
       const fetchedQuestions = await fetchQuizQuestions(
         config.paper, 
         config.questionCount, 
         config.topic
       );
+      
+      logDebug(`Successfully loaded ${fetchedQuestions.length} questions`);
       
       setQuestions(fetchedQuestions);
       setAnswers({});
@@ -96,17 +120,18 @@ export default function TestApp() {
       startTimer(config.timeLimit);
       setIsLoading(false);
     } catch (error) {
+      logDebug('Error starting test:', error);
       console.error('Error starting test:', error);
       setIsLoading(false);
-      // Handle error - maybe show an error message
+      // TODO: Show error message to user
     }
-  };
+  }, [logDebug, startTimer]);
   
-  const handleAnswerSelect = (questionId, option) => {
+  const handleAnswerSelect = useCallback((questionId, option) => {
     setAnswers(prev => ({ ...prev, [questionId]: option }));
-  };
+  }, []);
 
-  const handleFlagQuestion = (questionId) => {
+  const handleFlagQuestion = useCallback((questionId) => {
     setFlaggedQuestions(prev => {
       const newSet = new Set(prev);
       if (newSet.has(questionId)) {
@@ -116,75 +141,134 @@ export default function TestApp() {
       }
       return newSet;
     });
-  };
+  }, []);
 
-  const navigateToQuestion = (index) => {
-    if(index >= 0 && index < questions.length) {
+  const navigateToQuestion = useCallback((index) => {
+    if (index >= 0 && index < questions.length) {
       setCurrentQuestionIndex(index);
     }
     setPaletteOpen(false);
-  };
+  }, [questions.length]);
   
-  const finishTest = async () => {
-    clearInterval(timerRef.current);
+  const finishTest = useCallback(async () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    logDebug('Finishing test');
+    
     if (session?.user?.id) {
       await saveTestAttempt();
     }
     setTestState(TEST_STATES.FINISHED);
-  };
+  }, [session, logDebug]);
   
-  const saveTestAttempt = async () => {
+  const saveTestAttempt = useCallback(async () => {
+    if (!session?.user?.id) return;
+    
     setSaveStatus('saving');
     
-    // Use the isCorrectAnswer utility function for proper comparison
-    const correctAnswersCount = questions.reduce((count, q) => {
-      const userAnswer = answers[q.main_id || q.id];
-      return isCorrectAnswer(userAnswer, q.correct_answer) ? count + 1 : count;
-    }, 0);
-    
-    const incorrectAnswersCount = Object.keys(answers).length - correctAnswersCount;
-    const unansweredCount = questions.length - Object.keys(answers).length;
-    const score = questions.length > 0 ? Math.round((correctAnswersCount / questions.length) * 100) : 0;
-    
-    const attemptData = {
-      testMode: testConfig.mode,
-      testType: testConfig.paper,
-      testConfig: testConfig,
-      questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
-        id, main_id, question_text, correct_answer, tag, year 
-      })),
-      answers: answers,
-      flaggedQuestions: Array.from(flaggedQuestions),
-      correct: correctAnswersCount,
-      incorrect: incorrectAnswersCount,
-      unanswered: unansweredCount,
-      totalQuestions: questions.length,
-      score: score,
-      timeTaken: testConfig.timeLimit - timeRemaining,
-      timeLimit: testConfig.timeLimit,
-    };
-
     try {
+      // Use the isCorrectAnswer utility function for proper comparison
+      const correctAnswersCount = questions.reduce((count, q) => {
+        const userAnswer = answers[q.main_id || q.id];
+        return isCorrectAnswer(userAnswer, q.correct_answer) ? count + 1 : count;
+      }, 0);
+      
+      const incorrectAnswersCount = Object.keys(answers).length - correctAnswersCount;
+      const unansweredCount = questions.length - Object.keys(answers).length;
+      const score = questions.length > 0 ? Math.round((correctAnswersCount / questions.length) * 100) : 0;
+      const timeTaken = testConfig.timeLimit - timeRemaining;
+      
+      const attemptData = {
+        testMode: testConfig.mode,
+        testType: testConfig.paper,
+        testConfig: testConfig,
+        questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
+          id, main_id, question_text, correct_answer, tag, year 
+        })),
+        answers: answers,
+        flaggedQuestions: Array.from(flaggedQuestions),
+        correct: correctAnswersCount,
+        incorrect: incorrectAnswersCount,
+        unanswered: unansweredCount,
+        totalQuestions: questions.length,
+        score: score,
+        timeTaken: timeTaken,
+        timeLimit: testConfig.timeLimit,
+      };
+
+      logDebug('Saving test attempt:', {
+        correctAnswers: correctAnswersCount,
+        score: score,
+        timeTaken: timeTaken
+      });
+
       const response = await fetch('/api/user/attempts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'test', attemptData }),
       });
-      if(response.ok) setSaveStatus('success');
-      else setSaveStatus('error');
+      
+      if (response.ok) {
+        setSaveStatus('success');
+        logDebug('Test attempt saved successfully');
+      } else {
+        setSaveStatus('error');
+        logDebug('Failed to save test attempt:', response.status);
+      }
     } catch (error) {
       setSaveStatus('error');
+      logDebug('Error saving test attempt:', error);
       console.error("Failed to save test attempt:", error);
     }
-  };
+  }, [session, questions, answers, flaggedQuestions, testConfig, timeRemaining, logDebug]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (testState !== TEST_STATES.RUNNING) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          navigateToQuestion(currentQuestionIndex - 1);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          navigateToQuestion(currentQuestionIndex + 1);
+          break;
+        case 'f':
+          e.preventDefault();
+          handleFlagQuestion(currentQuestion.main_id || currentQuestion.id);
+          break;
+        case 'p':
+          e.preventDefault();
+          setPaletteOpen(!isPaletteOpen);
+          break;
+        case 'a':
+        case 'b':
+        case 'c':
+        case 'd':
+          e.preventDefault();
+          handleAnswerSelect(currentQuestion.main_id || currentQuestion.id, e.key);
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [testState, currentQuestionIndex, navigateToQuestion, handleFlagQuestion, handleAnswerSelect, isPaletteOpen]);
 
   const currentQuestion = questions[currentQuestionIndex] || {};
   const currentQuestionId = currentQuestion.main_id || currentQuestion.id;
 
+  // Show selector or loading state
   if (testState === TEST_STATES.CONFIG || isLoading) {
     return <TestSelector onStartTest={startTest} isLoading={isLoading} />;
   }
 
+  // Show summary after test completion
   if (testState === TEST_STATES.FINISHED) {
     return (
       <TestSummary
@@ -199,6 +283,7 @@ export default function TestApp() {
     );
   }
 
+  // Show review mode
   if (testState === TEST_STATES.REVIEW) {
     return (
       <TestReview
@@ -210,8 +295,10 @@ export default function TestApp() {
     );
   }
   
+  // Main test interface
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 font-sans relative overflow-hidden">
+      {/* Dynamic Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div 
           animate={{ x: mousePosition.x * 0.1, y: mousePosition.y * 0.1 }} 

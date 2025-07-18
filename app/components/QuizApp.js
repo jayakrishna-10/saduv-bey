@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Updated to remove year filtering and work with streamlined selector
+// FILE: app/components/QuizApp.js
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -50,10 +50,11 @@ export function QuizApp() {
   const [currentExplanation, setCurrentExplanation] = useState(null);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   
-  // Configuration state - removed year-related state
+  // Configuration state
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState('all');
   const [questionCount, setQuestionCount] = useState(20);
+  const [topicsCache, setTopicsCache] = useState({});
   
   // Progress state
   const [answeredQuestions, setAnsweredQuestions] = useState([]);
@@ -153,15 +154,29 @@ export function QuizApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedOption, showAnswer, showFeedback, showModifyQuiz, showSummary, showFinishConfirmation]);
 
-  // Initial setup - only fetch topics for the default paper
-  useEffect(() => {
-    fetchTopics(selectedPaper).then(data => {
-      if (data && Array.isArray(data)) {
-        setTopics(data);
-        logDebug(`Loaded ${data.length} topics for initial paper ${selectedPaper}`);
-      }
-    });
-  }, []); // Empty dependency array - only run once
+  // Fetch topics only when needed (when paper changes)
+  const fetchTopicsForPaper = useCallback(async (paper) => {
+    // Check cache first
+    if (topicsCache[paper]) {
+      setTopics(topicsCache[paper]);
+      logDebug(`Using cached topics for ${paper}`);
+      return topicsCache[paper];
+    }
+
+    // Fetch if not in cache
+    const data = await fetchTopics(paper);
+    if (data && Array.isArray(data)) {
+      setTopics(data);
+      // Cache the result
+      setTopicsCache(prev => ({
+        ...prev,
+        [paper]: data
+      }));
+      logDebug(`Loaded ${data.length} topics for ${paper}`);
+      return data;
+    }
+    return [];
+  }, [topicsCache, logDebug]);
 
   // Update progress
   useEffect(() => {
@@ -202,7 +217,6 @@ export function QuizApp() {
       setIsLoading(true);
       logDebug('Fetching questions...', { selectedPaper, questionCount, selectedTopic });
       
-      // Updated function call - removed selectedYear parameter
       const fetchedQuestions = await fetchQuizQuestions(selectedPaper, questionCount, selectedTopic);
       
       setQuestions(fetchedQuestions);
@@ -265,7 +279,6 @@ export function QuizApp() {
       const attemptData = {
         paper: selectedPaper,
         selectedTopic: selectedTopic,
-        // Removed selectedYear from attemptData
         questionCount: questionCount,
         questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
           id, main_id, question_text, correct_answer, tag, year 
@@ -381,17 +394,14 @@ export function QuizApp() {
   const handleSwipeRight = () => handlePreviousQuestion();
 
   const handleQuizConfiguration = async (config) => {
-    // Update all configuration state - removed selectedYear
+    // Update all configuration state
     setSelectedPaper(config.selectedPaper);
     setSelectedTopic(config.selectedTopic);
     setQuestionCount(config.questionCount);
     
-    // Update topics based on selected paper
-    logDebug('Fetching topics for paper:', config.selectedPaper);
-    const topicsData = await fetchTopics(config.selectedPaper);
-    if (topicsData && Array.isArray(topicsData)) {
-      setTopics(topicsData);
-      logDebug(`Updated topics: ${topicsData.length} topics loaded`);
+    // Fetch topics for the selected paper if needed
+    if (config.selectedPaper !== selectedPaper) {
+      await fetchTopicsForPaper(config.selectedPaper);
     }
     
     setShowModifyQuiz(false);
@@ -512,15 +522,7 @@ export function QuizApp() {
           }} 
           onApply={handleQuizConfiguration} 
           topics={topics} 
-          onPaperChange={async (paperId) => {
-            // Update topics when paper changes
-            logDebug('Paper changed to:', paperId);
-            const topicsData = await fetchTopics(paperId);
-            if (topicsData && Array.isArray(topicsData)) {
-              setTopics(topicsData);
-              logDebug(`Topics updated for ${paperId}: ${topicsData.length} topics`);
-            }
-          }}
+          onPaperChange={fetchTopicsForPaper}
         />
       </div>
     );
@@ -638,15 +640,7 @@ export function QuizApp() {
         }} 
         onApply={handleQuizConfiguration} 
         topics={topics}
-        onPaperChange={async (paperId) => {
-          // Update topics when paper changes
-          logDebug('Paper changed in modal to:', paperId);
-          const topicsData = await fetchTopics(paperId);
-          if (topicsData && Array.isArray(topicsData)) {
-            setTopics(topicsData);
-            logDebug(`Topics updated in modal for ${paperId}: ${topicsData.length} topics`);
-          }
-        }}
+        onPaperChange={fetchTopicsForPaper}
       />
       
       <QuizSummary 

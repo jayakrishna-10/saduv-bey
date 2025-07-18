@@ -1,6 +1,6 @@
-// app/components/QuizSelector.js - Streamlined 2-screen approach
+// FILE: app/components/QuizSelector.js
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -15,8 +15,10 @@ import {
   Zap,
   Target,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
+import { prefetchAllTopics } from '@/lib/quiz-utils';
 
 const PAPERS = {
   paper1: {
@@ -63,8 +65,25 @@ export function QuizSelector({
     showExplanations: true
   });
 
-  const [step, setStep] = useState(1); // 1: Paper + Topic, 2: Settings
+  const [step, setStep] = useState(1);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [hasPrefetched, setHasPrefetched] = useState(false);
+
+  // Prefetch all topics when component first becomes visible
+  useEffect(() => {
+    if (isOpen && !hasPrefetched) {
+      setHasPrefetched(true);
+      console.log('[QuizSelector] Prefetching all topics on first open...');
+      
+      prefetchAllTopics()
+        .then(() => {
+          console.log('[QuizSelector] Topics prefetched successfully');
+        })
+        .catch(error => {
+          console.error('[QuizSelector] Prefetch error:', error);
+        });
+    }
+  }, [isOpen, hasPrefetched]);
 
   // Initialize config when modal opens
   useEffect(() => {
@@ -80,13 +99,12 @@ export function QuizSelector({
     } else if (!isOpen) {
       setIsInitialized(false);
     }
-  }, [isOpen, currentConfig]);
+  }, [isOpen, currentConfig, isInitialized]);
 
   const handlePaperSelect = useCallback(async (paperId) => {
     setConfig(prev => ({
       ...prev,
       selectedPaper: paperId,
-      // Reset topic when paper changes
       selectedTopic: 'all'
     }));
     
@@ -96,15 +114,16 @@ export function QuizSelector({
     }
   }, [onPaperChange]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (step < 2) setStep(step + 1);
-  };
+  }, [step]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (step > 1) setStep(step - 1);
-  };
+  }, [step]);
 
   const handleApply = useCallback(() => {
+    console.log('[QuizSelector] Applying config:', config);
     onApply(config);
     if (onClose) onClose();
   }, [config, onApply, onClose]);
@@ -119,19 +138,32 @@ export function QuizSelector({
     setConfig(resetConfig);
     setStep(1);
     
-    // Reset to paper1 topics
     if (onPaperChange) {
       onPaperChange('paper1');
     }
   }, [onPaperChange]);
 
-  const getStepProgress = () => (step / 2) * 100;
+  const handleTopicSelect = useCallback((topic) => {
+    setConfig(prev => ({ ...prev, selectedTopic: topic }));
+  }, []);
 
-  const getQuestionCountLabel = (count) => {
+  const handleQuestionCountChange = useCallback((count) => {
+    setConfig(prev => ({ ...prev, questionCount: count }));
+  }, []);
+
+  const handleExplanationsToggle = useCallback(() => {
+    setConfig(prev => ({ ...prev, showExplanations: !prev.showExplanations }));
+  }, []);
+
+  // Memoized values
+  const stepProgress = useMemo(() => (step / 2) * 100, [step]);
+
+  const questionCountLabel = useMemo(() => {
+    const count = config.questionCount;
     if (count <= 10) return { label: 'Quick', icon: Zap, color: 'text-yellow-600 dark:text-yellow-400' };
     if (count <= 30) return { label: 'Standard', icon: Target, color: 'text-blue-600 dark:text-blue-400' };
     return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
-  };
+  }, [config.questionCount]);
 
   const canClose = onClose !== undefined;
 
@@ -183,7 +215,7 @@ export function QuizSelector({
                 <motion.div
                   className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ width: `${getStepProgress()}%` }}
+                  animate={{ width: `${stepProgress}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
@@ -269,7 +301,7 @@ export function QuizSelector({
                       <div className="grid grid-cols-1 gap-3">
                         {/* All Topics Option */}
                         <motion.button
-                          onClick={() => setConfig(prev => ({ ...prev, selectedTopic: 'all' }))}
+                          onClick={() => handleTopicSelect('all')}
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
                           className={`p-4 rounded-xl text-left transition-all border-2 ${
@@ -284,7 +316,7 @@ export function QuizSelector({
                                 All Topics
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
-                                Practice questions from all {topics.length} available topics
+                                Practice questions from all {topics.length || PAPERS[config.selectedPaper]?.topics} available topics
                               </div>
                             </div>
                             {config.selectedTopic === 'all' && (
@@ -294,33 +326,40 @@ export function QuizSelector({
                         </motion.button>
 
                         {/* Individual Topic Options */}
-                        <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
-                          {topics.map((topic, index) => (
-                            <motion.button
-                              key={topic}
-                              onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.05 }}
-                              className={`w-full p-3 rounded-lg text-left transition-all border ${
-                                config.selectedTopic === topic
-                                  ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
-                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                  {topic}
-                                </span>
-                                {config.selectedTopic === topic && (
-                                  <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                )}
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
+                        {topics.length > 0 ? (
+                          <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                            {topics.map((topic, index) => (
+                              <motion.button
+                                key={topic}
+                                onClick={() => handleTopicSelect(topic)}
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: Math.min(index * 0.02, 0.1) }}
+                                className={`w-full p-3 rounded-lg text-left transition-all border ${
+                                  config.selectedTopic === topic
+                                    ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {topic}
+                                  </span>
+                                  {config.selectedTopic === topic && (
+                                    <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                  )}
+                                </div>
+                              </motion.button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center p-8 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                            <Loader2 className="h-5 w-5 animate-spin text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Loading topics...</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -368,7 +407,7 @@ export function QuizSelector({
                         max="50"
                         step="5"
                         value={config.questionCount}
-                        onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
+                        onChange={(e) => handleQuestionCountChange(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                       />
                       
@@ -381,7 +420,7 @@ export function QuizSelector({
                       {/* Question Count Indicator */}
                       <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                         {(() => {
-                          const { label, icon: Icon, color } = getQuestionCountLabel(config.questionCount);
+                          const { label, icon: Icon, color } = questionCountLabel;
                           return (
                             <>
                               <Icon className={`h-5 w-5 ${color}`} />
@@ -406,7 +445,7 @@ export function QuizSelector({
                       </div>
                     </div>
                     <button
-                      onClick={() => setConfig(prev => ({ ...prev, showExplanations: !prev.showExplanations }))}
+                      onClick={handleExplanationsToggle}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
                         config.showExplanations ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
