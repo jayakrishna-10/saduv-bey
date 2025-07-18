@@ -1,6 +1,6 @@
-// app/components/QuizSelector.js - Optimized with prefetching
+// FILE: app/components/QuizSelector.js
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -67,26 +67,23 @@ export function QuizSelector({
 
   const [step, setStep] = useState(1);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isPrefetching, setIsPrefetching] = useState(false);
-  const [topicsCache, setTopicsCache] = useState({});
+  const [hasPrefetched, setHasPrefetched] = useState(false);
 
-  // Prefetch all topics when component mounts
+  // Prefetch all topics when component first becomes visible
   useEffect(() => {
-    if (isOpen && !isPrefetching && Object.keys(topicsCache).length === 0) {
-      setIsPrefetching(true);
-      console.log('[QuizSelector] Prefetching all topics...');
+    if (isOpen && !hasPrefetched) {
+      setHasPrefetched(true);
+      console.log('[QuizSelector] Prefetching all topics on first open...');
       
       prefetchAllTopics()
         .then(() => {
           console.log('[QuizSelector] Topics prefetched successfully');
-          setIsPrefetching(false);
         })
         .catch(error => {
           console.error('[QuizSelector] Prefetch error:', error);
-          setIsPrefetching(false);
         });
     }
-  }, [isOpen, isPrefetching, topicsCache]);
+  }, [isOpen, hasPrefetched]);
 
   // Initialize config when modal opens
   useEffect(() => {
@@ -102,7 +99,7 @@ export function QuizSelector({
     } else if (!isOpen) {
       setIsInitialized(false);
     }
-  }, [isOpen, currentConfig]);
+  }, [isOpen, currentConfig, isInitialized]);
 
   const handlePaperSelect = useCallback(async (paperId) => {
     setConfig(prev => ({
@@ -117,13 +114,13 @@ export function QuizSelector({
     }
   }, [onPaperChange]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (step < 2) setStep(step + 1);
-  };
+  }, [step]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (step > 1) setStep(step - 1);
-  };
+  }, [step]);
 
   const handleApply = useCallback(() => {
     console.log('[QuizSelector] Applying config:', config);
@@ -146,13 +143,27 @@ export function QuizSelector({
     }
   }, [onPaperChange]);
 
-  const getStepProgress = () => (step / 2) * 100;
+  const handleTopicSelect = useCallback((topic) => {
+    setConfig(prev => ({ ...prev, selectedTopic: topic }));
+  }, []);
 
-  const getQuestionCountLabel = (count) => {
+  const handleQuestionCountChange = useCallback((count) => {
+    setConfig(prev => ({ ...prev, questionCount: count }));
+  }, []);
+
+  const handleExplanationsToggle = useCallback(() => {
+    setConfig(prev => ({ ...prev, showExplanations: !prev.showExplanations }));
+  }, []);
+
+  // Memoized values
+  const stepProgress = useMemo(() => (step / 2) * 100, [step]);
+
+  const questionCountLabel = useMemo(() => {
+    const count = config.questionCount;
     if (count <= 10) return { label: 'Quick', icon: Zap, color: 'text-yellow-600 dark:text-yellow-400' };
     if (count <= 30) return { label: 'Standard', icon: Target, color: 'text-blue-600 dark:text-blue-400' };
     return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
-  };
+  }, [config.questionCount]);
 
   const canClose = onClose !== undefined;
 
@@ -204,7 +215,7 @@ export function QuizSelector({
                 <motion.div
                   className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ width: `${getStepProgress()}%` }}
+                  animate={{ width: `${stepProgress}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
@@ -290,7 +301,7 @@ export function QuizSelector({
                       <div className="grid grid-cols-1 gap-3">
                         {/* All Topics Option */}
                         <motion.button
-                          onClick={() => setConfig(prev => ({ ...prev, selectedTopic: 'all' }))}
+                          onClick={() => handleTopicSelect('all')}
                           whileHover={{ scale: 1.01 }}
                           whileTap={{ scale: 0.99 }}
                           className={`p-4 rounded-xl text-left transition-all border-2 ${
@@ -305,7 +316,7 @@ export function QuizSelector({
                                 All Topics
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
-                                Practice questions from all {topics.length} available topics
+                                Practice questions from all {topics.length || PAPERS[config.selectedPaper]?.topics} available topics
                               </div>
                             </div>
                             {config.selectedTopic === 'all' && (
@@ -320,12 +331,12 @@ export function QuizSelector({
                             {topics.map((topic, index) => (
                               <motion.button
                                 key={topic}
-                                onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
+                                onClick={() => handleTopicSelect(topic)}
                                 whileHover={{ scale: 1.01 }}
                                 whileTap={{ scale: 0.99 }}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.02 }}
+                                transition={{ delay: Math.min(index * 0.02, 0.1) }}
                                 className={`w-full p-3 rounded-lg text-left transition-all border ${
                                   config.selectedTopic === topic
                                     ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
@@ -396,7 +407,7 @@ export function QuizSelector({
                         max="50"
                         step="5"
                         value={config.questionCount}
-                        onChange={(e) => setConfig(prev => ({ ...prev, questionCount: parseInt(e.target.value) }))}
+                        onChange={(e) => handleQuestionCountChange(parseInt(e.target.value))}
                         className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                       />
                       
@@ -409,7 +420,7 @@ export function QuizSelector({
                       {/* Question Count Indicator */}
                       <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
                         {(() => {
-                          const { label, icon: Icon, color } = getQuestionCountLabel(config.questionCount);
+                          const { label, icon: Icon, color } = questionCountLabel;
                           return (
                             <>
                               <Icon className={`h-5 w-5 ${color}`} />
@@ -434,7 +445,7 @@ export function QuizSelector({
                       </div>
                     </div>
                     <button
-                      onClick={() => setConfig(prev => ({ ...prev, showExplanations: !prev.showExplanations }))}
+                      onClick={handleExplanationsToggle}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
                         config.showExplanations ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
