@@ -1,4 +1,4 @@
-// app/components/QuizSelector.js - Streamlined 2-screen approach
+// app/components/QuizSelector.js - Optimized with prefetching
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,8 +15,10 @@ import {
   Zap,
   Target,
   Clock,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
+import { prefetchAllTopics } from '@/lib/quiz-utils';
 
 const PAPERS = {
   paper1: {
@@ -63,8 +65,28 @@ export function QuizSelector({
     showExplanations: true
   });
 
-  const [step, setStep] = useState(1); // 1: Paper + Topic, 2: Settings
+  const [step, setStep] = useState(1);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isPrefetching, setIsPrefetching] = useState(false);
+  const [topicsCache, setTopicsCache] = useState({});
+
+  // Prefetch all topics when component mounts
+  useEffect(() => {
+    if (isOpen && !isPrefetching && Object.keys(topicsCache).length === 0) {
+      setIsPrefetching(true);
+      console.log('[QuizSelector] Prefetching all topics...');
+      
+      prefetchAllTopics()
+        .then(() => {
+          console.log('[QuizSelector] Topics prefetched successfully');
+          setIsPrefetching(false);
+        })
+        .catch(error => {
+          console.error('[QuizSelector] Prefetch error:', error);
+          setIsPrefetching(false);
+        });
+    }
+  }, [isOpen, isPrefetching, topicsCache]);
 
   // Initialize config when modal opens
   useEffect(() => {
@@ -86,7 +108,6 @@ export function QuizSelector({
     setConfig(prev => ({
       ...prev,
       selectedPaper: paperId,
-      // Reset topic when paper changes
       selectedTopic: 'all'
     }));
     
@@ -105,6 +126,7 @@ export function QuizSelector({
   };
 
   const handleApply = useCallback(() => {
+    console.log('[QuizSelector] Applying config:', config);
     onApply(config);
     if (onClose) onClose();
   }, [config, onApply, onClose]);
@@ -119,7 +141,6 @@ export function QuizSelector({
     setConfig(resetConfig);
     setStep(1);
     
-    // Reset to paper1 topics
     if (onPaperChange) {
       onPaperChange('paper1');
     }
@@ -294,33 +315,40 @@ export function QuizSelector({
                         </motion.button>
 
                         {/* Individual Topic Options */}
-                        <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
-                          {topics.map((topic, index) => (
-                            <motion.button
-                              key={topic}
-                              onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
-                              whileHover={{ scale: 1.01 }}
-                              whileTap={{ scale: 0.99 }}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.05 }}
-                              className={`w-full p-3 rounded-lg text-left transition-all border ${
-                                config.selectedTopic === topic
-                                  ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
-                                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                  {topic}
-                                </span>
-                                {config.selectedTopic === topic && (
-                                  <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                                )}
-                              </div>
-                            </motion.button>
-                          ))}
-                        </div>
+                        {topics.length > 0 ? (
+                          <div className="max-h-48 overflow-y-auto space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                            {topics.map((topic, index) => (
+                              <motion.button
+                                key={topic}
+                                onClick={() => setConfig(prev => ({ ...prev, selectedTopic: topic }))}
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.02 }}
+                                className={`w-full p-3 rounded-lg text-left transition-all border ${
+                                  config.selectedTopic === topic
+                                    ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 shadow-sm'
+                                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {topic}
+                                  </span>
+                                  {config.selectedTopic === topic && (
+                                    <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                  )}
+                                </div>
+                              </motion.button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center p-8 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/50 dark:bg-gray-800/50">
+                            <Loader2 className="h-5 w-5 animate-spin text-gray-400 mr-2" />
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Loading topics...</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
