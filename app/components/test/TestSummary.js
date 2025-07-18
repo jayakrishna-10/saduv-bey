@@ -19,6 +19,7 @@ import {
   Loader2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { isCorrectAnswer } from '@/lib/quiz-utils';
 
 export function TestSummary({ 
   questions, 
@@ -38,7 +39,7 @@ export function TestSummary({
       const userAnswer = answers[q.main_id || q.id];
       if (!userAnswer) {
         unanswered++;
-      } else if (userAnswer === q.correct_answer) {
+      } else if (isCorrectAnswer(userAnswer, q.correct_answer)) {
         correct++;
       } else {
         incorrect++;
