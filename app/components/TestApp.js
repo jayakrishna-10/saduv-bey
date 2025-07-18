@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchQuizQuestions } from '@/lib/quiz-utils';
+import { fetchQuizQuestions, isCorrectAnswer } from '@/lib/quiz-utils';
 import { Loader2 } from 'lucide-react';
 
 import { TestSelector } from './test/TestSelector';
@@ -135,9 +135,11 @@ export default function TestApp() {
   
   const saveTestAttempt = async () => {
     setSaveStatus('saving');
+    
+    // Use the isCorrectAnswer utility function for proper comparison
     const correctAnswersCount = questions.reduce((count, q) => {
       const userAnswer = answers[q.main_id || q.id];
-      return userAnswer === q.correct_answer ? count + 1 : count;
+      return isCorrectAnswer(userAnswer, q.correct_answer) ? count + 1 : count;
     }, 0);
     
     const incorrectAnswersCount = Object.keys(answers).length - correctAnswersCount;
