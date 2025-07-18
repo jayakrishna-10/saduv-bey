@@ -1,4 +1,4 @@
-// app/lib/quiz-utils.js - Optimized version
+// FILE: app/lib/quiz-utils.js
 import { clsx } from 'clsx';
 import { dedupeRequest } from './request-dedup';
 
@@ -70,6 +70,10 @@ export const PAPERS = {
     topics: ['Motors', 'Compressed Air', 'HVAC', 'Lighting', 'Power Factor']
   }
 };
+
+// Cache for topics to prevent repeated fetching
+const topicsCache = new Map();
+const TOPICS_CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
 // Enhanced navigation utilities
 export const getNextAvailableQuestion = (questions, currentIndex, completedQuestionIds) => {
@@ -160,7 +164,9 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
         option_a: normalizeOptionText(q.option_a),
         option_b: normalizeOptionText(q.option_b),
         option_c: normalizeOptionText(q.option_c),
-        option_d: normalizeOptionText(q.option_d)
+        option_d: normalizeOptionText(q.option_d),
+        // Add paper info for explanation fetching
+        paper: selectedPaper
       }));
       
       return normalizedData;
@@ -172,9 +178,18 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
 };
 
 /**
- * Optimized topics fetching with deduplication
+ * Optimized topics fetching with caching and deduplication
  */
 export const fetchTopics = async (selectedPaper) => {
+  const cacheKey = `topics-${selectedPaper}`;
+  
+  // Check in-memory cache first
+  const cached = topicsCache.get(cacheKey);
+  if (cached && cached.timestamp > Date.now() - TOPICS_CACHE_DURATION) {
+    console.log(`[TOPICS] Using in-memory cache for ${selectedPaper}`);
+    return cached.data;
+  }
+  
   const requestKey = `topics-${selectedPaper}`;
   
   return dedupeRequest(requestKey, async () => {
@@ -193,7 +208,16 @@ export const fetchTopics = async (selectedPaper) => {
         const result = await response.json();
         const loadTime = performance.now() - startTime;
         console.log(`[TOPICS] Loaded ${result.topics?.length || 0} topics in ${loadTime.toFixed(0)}ms`);
-        return result.topics || [];
+        
+        const topics = result.topics || [];
+        
+        // Cache the result in memory
+        topicsCache.set(cacheKey, {
+          data: topics,
+          timestamp: Date.now()
+        });
+        
+        return topics;
       } else {
         console.error('[TOPICS] Failed to fetch:', response.status);
         return [];
@@ -212,8 +236,46 @@ export const prefetchAllTopics = async () => {
   console.log('[TOPICS] Prefetching all topics');
   const papers = ['paper1', 'paper2', 'paper3'];
   
+  // Check if already cached
+  const allCached = papers.every(paper => {
+    const cached = topicsCache.get(`topics-${paper}`);
+    return cached && cached.timestamp > Date.now() - TOPICS_CACHE_DURATION;
+  });
+  
+  if (allCached) {
+    console.log('[TOPICS] All topics already cached');
+    return;
+  }
+  
   // Fetch all topics in parallel
   await Promise.all(papers.map(paper => fetchTopics(paper)));
+};
+
+/**
+ * Fetch explanation for a specific question
+ */
+export const fetchQuestionExplanation = async (questionId, paper) => {
+  const requestKey = `explanation-${paper}-${questionId}`;
+  
+  return dedupeRequest(requestKey, async () => {
+    try {
+      const response = await fetch('/api/quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId, paper })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch explanation');
+      }
+      
+      const result = await response.json();
+      return result.explanation || null;
+    } catch (error) {
+      console.error('[EXPLANATION] Fetch error:', error);
+      return null;
+    }
+  });
 };
 
 // Legacy function name kept for backward compatibility
@@ -441,6 +503,12 @@ export const removeFromLocalStorage = (key) => {
   }
 };
 
+// Clear topics cache (useful for forcing refresh)
+export const clearTopicsCache = () => {
+  topicsCache.clear();
+  console.log('[TOPICS] Cache cleared');
+};
+
 // Keyboard shortcuts utility
 export const KEYBOARD_SHORTCUTS = {
   PREVIOUS_QUESTION: 'ArrowLeft',
@@ -492,6 +560,7 @@ export default {
   fetchTopics,
   fetchTopicsAndYears,
   prefetchAllTopics,
+  fetchQuestionExplanation,
   generateQuizSummary,
   analyzePerformance,
   cn,
@@ -502,6 +571,7 @@ export default {
   saveToLocalStorage,
   loadFromLocalStorage,
   removeFromLocalStorage,
+  clearTopicsCache,
   KEYBOARD_SHORTCUTS,
   handleKeyboardShortcut,
   announceToScreenReader
