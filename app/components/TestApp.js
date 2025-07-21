@@ -265,7 +265,14 @@ export default function TestApp() {
 
   // Show selector or loading state
   if (testState === TEST_STATES.CONFIG || isLoading) {
-    return <TestSelector onStartTest={startTest} isLoading={isLoading} />;
+    return (
+      <TestSelector 
+        onStartTest={startTest} 
+        isLoading={isLoading}
+        onClose={null} // No close handler for initial view
+        isModal={false} // Not a modal when it's the main view
+      />
+    );
   }
 
   // Show summary after test completion

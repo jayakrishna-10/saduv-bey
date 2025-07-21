@@ -16,9 +16,11 @@ import {
   Target,
   Clock,
   ChevronRight,
-  Loader2
+  Loader2,
+  Home
 } from 'lucide-react';
 import { prefetchAllTopics } from '@/lib/quiz-utils';
+import { useRouter } from 'next/navigation';
 
 const PAPERS = {
   paper1: {
@@ -56,8 +58,10 @@ export function QuizSelector({
   currentConfig, 
   onApply,
   topics = [],
-  onPaperChange
+  onPaperChange,
+  isInitialView = false // New prop to indicate if this is the initial view
 }) {
+  const router = useRouter();
   const [config, setConfig] = useState({
     selectedPaper: 'paper1',
     selectedTopic: 'all',
@@ -155,6 +159,15 @@ export function QuizSelector({
     setConfig(prev => ({ ...prev, showExplanations: !prev.showExplanations }));
   }, []);
 
+  const handleClose = useCallback(() => {
+    if (onClose) {
+      onClose();
+    } else if (isInitialView) {
+      // If it's the initial view and no onClose provided, navigate to home
+      router.push('/');
+    }
+  }, [onClose, isInitialView, router]);
+
   // Memoized values
   const stepProgress = useMemo(() => (step / 2) * 100, [step]);
 
@@ -165,7 +178,9 @@ export function QuizSelector({
     return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
   }, [config.questionCount]);
 
-  const canClose = onClose !== undefined;
+  // Determine if we should show close functionality
+  const showCloseButton = onClose || isInitialView;
+  const isModal = !isInitialView;
 
   if (!isOpen) return null;
 
@@ -175,8 +190,13 @@ export function QuizSelector({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={(e) => e.target === e.currentTarget && canClose && onClose()}
+        className={`${isModal ? 'fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]' : ''} flex items-center justify-center p-4 ${!isModal ? 'min-h-screen' : ''}`}
+        onClick={(e) => {
+          // Only handle backdrop clicks for modals
+          if (isModal && e.target === e.currentTarget && onClose) {
+            onClose();
+          }
+        }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -186,12 +206,17 @@ export function QuizSelector({
         >
           {/* Header */}
           <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-            {canClose && (
+            {showCloseButton && (
               <button
-                onClick={onClose}
-                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors"
+                onClick={handleClose}
+                className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors group"
+                aria-label={isInitialView ? "Go to home" : "Close dialog"}
               >
-                <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                {isInitialView ? (
+                  <Home className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
+                ) : (
+                  <X className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
+                )}
               </button>
             )}
 
@@ -252,36 +277,67 @@ export function QuizSelector({
                           onClick={() => handlePaperSelect(paper.id)}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
-                          className={`p-6 rounded-2xl text-center transition-all duration-300 border-2 ${
+                          className={`p-4 md:p-6 rounded-2xl transition-all duration-300 border-2 ${
                             config.selectedPaper === paper.id
                               ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                               : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
                           } ${paper.gradient}`}
                         >
-                          <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>
-                            {paper.icon}
-                          </div>
-                          <div className="mb-2">
-                            <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                              {paper.name}
+                          {/* Mobile Layout - Horizontal */}
+                          <div className="flex md:hidden items-start gap-4">
+                            <div className={`w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r ${paper.color} text-white text-xl shadow-lg flex items-center justify-center`}>
+                              {paper.icon}
                             </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                              {paper.topics} topics available
+                            <div className="flex-1 text-left">
+                              <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                                {paper.name}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                {paper.topics} topics available
+                              </div>
+                              <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                                {paper.description}
+                              </p>
+                              {config.selectedPaper === paper.id && (
+                                <motion.div
+                                  initial={{ scale: 0, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  transition={{ type: "spring", stiffness: 300 }}
+                                  className="mt-2"
+                                >
+                                  <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                                </motion.div>
+                              )}
                             </div>
                           </div>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                            {paper.description}
-                          </p>
-                          {config.selectedPaper === paper.id && (
-                            <motion.div
-                              initial={{ scale: 0, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              transition={{ type: "spring", stiffness: 300 }}
-                              className="mt-3"
-                            >
-                              <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mx-auto" />
-                            </motion.div>
-                          )}
+
+                          {/* Desktop Layout - Vertical */}
+                          <div className="hidden md:block text-center">
+                            <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>
+                              {paper.icon}
+                            </div>
+                            <div className="mb-2">
+                              <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                                {paper.name}
+                              </div>
+                              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                {paper.topics} topics available
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                              {paper.description}
+                            </p>
+                            {config.selectedPaper === paper.id && (
+                              <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 300 }}
+                                className="mt-3"
+                              >
+                                <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mx-auto" />
+                              </motion.div>
+                            )}
+                          </div>
                         </motion.button>
                       ))}
                     </div>
