@@ -513,7 +513,8 @@ export function QuizApp() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
         <QuizSelector 
           isOpen={true} 
-          onClose={() => {}} // Can't close when it's the initial view
+          onClose={null} // Pass null instead of empty function for initial view
+          isInitialView={true} // Indicate this is the initial view
           currentConfig={{ 
             selectedPaper, 
             selectedTopic, 
@@ -632,6 +633,7 @@ export function QuizApp() {
       <QuizSelector 
         isOpen={showModifyQuiz} 
         onClose={() => setShowModifyQuiz(false)} 
+        isInitialView={false} // Not the initial view when opened as modal
         currentConfig={{ 
           selectedPaper, 
           selectedTopic, 
