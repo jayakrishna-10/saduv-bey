@@ -18,9 +18,11 @@ import {
   ChevronRight,
   FileText,
   Edit,
-  Loader2
+  Loader2,
+  Home
 } from 'lucide-react';
 import { fetchTopics, prefetchAllTopics } from '@/lib/quiz-utils';
+import { useRouter } from 'next/navigation';
 
 const PAPERS = {
   paper1: {
@@ -52,7 +54,13 @@ const PAPERS = {
   }
 };
 
-export function TestSelector({ onStartTest, isLoading }) {
+export function TestSelector({ 
+  onStartTest, 
+  isLoading,
+  onClose,
+  isModal = false 
+}) {
+  const router = useRouter();
   const [config, setConfig] = useState({
     mode: 'mock', // 'mock' or 'practice'
     selectedPaper: 'paper1',
@@ -182,6 +190,15 @@ export function TestSelector({ onStartTest, isLoading }) {
     setConfig(prev => ({ ...prev, questionCount: count }));
   }, []);
 
+  const handleClose = useCallback(() => {
+    if (onClose) {
+      onClose();
+    } else {
+      // Navigate to home if no onClose handler provided
+      router.push('/');
+    }
+  }, [onClose, router]);
+
   // Memoized values
   const stepProgress = useMemo(() => {
     if (config.mode === 'mock') return 100;
@@ -203,9 +220,18 @@ export function TestSelector({ onStartTest, isLoading }) {
   }, [config.mode, step]);
 
   const totalSteps = config.mode === 'mock' ? 1 : 2;
+  const showCloseButton = true; // Always show close button
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div 
+      className={`${isModal ? 'fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]' : 'min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800'} flex items-center justify-center p-4`}
+      onClick={(e) => {
+        // Handle backdrop clicks for modals
+        if (isModal && e.target === e.currentTarget && onClose) {
+          onClose();
+        }
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -213,6 +239,20 @@ export function TestSelector({ onStartTest, isLoading }) {
       >
         {/* Header */}
         <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+          {showCloseButton && (
+            <button
+              onClick={handleClose}
+              className="absolute top-6 right-6 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors group"
+              aria-label={onClose ? "Close dialog" : "Go to home"}
+            >
+              {onClose ? (
+                <X className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
+              ) : (
+                <Home className="h-5 w-5 text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200" />
+              )}
+            </button>
+          )}
+          
           <div className="pr-12">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl">
@@ -268,72 +308,134 @@ export function TestSelector({ onStartTest, isLoading }) {
                       onClick={() => handleModeChange('mock')}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
+                      className={`p-4 md:p-6 rounded-2xl transition-all duration-300 border-2 ${
                         config.mode === 'mock'
                           ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
                       } bg-gradient-to-br from-red-50 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30`}
                     >
-                      <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white text-2xl shadow-lg flex items-center justify-center">
-                        <FileText className="h-8 w-8" />
-                      </div>
-                      <div className="mb-2">
-                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                          Mock Test
+                      {/* Mobile Layout - Horizontal */}
+                      <div className="flex md:hidden items-start gap-4">
+                        <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-lg flex items-center justify-center">
+                          <FileText className="h-7 w-7" />
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          Real exam simulation
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            Mock Test
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            Real exam simulation
+                          </div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                            50 questions, 60 minutes timer. Experience the actual exam conditions.
+                          </p>
+                          {config.mode === 'mock' && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ type: "spring", stiffness: 300 }}
+                              className="mt-2"
+                            >
+                              <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                            </motion.div>
+                          )}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        50 questions, 60 minutes timer. Experience the actual exam conditions.
-                      </p>
-                      {config.mode === 'mock' && (
-                        <motion.div
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                          className="mt-3"
-                        >
-                          <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                        </motion.div>
-                      )}
+
+                      {/* Desktop Layout - Vertical */}
+                      <div className="hidden md:block text-left">
+                        <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white text-2xl shadow-lg flex items-center justify-center">
+                          <FileText className="h-8 w-8" />
+                        </div>
+                        <div className="mb-2">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            Mock Test
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            Real exam simulation
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          50 questions, 60 minutes timer. Experience the actual exam conditions.
+                        </p>
+                        {config.mode === 'mock' && (
+                          <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            className="mt-3"
+                          >
+                            <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                          </motion.div>
+                        )}
+                      </div>
                     </motion.button>
 
                     <motion.button
                       onClick={() => handleModeChange('practice')}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`p-6 rounded-2xl text-left transition-all duration-300 border-2 ${
+                      className={`p-4 md:p-6 rounded-2xl transition-all duration-300 border-2 ${
                         config.mode === 'practice'
                           ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
                       } bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30`}
                     >
-                      <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl shadow-lg flex items-center justify-center">
-                        <Edit className="h-8 w-8" />
-                      </div>
-                      <div className="mb-2">
-                        <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                          Practice Test
+                      {/* Mobile Layout - Horizontal */}
+                      <div className="flex md:hidden items-start gap-4">
+                        <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg flex items-center justify-center">
+                          <Edit className="h-7 w-7" />
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                          Custom practice session
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            Practice Test
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            Custom practice session
+                          </div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                            Choose your topics and question count. 72 seconds per question.
+                          </p>
+                          {config.mode === 'practice' && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ type: "spring", stiffness: 300 }}
+                              className="mt-2"
+                            >
+                              <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                            </motion.div>
+                          )}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                        Choose your topics and question count. 72 seconds per question.
-                      </p>
-                      {config.mode === 'practice' && (
-                        <motion.div
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ type: "spring", stiffness: 300 }}
-                          className="mt-3"
-                        >
-                          <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                        </motion.div>
-                      )}
+
+                      {/* Desktop Layout - Vertical */}
+                      <div className="hidden md:block text-left">
+                        <div className="w-16 h-16 mb-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white text-2xl shadow-lg flex items-center justify-center">
+                          <Edit className="h-8 w-8" />
+                        </div>
+                        <div className="mb-2">
+                          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                            Practice Test
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            Custom practice session
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                          Choose your topics and question count. 72 seconds per question.
+                        </p>
+                        {config.mode === 'practice' && (
+                          <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                            className="mt-3"
+                          >
+                            <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                          </motion.div>
+                        )}
+                      </div>
                     </motion.button>
                   </div>
                 </div>
@@ -356,36 +458,67 @@ export function TestSelector({ onStartTest, isLoading }) {
                         onClick={() => handlePaperSelect(paper.id)}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        className={`p-6 rounded-2xl text-center transition-all duration-300 border-2 ${
+                        className={`p-4 md:p-6 rounded-2xl transition-all duration-300 border-2 ${
                           config.selectedPaper === paper.id
                             ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
                         } ${paper.gradient}`}
                       >
-                        <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>
-                          {paper.icon}
-                        </div>
-                        <div className="mb-2">
-                          <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                            {paper.name}
+                        {/* Mobile Layout - Horizontal */}
+                        <div className="flex md:hidden items-start gap-4">
+                          <div className={`w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r ${paper.color} text-white text-xl shadow-lg flex items-center justify-center`}>
+                            {paper.icon}
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                            {paper.topics} topics available
+                          <div className="flex-1 text-left">
+                            <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                              {paper.name}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                              {paper.topics} topics available
+                            </div>
+                            <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
+                              {paper.description}
+                            </p>
+                            {config.selectedPaper === paper.id && (
+                              <motion.div
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 300 }}
+                                className="mt-2"
+                              >
+                                <CheckCircle2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                              </motion.div>
+                            )}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {paper.description}
-                        </p>
-                        {config.selectedPaper === paper.id && (
-                          <motion.div
-                            initial={{ scale: 0, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ type: "spring", stiffness: 300 }}
-                            className="mt-3"
-                          >
-                            <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mx-auto" />
-                          </motion.div>
-                        )}
+
+                        {/* Desktop Layout - Vertical */}
+                        <div className="hidden md:block text-center">
+                          <div className={`w-16 h-16 mx-auto mb-4 rounded-xl bg-gradient-to-r ${paper.color} text-white text-2xl shadow-lg flex items-center justify-center`}>
+                            {paper.icon}
+                          </div>
+                          <div className="mb-2">
+                            <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                              {paper.name}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              {paper.topics} topics available
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                            {paper.description}
+                          </p>
+                          {config.selectedPaper === paper.id && (
+                            <motion.div
+                              initial={{ scale: 0, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{ type: "spring", stiffness: 300 }}
+                              className="mt-3"
+                            >
+                              <CheckCircle2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mx-auto" />
+                            </motion.div>
+                          )}
+                        </div>
                       </motion.button>
                     ))}
                   </div>
