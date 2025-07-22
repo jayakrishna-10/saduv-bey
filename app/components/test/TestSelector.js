@@ -1,6 +1,7 @@
-// FILE: app/components/test/TestSelector.js
+// app/components/test/TestSelector.js
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, 
@@ -19,7 +20,14 @@ import {
   FileText,
   Edit,
   Loader2,
-  Home
+  Home,
+  Lock,
+  Crown,
+  LogIn,
+  Calendar,
+  Users,
+  Star,
+  AlertCircle
 } from 'lucide-react';
 import { fetchTopics, prefetchAllTopics } from '@/lib/quiz-utils';
 import { useRouter } from 'next/navigation';
@@ -60,7 +68,10 @@ export function TestSelector({
   onClose,
   isModal = false 
 }) {
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const isAuthenticated = !!(session?.user);
+  
   const [config, setConfig] = useState({
     mode: 'mock', // 'mock' or 'practice'
     selectedPaper: 'paper1',
@@ -199,6 +210,13 @@ export function TestSelector({
     }
   }, [onClose, router]);
 
+  const handleSignIn = useCallback(() => {
+    // Import signIn from next-auth/react and call it
+    import('next-auth/react').then(({ signIn }) => {
+      signIn('google');
+    });
+  }, []);
+
   // Memoized values
   const stepProgress = useMemo(() => {
     if (config.mode === 'mock') return 100;
@@ -235,10 +253,11 @@ export function TestSelector({
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl"
+        className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-3xl shadow-2xl flex flex-col"
+        style={{ maxHeight: isModal ? '90vh' : '100vh' }}
       >
         {/* Header */}
-        <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+        <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0">
           {showCloseButton && (
             <button
               onClick={handleClose}
@@ -280,8 +299,36 @@ export function TestSelector({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        {/* Authentication Status Banner */}
+        {!isAuthenticated && (
+          <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-b border-amber-200 dark:border-amber-700 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-full">
+                  <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-amber-900 dark:text-amber-100 font-medium text-sm">
+                    Limited Access - 2023 Questions Only
+                  </p>
+                  <p className="text-amber-700 dark:text-amber-300 text-xs">
+                    Sign in to access all years and get comprehensive test analytics
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleSignIn}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm text-sm"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign In
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6">
           <AnimatePresence mode="wait">
             {/* Step 1: Mode Selection + Paper + Topic (for practice) */}
             {step === 1 && (
@@ -292,6 +339,24 @@ export function TestSelector({
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-6"
               >
+                {/* Mock Test Limitation Warning for Non-Authenticated Users */}
+                {!isAuthenticated && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/30 rounded-xl border border-red-200 dark:border-red-700">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-red-900 dark:text-red-100 mb-1">
+                          Mock Test Limitations
+                        </h4>
+                        <p className="text-red-800 dark:text-red-200 text-sm">
+                          Mock tests are limited to 2023 questions only for non-registered users. 
+                          Sign in to access the full exam simulation with questions from all years.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Mode Selection */}
                 <div>
                   <div className="text-center mb-6">
@@ -300,6 +365,11 @@ export function TestSelector({
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       Choose between a realistic exam simulation or a flexible practice session
+                      {!isAuthenticated && (
+                        <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
+                          (Both modes limited to 2023 questions for non-registered users)
+                        </span>
+                      )}
                     </p>
                   </div>
 
@@ -312,8 +382,18 @@ export function TestSelector({
                         config.mode === 'mock'
                           ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
-                      } bg-gradient-to-br from-red-50 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30`}
+                      } bg-gradient-to-br from-red-50 to-orange-100 dark:from-red-900/30 dark:to-orange-900/30 relative overflow-hidden`}
                     >
+                      {/* Premium indicator for authenticated users */}
+                      {isAuthenticated && (
+                        <div className="absolute top-2 right-2">
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <Crown className="h-3 w-3" />
+                            All Years
+                          </div>
+                        </div>
+                      )}
+
                       {/* Mobile Layout - Horizontal */}
                       <div className="flex md:hidden items-start gap-4">
                         <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r from-red-500 to-orange-600 text-white shadow-lg flex items-center justify-center">
@@ -324,10 +404,11 @@ export function TestSelector({
                             Mock Test
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                            Real exam simulation
+                            {isAuthenticated ? 'Real exam simulation' : 'Limited simulation (2023)'}
                           </div>
                           <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                             50 questions, 60 minutes timer. Experience the actual exam conditions.
+                            {!isAuthenticated && ' (2023 questions only)'}
                           </p>
                           {config.mode === 'mock' && (
                             <motion.div
@@ -352,11 +433,12 @@ export function TestSelector({
                             Mock Test
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                            Real exam simulation
+                            {isAuthenticated ? 'Real exam simulation' : 'Limited simulation (2023)'}
                           </div>
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           50 questions, 60 minutes timer. Experience the actual exam conditions.
+                          {!isAuthenticated && ' (2023 questions only)'}
                         </p>
                         {config.mode === 'mock' && (
                           <motion.div
@@ -379,8 +461,18 @@ export function TestSelector({
                         config.mode === 'practice'
                           ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
-                      } bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30`}
+                      } bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 relative overflow-hidden`}
                     >
+                      {/* Premium indicator for authenticated users */}
+                      {isAuthenticated && (
+                        <div className="absolute top-2 right-2">
+                          <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                            <Crown className="h-3 w-3" />
+                            All Years
+                          </div>
+                        </div>
+                      )}
+
                       {/* Mobile Layout - Horizontal */}
                       <div className="flex md:hidden items-start gap-4">
                         <div className="w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg flex items-center justify-center">
@@ -391,10 +483,11 @@ export function TestSelector({
                             Practice Test
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                            Custom practice session
+                            {isAuthenticated ? 'Custom practice session' : 'Limited practice (2023)'}
                           </div>
                           <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                             Choose your topics and question count. 72 seconds per question.
+                            {!isAuthenticated && ' (2023 questions only)'}
                           </p>
                           {config.mode === 'practice' && (
                             <motion.div
@@ -419,11 +512,12 @@ export function TestSelector({
                             Practice Test
                           </div>
                           <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                            Custom practice session
+                            {isAuthenticated ? 'Custom practice session' : 'Limited practice (2023)'}
                           </div>
                         </div>
                         <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                           Choose your topics and question count. 72 seconds per question.
+                          {!isAuthenticated && ' (2023 questions only)'}
                         </p>
                         {config.mode === 'practice' && (
                           <motion.div
@@ -440,6 +534,36 @@ export function TestSelector({
                   </div>
                 </div>
 
+                {/* Premium Features for Authenticated Users */}
+                {isAuthenticated && (
+                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl border border-green-200 dark:border-green-700">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                        <Star className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      </div>
+                      <h4 className="font-medium text-green-900 dark:text-green-100">Premium Test Access Unlocked!</h4>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                        <Calendar className="h-4 w-4" />
+                        All Years
+                      </div>
+                      <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                        <BookOpen className="h-4 w-4" />
+                        All Topics
+                      </div>
+                      <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                        <Sparkles className="h-4 w-4" />
+                        Full Analytics
+                      </div>
+                      <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                        <Users className="h-4 w-4" />
+                        Progress Tracking
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Paper Selection */}
                 <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6">
                   <div className="text-center mb-6">
@@ -448,6 +572,11 @@ export function TestSelector({
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       Choose which NCE paper you'd like to practice
+                      {!isAuthenticated && (
+                        <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
+                          (2023 questions only for non-registered users)
+                        </span>
+                      )}
                     </p>
                   </div>
 
@@ -462,8 +591,18 @@ export function TestSelector({
                           config.selectedPaper === paper.id
                             ? 'border-indigo-300 dark:border-indigo-600 shadow-lg ring-2 ring-indigo-100 dark:ring-indigo-900/50 transform scale-[1.02]'
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md'
-                        } ${paper.gradient}`}
+                        } ${paper.gradient} relative overflow-hidden`}
                       >
+                        {/* Premium indicator for authenticated users */}
+                        {isAuthenticated && (
+                          <div className="absolute top-2 right-2">
+                            <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                              <Crown className="h-3 w-3" />
+                              All Years
+                            </div>
+                          </div>
+                        )}
+
                         {/* Mobile Layout - Horizontal */}
                         <div className="flex md:hidden items-start gap-4">
                           <div className={`w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r ${paper.color} text-white text-xl shadow-lg flex items-center justify-center`}>
@@ -474,7 +613,7 @@ export function TestSelector({
                               {paper.name}
                             </div>
                             <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                              {paper.topics} topics available
+                              {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 only`}
                             </div>
                             <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                               {paper.description}
@@ -502,7 +641,7 @@ export function TestSelector({
                               {paper.name}
                             </div>
                             <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                              {paper.topics} topics available
+                              {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 only`}
                             </div>
                           </div>
                           <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -531,9 +670,19 @@ export function TestSelector({
                       <label className="flex items-center gap-2 text-lg font-medium text-gray-900 dark:text-gray-100">
                         <Filter className="h-5 w-5" />
                         Choose Topic Focus
+                        {!isAuthenticated && (
+                          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full text-xs font-medium">
+                            2023 Only
+                          </span>
+                        )}
                       </label>
                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                         Select a specific topic or practice all topics from {PAPERS[config.selectedPaper]?.name}
+                        {!isAuthenticated && (
+                          <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                            Topics are limited to questions from 2023 for non-registered users
+                          </span>
+                        )}
                       </p>
                       
                       <div className="grid grid-cols-1 gap-3">
@@ -555,6 +704,7 @@ export function TestSelector({
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Practice questions from all {topics.length} available topics
+                                {!isAuthenticated && ' (2023 questions only)'}
                               </div>
                             </div>
                             {config.selectedTopic === 'all' && (
@@ -604,9 +754,23 @@ export function TestSelector({
                 )}
 
                 {/* Selection Summary */}
-                <div className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-200 dark:border-indigo-700">
-                  <h4 className="font-medium text-indigo-900 dark:text-indigo-100 mb-2">Current Selection</h4>
-                  <div className="space-y-1 text-sm text-indigo-800 dark:text-indigo-200">
+                <div className={`p-4 rounded-xl border ${
+                  isAuthenticated 
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
+                    : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'
+                }`}>
+                  <h4 className={`font-medium mb-2 ${
+                    isAuthenticated 
+                      ? 'text-indigo-900 dark:text-indigo-100'
+                      : 'text-amber-900 dark:text-amber-100'
+                  }`}>
+                    Current Selection
+                  </h4>
+                  <div className={`space-y-1 text-sm ${
+                    isAuthenticated 
+                      ? 'text-indigo-800 dark:text-indigo-200'
+                      : 'text-amber-800 dark:text-amber-200'
+                  }`}>
                     <div>🎯 Mode: {config.mode === 'mock' ? 'Mock Test' : 'Practice Test'}</div>
                     <div>📄 Paper: {PAPERS[config.selectedPaper]?.name}</div>
                     {config.mode === 'practice' && (
@@ -618,7 +782,33 @@ export function TestSelector({
                         <div>⏱️ Time: 60 minutes</div>
                       </>
                     )}
+                    {!isAuthenticated && (
+                      <div className={`flex items-center gap-2 mt-2 pt-2 border-t ${
+                        isAuthenticated 
+                          ? 'border-indigo-200 dark:border-indigo-700'
+                          : 'border-amber-200 dark:border-amber-700'
+                      }`}>
+                        <Lock className="h-4 w-4" />
+                        <span>Limited to 2023 questions only</span>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Upgrade prompt for non-authenticated users */}
+                  {!isAuthenticated && (
+                    <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-700">
+                      <p className="text-amber-800 dark:text-amber-200 text-sm mb-3">
+                        Want access to all years and comprehensive analytics?
+                      </p>
+                      <button
+                        onClick={handleSignIn}
+                        className="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm text-sm flex items-center justify-center gap-2"
+                      >
+                        <LogIn className="h-4 w-4" />
+                        Sign In for Full Access
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -638,6 +828,11 @@ export function TestSelector({
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 text-sm">
                     Configure your practice session
+                    {!isAuthenticated && (
+                      <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                        (Limited to 2023 questions)
+                      </span>
+                    )}
                   </p>
                 </div>
 
@@ -706,45 +901,104 @@ export function TestSelector({
                 </div>
 
                 {/* Final Summary */}
-                <div className="p-6 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-2xl border border-indigo-200 dark:border-indigo-700">
-                  <h4 className="font-semibold text-indigo-900 dark:text-indigo-100 mb-4 flex items-center gap-2">
+                <div className={`p-6 rounded-2xl border ${
+                  isAuthenticated 
+                    ? 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border-indigo-200 dark:border-indigo-700'
+                    : 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-amber-200 dark:border-amber-700'
+                }`}>
+                  <h4 className={`font-semibold mb-4 flex items-center gap-2 ${
+                    isAuthenticated 
+                      ? 'text-indigo-900 dark:text-indigo-100'
+                      : 'text-amber-900 dark:text-amber-100'
+                  }`}>
                     <CheckCircle2 className="h-5 w-5" />
                     Ready to Start Practice Test
                   </h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Paper</div>
-                      <div className="text-indigo-900 dark:text-indigo-100">{PAPERS[config.selectedPaper]?.name}</div>
+                      <div className={`font-medium ${
+                        isAuthenticated 
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : 'text-amber-700 dark:text-amber-300'
+                      }`}>Paper</div>
+                      <div className={isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                      }>{PAPERS[config.selectedPaper]?.name}</div>
                     </div>
                     <div>
-                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Questions</div>
-                      <div className="text-indigo-900 dark:text-indigo-100">{config.questionCount}</div>
+                      <div className={`font-medium ${
+                        isAuthenticated 
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : 'text-amber-700 dark:text-amber-300'
+                      }`}>Questions</div>
+                      <div className={isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                      }>{config.questionCount}</div>
                     </div>
                     <div className="col-span-2">
-                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Topic</div>
-                      <div className="text-indigo-900 dark:text-indigo-100">
+                      <div className={`font-medium ${
+                        isAuthenticated 
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : 'text-amber-700 dark:text-amber-300'
+                      }`}>Topic</div>
+                      <div className={isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                      }>
                         {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}
                       </div>
                     </div>
                     <div>
-                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Time per Question</div>
-                      <div className="text-indigo-900 dark:text-indigo-100">72 seconds</div>
+                      <div className={`font-medium ${
+                        isAuthenticated 
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : 'text-amber-700 dark:text-amber-300'
+                      }`}>Time per Question</div>
+                      <div className={isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                      }>72 seconds</div>
                     </div>
                     <div>
-                      <div className="text-indigo-700 dark:text-indigo-300 font-medium">Total Duration</div>
-                      <div className="text-indigo-900 dark:text-indigo-100">
-                        {Math.floor((config.questionCount * 72) / 60)} min {(config.questionCount * 72) % 60} sec
+                      <div className={`font-medium ${
+                        isAuthenticated 
+                          ? 'text-indigo-700 dark:text-indigo-300'
+                          : 'text-amber-700 dark:text-amber-300'
+                      }`}>Year Access</div>
+                      <div className={isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                      }>
+                        {isAuthenticated ? 'All Years' : '2023 Only'}
                       </div>
                     </div>
                   </div>
+
+                  {/* Upgrade prompt for non-authenticated users */}
+                  {!isAuthenticated && (
+                    <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-700">
+                      <p className="text-amber-800 dark:text-amber-200 text-sm mb-3">
+                        Want access to all years and comprehensive analytics?
+                      </p>
+                      <button
+                        onClick={handleSignIn}
+                        className="w-full px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm text-sm flex items-center justify-center gap-2"
+                      >
+                        <LogIn className="h-4 w-4" />
+                        Sign In for Full Access
+                      </button>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-900/50">
+        {/* Footer - Fixed at bottom */}
+        <div className="flex items-center justify-between p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-900/50 flex-shrink-0">
           <div className="flex items-center gap-3">
             {step > 1 && (
               <button
