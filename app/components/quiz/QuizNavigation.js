@@ -1,10 +1,11 @@
-// app/components/quiz/QuizNavigation.js - Simplified with only essential action buttons
+// app/components/quiz/QuizNavigation.js - Modified with single row and feedback button
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, 
   ChevronRight, 
   Lightbulb, 
+  Settings,
   Flag,
   MessageSquare
 } from 'lucide-react';
@@ -43,7 +44,7 @@ export function QuizNavigation({
   const correctAnswers = answeredQuestions.filter(q => q.isCorrect).length;
   const accuracy = answeredQuestions.length > 0 ? Math.round((correctAnswers / answeredQuestions.length) * 100) : 0;
 
-  // Mobile Floating Navigation - Simplified single row design
+  // Mobile Floating Navigation - Single row design
   if (isMobile) {
     return (
       <>
@@ -66,11 +67,11 @@ export function QuizNavigation({
                   {/* Previous */}
                   <motion.button
                     onClick={onPrevious}
-                    disabled={!hasPrevious}
+                    disabled={!hasPrevQuestion}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     className={`p-2.5 rounded-xl transition-all ${
-                      hasPrevious
+                      hasPrevQuestion
                         ? 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                         : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
                     }`}
@@ -78,15 +79,15 @@ export function QuizNavigation({
                     <ChevronLeft className="h-5 w-5" />
                   </motion.button>
 
-                  {/* Center Action Buttons - Only 3 essential buttons */}
-                  <div className="flex items-center gap-2 flex-1 justify-center">
+                  {/* Center Action Buttons */}
+                  <div className="flex items-center gap-1.5 flex-1 justify-center">
                     {/* Show Answer Button */}
                     <motion.button
                       onClick={onShowAnswer}
                       disabled={showFeedback || showAnswer}
                       whileHover={{ scale: (showFeedback || showAnswer) ? 1 : 1.05 }}
                       whileTap={{ scale: (showFeedback || showAnswer) ? 1 : 0.95 }}
-                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
+                      className={`flex items-center gap-1 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
                         (showFeedback || showAnswer)
                           ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                           : 'bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300'
@@ -97,12 +98,24 @@ export function QuizNavigation({
                       <span className="hidden xs:inline">Answer</span>
                     </motion.button>
 
+                    {/* Settings Button */}
+                    <motion.button
+                      onClick={onShowConfig}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl bg-purple-100 dark:bg-purple-900/50 hover:bg-purple-200 dark:hover:bg-purple-900/70 text-purple-700 dark:text-purple-300 transition-all text-sm font-medium"
+                      title="Quiz Settings"
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span className="hidden xs:inline">Settings</span>
+                    </motion.button>
+
                     {/* Feedback Button */}
                     <motion.button
                       onClick={() => setIsFeedbackModalOpen(true)}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 transition-all text-sm font-medium"
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 transition-all text-sm font-medium"
                       title="Report Issue"
                     >
                       <MessageSquare className="h-4 w-4" />
@@ -115,7 +128,7 @@ export function QuizNavigation({
                       disabled={answeredQuestions.length === 0}
                       whileHover={{ scale: answeredQuestions.length === 0 ? 1 : 1.05 }}
                       whileTap={{ scale: answeredQuestions.length === 0 ? 1 : 0.95 }}
-                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all text-sm font-medium ${
+                      className={`flex items-center gap-1 px-3 py-2 rounded-xl transition-all text-sm font-medium ${
                         answeredQuestions.length === 0
                           ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                           : 'bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300'
@@ -158,7 +171,7 @@ export function QuizNavigation({
     );
   }
 
-  // Desktop Ambient Navigation - Simplified version
+  // Desktop Ambient Navigation - Keep existing behavior
   return (
     <>
       <AnimatePresence>
@@ -211,35 +224,46 @@ export function QuizNavigation({
               </motion.button>
             </motion.div>
 
-            {/* Bottom Action Bar - Only 3 essential buttons */}
+            {/* Bottom Action Bar */}
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               className="fixed bottom-6 inset-x-0 flex justify-center z-50"
             >
-              <div className="flex items-center gap-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-3">
+              <div className="flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-2">
                 {/* Show Answer */}
                 {!showFeedback && !showAnswer && (
                   <motion.button
                     onClick={onShowAnswer}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300 rounded-xl transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300 rounded-xl transition-all"
                   >
-                    <Lightbulb className="h-5 w-5" />
+                    <Lightbulb className="h-4 w-4" />
                     <span className="text-sm font-medium">Show Answer</span>
                   </motion.button>
                 )}
+
+                {/* Settings */}
+                <motion.button
+                  onClick={onShowConfig}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/50 hover:bg-purple-200 dark:hover:bg-purple-900/70 text-purple-700 dark:text-purple-300 rounded-xl transition-all"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="text-sm font-medium">Settings</span>
+                </motion.button>
 
                 {/* Feedback */}
                 <motion.button
                   onClick={() => setIsFeedbackModalOpen(true)}
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 rounded-xl transition-all"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 rounded-xl transition-all"
                 >
-                  <MessageSquare className="h-5 w-5" />
+                  <MessageSquare className="h-4 w-4" />
                   <span className="text-sm font-medium">Report Issue</span>
                 </motion.button>
 
@@ -249,9 +273,9 @@ export function QuizNavigation({
                     onClick={onFinishQuiz}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 rounded-xl transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 rounded-xl transition-all"
                   >
-                    <Flag className="h-5 w-5" />
+                    <Flag className="h-4 w-4" />
                     <span className="text-sm font-medium">Finish Quiz</span>
                   </motion.button>
                 )}
