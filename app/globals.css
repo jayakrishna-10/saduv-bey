@@ -607,7 +607,6 @@ body {
     -webkit-backdrop-filter: blur(30px);
   }
 }
-
 /* Add these styles to app/globals.css - Mobile navigation enhancements */
 
 /* Enhanced mobile navigation styles */
@@ -626,7 +625,8 @@ body {
   /* Hide button text on very small screens (< 360px) */
   @media (max-width: 359px) {
     .mobile-nav-dock button span {
-      @apply hidden;
+      /* FIX: Replaced @apply hidden with its CSS equivalent to avoid circular dependency */
+      display: none;
     }
     
     .mobile-nav-dock button {
