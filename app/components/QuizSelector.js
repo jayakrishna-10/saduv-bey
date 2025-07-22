@@ -24,7 +24,8 @@ import {
   LogIn,
   Calendar,
   Users,
-  Star
+  Star,
+  AlertCircle
 } from 'lucide-react';
 import { prefetchAllTopics } from '@/lib/quiz-utils';
 import { useRouter } from 'next/navigation';
@@ -304,6 +305,23 @@ export function QuizSelector({
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
+                  {/* Availability Information for Non-Authenticated Users */}
+                  {!isAuthenticated && (
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                            2023 Questions Available
+                          </h4>
+                          <p className="text-blue-800 dark:text-blue-200 text-sm">
+                            You can practice with questions from 2023 across all papers and topics. Sign in to access the complete question bank from all years plus AI explanations and progress tracking.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Paper Selection */}
                   <div>
                     <div className="text-center mb-6">
@@ -313,8 +331,8 @@ export function QuizSelector({
                       <p className="text-gray-600 dark:text-gray-400 text-sm">
                         Choose which NCE paper you'd like to practice
                         {!isAuthenticated && (
-                          <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
-                            (2023 questions only for non-registered users)
+                          <span className="block mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                            (2023 questions available for all papers)
                           </span>
                         )}
                       </p>
@@ -343,6 +361,16 @@ export function QuizSelector({
                             </div>
                           )}
 
+                          {/* 2023 Available indicator for non-authenticated users */}
+                          {!isAuthenticated && (
+                            <div className="absolute top-2 right-2">
+                              <div className="bg-gradient-to-r from-blue-400 to-blue-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                2023 Available
+                              </div>
+                            </div>
+                          )}
+
                           {/* Mobile Layout - Horizontal */}
                           <div className="flex md:hidden items-start gap-4">
                             <div className={`w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r ${paper.color} text-white text-xl shadow-lg flex items-center justify-center`}>
@@ -353,7 +381,7 @@ export function QuizSelector({
                                 {paper.name}
                               </div>
                               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 only`}
+                                {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 available`}
                               </div>
                               <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                                 {paper.description}
@@ -381,7 +409,7 @@ export function QuizSelector({
                                 {paper.name}
                               </div>
                               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                                {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 only`}
+                                {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 available`}
                               </div>
                             </div>
                             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -440,16 +468,16 @@ export function QuizSelector({
                         <Filter className="h-5 w-5" />
                         Choose Topic Focus
                         {!isAuthenticated && (
-                          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full text-xs font-medium">
-                            2023 Only
+                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                            2023 Available
                           </span>
                         )}
                       </label>
                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                         Select a specific topic or practice all topics from {PAPERS[config.selectedPaper]?.name}
                         {!isAuthenticated && (
-                          <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                            Topics are limited to questions from 2023 for non-registered users
+                          <span className="block mt-1 text-blue-600 dark:text-blue-400">
+                            Topics with 2023 questions available
                           </span>
                         )}
                       </p>
@@ -473,7 +501,7 @@ export function QuizSelector({
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Practice questions from all {topics.length || PAPERS[config.selectedPaper]?.topics} available topics
-                                {!isAuthenticated && ' (2023 questions only)'}
+                                {!isAuthenticated && ' (2023 questions)'}
                               </div>
                             </div>
                             {config.selectedTopic === 'all' && (
@@ -525,28 +553,30 @@ export function QuizSelector({
                   <div className={`p-4 rounded-xl border ${
                     isAuthenticated 
                       ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
-                      : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'
+                      : 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700'
                   }`}>
                     <h4 className={`font-medium mb-2 ${
                       isAuthenticated 
                         ? 'text-indigo-900 dark:text-indigo-100'
-                        : 'text-amber-900 dark:text-amber-100'
+                        : 'text-blue-900 dark:text-blue-100'
                     }`}>
                       Current Selection
                     </h4>
                     <div className={`space-y-1 text-sm ${
                       isAuthenticated 
                         ? 'text-indigo-800 dark:text-indigo-200'
-                        : 'text-amber-800 dark:text-amber-200'
+                        : 'text-blue-800 dark:text-blue-200'
                     }`}>
                       <div>📄 Paper: {PAPERS[config.selectedPaper]?.name}</div>
                       <div>🎯 Topic: {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</div>
-                      {!isAuthenticated && (
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-amber-200 dark:border-amber-700">
-                          <Lock className="h-4 w-4" />
-                          <span>Limited to 2023 questions only</span>
-                        </div>
-                      )}
+                      <div className={`flex items-center gap-2 mt-2 pt-2 border-t ${
+                        isAuthenticated 
+                          ? 'border-indigo-200 dark:border-indigo-700'
+                          : 'border-blue-200 dark:border-blue-700'
+                      }`}>
+                        <Calendar className="h-4 w-4" />
+                        <span>{isAuthenticated ? 'All years available' : '2023 questions available'}</span>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -568,8 +598,8 @@ export function QuizSelector({
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       Configure your practice session
                       {!isAuthenticated && (
-                        <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                          (Limited to 2023 questions)
+                        <span className="block mt-1 text-blue-600 dark:text-blue-400">
+                          (Using 2023 questions)
                         </span>
                       )}
                     </p>
@@ -625,7 +655,7 @@ export function QuizSelector({
                         <span className="text-gray-900 dark:text-gray-100 font-medium">AI Explanations</span>
                         <p className="text-gray-600 dark:text-gray-400 text-sm">
                           Get detailed explanations after each answer
-                          {!isAuthenticated && ' (Limited for 2023 questions)'}
+                          {!isAuthenticated && ' (Available for 2023 questions)'}
                         </p>
                       </div>
                     </div>
@@ -647,12 +677,12 @@ export function QuizSelector({
                   <div className={`p-6 rounded-2xl border ${
                     isAuthenticated 
                       ? 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border-indigo-200 dark:border-indigo-700'
-                      : 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-amber-200 dark:border-amber-700'
+                      : 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 border-blue-200 dark:border-blue-700'
                   }`}>
                     <h4 className={`font-semibold mb-4 flex items-center gap-2 ${
                       isAuthenticated 
                         ? 'text-indigo-900 dark:text-indigo-100'
-                        : 'text-amber-900 dark:text-amber-100'
+                        : 'text-blue-900 dark:text-blue-100'
                     }`}>
                       <CheckCircle2 className="h-5 w-5" />
                       Ready to Start
@@ -662,33 +692,33 @@ export function QuizSelector({
                         <div className={`font-medium ${
                           isAuthenticated 
                             ? 'text-indigo-700 dark:text-indigo-300'
-                            : 'text-amber-700 dark:text-amber-300'
+                            : 'text-blue-700 dark:text-blue-300'
                         }`}>Paper</div>
                         <div className={isAuthenticated 
                           ? 'text-indigo-900 dark:text-indigo-100'
-                          : 'text-amber-900 dark:text-amber-100'
+                          : 'text-blue-900 dark:text-blue-100'
                         }>{PAPERS[config.selectedPaper]?.name}</div>
                       </div>
                       <div>
                         <div className={`font-medium ${
                           isAuthenticated 
                             ? 'text-indigo-700 dark:text-indigo-300'
-                            : 'text-amber-700 dark:text-amber-300'
+                            : 'text-blue-700 dark:text-blue-300'
                         }`}>Questions</div>
                         <div className={isAuthenticated 
                           ? 'text-indigo-900 dark:text-indigo-100'
-                          : 'text-amber-900 dark:text-amber-100'
+                          : 'text-blue-900 dark:text-blue-100'
                         }>{config.questionCount}</div>
                       </div>
                       <div className="col-span-2">
                         <div className={`font-medium ${
                           isAuthenticated 
                             ? 'text-indigo-700 dark:text-indigo-300'
-                            : 'text-amber-700 dark:text-amber-300'
+                            : 'text-blue-700 dark:text-blue-300'
                         }`}>Topic</div>
                         <div className={isAuthenticated 
                           ? 'text-indigo-900 dark:text-indigo-100'
-                          : 'text-amber-900 dark:text-amber-100'
+                          : 'text-blue-900 dark:text-blue-100'
                         }>
                           {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}
                         </div>
@@ -697,32 +727,32 @@ export function QuizSelector({
                         <div className={`font-medium ${
                           isAuthenticated 
                             ? 'text-indigo-700 dark:text-indigo-300'
-                            : 'text-amber-700 dark:text-amber-300'
-                        }`}>Year Access</div>
+                            : 'text-blue-700 dark:text-blue-300'
+                        }`}>Question Source</div>
                         <div className={isAuthenticated 
                           ? 'text-indigo-900 dark:text-indigo-100'
-                          : 'text-amber-900 dark:text-amber-100'
+                          : 'text-blue-900 dark:text-blue-100'
                         }>
-                          {isAuthenticated ? 'All Years' : '2023 Only'}
+                          {isAuthenticated ? 'All Years' : '2023 Questions'}
                         </div>
                       </div>
                       <div>
                         <div className={`font-medium ${
                           isAuthenticated 
                             ? 'text-indigo-700 dark:text-indigo-300'
-                            : 'text-amber-700 dark:text-amber-300'
+                            : 'text-blue-700 dark:text-blue-300'
                         }`}>Explanations</div>
                         <div className={isAuthenticated 
                           ? 'text-indigo-900 dark:text-indigo-100'
-                          : 'text-amber-900 dark:text-amber-100'
+                          : 'text-blue-900 dark:text-blue-100'
                         }>{config.showExplanations ? 'Enabled' : 'Disabled'}</div>
                       </div>
                     </div>
 
                     {/* Upgrade prompt for non-authenticated users */}
                     {!isAuthenticated && (
-                      <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-700">
-                        <p className="text-amber-800 dark:text-amber-200 text-sm mb-3">
+                      <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-700">
+                        <p className="text-blue-800 dark:text-blue-200 text-sm mb-3">
                           Want access to all years and advanced features?
                         </p>
                         <button
