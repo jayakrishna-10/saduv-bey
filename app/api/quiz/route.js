@@ -1,6 +1,8 @@
 // app/api/quiz/route.js
 import { createClient } from '@supabase/supabase-js';
 import { getCachedData, generateCacheKey, CACHE_DURATION } from '@/lib/cache';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import { NextResponse } from 'next/server';
 
 // Enable edge runtime for better performance
@@ -15,8 +17,8 @@ const supabase = createClient(
  * Get lightweight question metadata (IDs, tags, years)
  * This is cached and used for randomization
  */
-async function getQuestionMetadata(paper, topic) {
-  const key = generateCacheKey('question-meta', { paper, topic });
+async function getQuestionMetadata(paper, topic, isAuthenticated) {
+  const key = generateCacheKey('question-meta', { paper, topic, isAuthenticated });
   
   return getCachedData(key, async () => {
     const tableMap = {
@@ -33,6 +35,12 @@ async function getQuestionMetadata(paper, topic) {
     let query = supabase
       .from(tableName)
       .select('id, main_id, tag, year');
+    
+    // Apply authentication-based filters
+    if (!isAuthenticated) {
+      // Limit to 2023 questions only for non-authenticated users
+      query = query.eq('year', 2023);
+    }
     
     if (topic && topic !== 'all') {
       query = query.ilike('tag', `%${topic}%`);
@@ -120,16 +128,20 @@ export async function GET(request) {
   const startTime = Date.now();
   
   try {
+    // Check authentication status
+    const session = await getServerSession(authOptions);
+    const isAuthenticated = !!(session?.user?.id);
+    
     const { searchParams } = new URL(request.url);
     const paper = searchParams.get('paper') || 'paper1';
     const limit = Math.min(parseInt(searchParams.get('limit')) || 20, 100); // Cap at 100
     const topic = searchParams.get('topic');
     
-    console.log(`[QUIZ API] Request: paper=${paper}, limit=${limit}, topic=${topic}`);
+    console.log(`[QUIZ API] Request: paper=${paper}, limit=${limit}, topic=${topic}, authenticated=${isAuthenticated}`);
     
     // Step 1: Get all question metadata (cached)
     const metadataFetchStart = Date.now();
-    const allQuestionMetadata = await getQuestionMetadata(paper, topic);
+    const allQuestionMetadata = await getQuestionMetadata(paper, topic, isAuthenticated);
     console.log(`[QUIZ API] Metadata fetch: ${Date.now() - metadataFetchStart}ms, found ${allQuestionMetadata.length} questions`);
     
     if (allQuestionMetadata.length === 0) {
@@ -139,7 +151,9 @@ export async function GET(request) {
           total: 0,
           paper: paper,
           topicFilter: topic || 'all',
-          loadTime: Date.now() - startTime
+          loadTime: Date.now() - startTime,
+          isAuthenticated,
+          yearRestriction: isAuthenticated ? null : 2023
         }
       });
     }
@@ -168,7 +182,10 @@ export async function GET(request) {
         paper: paper,
         topicFilter: topic || 'all',
         loadTime: totalTime,
-        cached: metadataFetchStart - startTime < 50 // Indicates if metadata was cached
+        cached: metadataFetchStart - startTime < 50, // Indicates if metadata was cached
+        isAuthenticated,
+        yearRestriction: isAuthenticated ? null : 2023,
+        availableYears: isAuthenticated ? 'all' : [2023]
       }
     });
     
@@ -196,6 +213,10 @@ export async function POST(request) {
       );
     }
     
+    // Check authentication for explanations as well
+    const session = await getServerSession(authOptions);
+    const isAuthenticated = !!(session?.user?.id);
+    
     const tableMap = {
       paper1: 'mcqs_p1',
       paper2: 'mcqs_p2', 
@@ -207,15 +228,34 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid paper' }, { status: 400 });
     }
     
-    // Fetch explanation for specific question (not cached)
-    const { data: questionData, error } = await supabase
+    // Build query with potential year restriction
+    let query = supabase
       .from(tableName)
-      .select('explanation')
-      .eq('main_id', questionId)
-      .single();
+      .select('explanation, year')
+      .eq('main_id', questionId);
+    
+    // Apply year restriction for non-authenticated users
+    if (!isAuthenticated) {
+      query = query.eq('year', 2023);
+    }
+    
+    const { data: questionData, error } = await query.single();
     
     if (error) {
       console.error('Error fetching explanation:', error);
+      
+      // If not found and user is not authenticated, inform them about the restriction
+      if (error.code === 'PGRST116' && !isAuthenticated) {
+        return NextResponse.json(
+          { 
+            error: 'Question not available',
+            message: 'This question is only available to registered users. Please sign in to access all questions.',
+            requiresAuth: true
+          }, 
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Failed to fetch explanation' }, 
         { status: 500 }
@@ -223,7 +263,9 @@ export async function POST(request) {
     }
     
     return NextResponse.json({ 
-      explanation: questionData?.explanation || null
+      explanation: questionData?.explanation || null,
+      isAuthenticated,
+      yearRestriction: isAuthenticated ? null : 2023
     });
     
   } catch (error) {
