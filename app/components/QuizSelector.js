@@ -24,9 +24,7 @@ import {
   LogIn,
   Calendar,
   Users,
-  Star,
-  Gift,
-  ArrowRight
+  Star
 } from 'lucide-react';
 import { prefetchAllTopics } from '@/lib/quiz-utils';
 import { useRouter } from 'next/navigation';
@@ -197,15 +195,6 @@ export function QuizSelector({
     return { label: 'Comprehensive', icon: Clock, color: 'text-purple-600 dark:text-purple-400' };
   }, [config.questionCount]);
 
-  // Check if user can proceed to next step or start quiz
-  const canProceed = useMemo(() => {
-    if (step === 1) {
-      return config.selectedPaper && config.selectedTopic; // Need both paper and topic
-    } else {
-      return config.questionCount > 0; // Need question count for step 2
-    }
-  }, [config.selectedPaper, config.selectedTopic, config.questionCount, step]);
-
   // Determine if we should show close functionality
   const showCloseButton = onClose || isInitialView;
   const isModal = !isInitialView;
@@ -230,10 +219,11 @@ export function QuizSelector({
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl"
+          className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 w-full max-w-3xl shadow-2xl flex flex-col"
+          style={{ maxHeight: isModal ? '90vh' : '100vh' }}
         >
           {/* Header */}
-          <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+          <div className="relative p-6 border-b border-gray-200/50 dark:border-gray-700/50 flex-shrink-0">
             {showCloseButton && (
               <button
                 onClick={handleClose}
@@ -277,18 +267,18 @@ export function QuizSelector({
 
           {/* Authentication Status Banner */}
           {!isAuthenticated && (
-            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-b border-blue-200 dark:border-blue-700">
+            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-b border-amber-200 dark:border-amber-700 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
-                    <Gift className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-full">
+                    <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-blue-900 dark:text-blue-100 font-medium text-sm">
-                      Free Trial Access - 2023 Questions Available!
+                    <p className="text-amber-900 dark:text-amber-100 font-medium text-sm">
+                      Limited Access - 2023 Questions Only
                     </p>
-                    <p className="text-blue-700 dark:text-blue-300 text-xs">
-                      Try our quiz platform with 2023 questions and AI explanations. Sign in for full access.
+                    <p className="text-amber-700 dark:text-amber-300 text-xs">
+                      Sign in to access all years and get personalized progress tracking
                     </p>
                   </div>
                 </div>
@@ -303,8 +293,8 @@ export function QuizSelector({
             </div>
           )}
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+          {/* Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto p-6">
             <AnimatePresence mode="wait">
               {/* Step 1: Paper & Topic Selection */}
               {step === 1 && (
@@ -323,6 +313,11 @@ export function QuizSelector({
                       </h3>
                       <p className="text-gray-600 dark:text-gray-400 text-sm">
                         Choose which NCE paper you'd like to practice
+                        {!isAuthenticated && (
+                          <span className="block mt-1 text-amber-600 dark:text-amber-400 font-medium">
+                            (2023 questions only for non-registered users)
+                          </span>
+                        )}
                       </p>
                     </div>
 
@@ -349,16 +344,6 @@ export function QuizSelector({
                             </div>
                           )}
 
-                          {/* Free trial indicator for non-authenticated users */}
-                          {!isAuthenticated && (
-                            <div className="absolute top-2 right-2">
-                              <div className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                                <Gift className="h-3 w-3" />
-                                2023 Free
-                              </div>
-                            </div>
-                          )}
-
                           {/* Mobile Layout - Horizontal */}
                           <div className="flex md:hidden items-start gap-4">
                             <div className={`w-14 h-14 flex-shrink-0 rounded-xl bg-gradient-to-r ${paper.color} text-white text-xl shadow-lg flex items-center justify-center`}>
@@ -369,7 +354,7 @@ export function QuizSelector({
                                 {paper.name}
                               </div>
                               <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                {paper.topics} topics available
+                                {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 only`}
                               </div>
                               <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                                 {paper.description}
@@ -397,7 +382,7 @@ export function QuizSelector({
                                 {paper.name}
                               </div>
                               <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                                {paper.topics} topics available
+                                {isAuthenticated ? `${paper.topics} topics, all years` : `${paper.topics} topics, 2023 only`}
                               </div>
                             </div>
                             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
@@ -449,36 +434,6 @@ export function QuizSelector({
                     </div>
                   )}
 
-                  {/* Free Trial Features for Non-Authenticated Users */}
-                  {!isAuthenticated && (
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
-                          <Gift className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <h4 className="font-medium text-blue-900 dark:text-blue-100">Free Trial - Try Before You Sign Up!</h4>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                          <Calendar className="h-4 w-4" />
-                          2023 Questions
-                        </div>
-                        <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                          <BookOpen className="h-4 w-4" />
-                          All Papers & Topics
-                        </div>
-                        <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                          <Sparkles className="h-4 w-4" />
-                          AI Explanations
-                        </div>
-                        <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                          <Target className="h-4 w-4" />
-                          Full Experience
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Topic Selection */}
                   <div className="border-t border-gray-200/50 dark:border-gray-700/50 pt-6">
                     <div className="space-y-4">
@@ -486,13 +441,18 @@ export function QuizSelector({
                         <Filter className="h-5 w-5" />
                         Choose Topic Focus
                         {!isAuthenticated && (
-                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                            2023 Available
+                          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 rounded-full text-xs font-medium">
+                            2023 Only
                           </span>
                         )}
                       </label>
                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                         Select a specific topic or practice all topics from {PAPERS[config.selectedPaper]?.name}
+                        {!isAuthenticated && (
+                          <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                            Topics are limited to questions from 2023 for non-registered users
+                          </span>
+                        )}
                       </p>
                       
                       <div className="grid grid-cols-1 gap-3">
@@ -514,6 +474,7 @@ export function QuizSelector({
                               </div>
                               <div className="text-sm text-gray-600 dark:text-gray-400">
                                 Practice questions from all {topics.length || PAPERS[config.selectedPaper]?.topics} available topics
+                                {!isAuthenticated && ' (2023 questions only)'}
                               </div>
                             </div>
                             {config.selectedTopic === 'all' && (
@@ -562,17 +523,31 @@ export function QuizSelector({
                   </div>
 
                   {/* Selection Summary */}
-                  <div className="p-4 rounded-xl border bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border-indigo-200 dark:border-indigo-700">
-                    <h4 className="font-medium mb-2 text-indigo-900 dark:text-indigo-100">
+                  <div className={`p-4 rounded-xl border ${
+                    isAuthenticated 
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
+                      : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700'
+                  }`}>
+                    <h4 className={`font-medium mb-2 ${
+                      isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                    }`}>
                       Current Selection
                     </h4>
-                    <div className="space-y-1 text-sm text-indigo-800 dark:text-indigo-200">
+                    <div className={`space-y-1 text-sm ${
+                      isAuthenticated 
+                        ? 'text-indigo-800 dark:text-indigo-200'
+                        : 'text-amber-800 dark:text-amber-200'
+                    }`}>
                       <div>📄 Paper: {PAPERS[config.selectedPaper]?.name}</div>
                       <div>🎯 Topic: {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}</div>
-                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-indigo-200 dark:border-indigo-700">
-                        {isAuthenticated ? <Crown className="h-4 w-4" /> : <Gift className="h-4 w-4" />}
-                        <span>{isAuthenticated ? 'Full access to all years' : 'Free trial with 2023 questions'}</span>
-                      </div>
+                      {!isAuthenticated && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-amber-200 dark:border-amber-700">
+                          <Lock className="h-4 w-4" />
+                          <span>Limited to 2023 questions only</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -593,6 +568,11 @@ export function QuizSelector({
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 text-sm">
                       Configure your practice session
+                      {!isAuthenticated && (
+                        <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                          (Limited to 2023 questions)
+                        </span>
+                      )}
                     </p>
                   </div>
 
@@ -646,6 +626,7 @@ export function QuizSelector({
                         <span className="text-gray-900 dark:text-gray-100 font-medium">AI Explanations</span>
                         <p className="text-gray-600 dark:text-gray-400 text-sm">
                           Get detailed explanations after each answer
+                          {!isAuthenticated && ' (Limited for 2023 questions)'}
                         </p>
                       </div>
                     </div>
@@ -664,42 +645,85 @@ export function QuizSelector({
                   </div>
 
                   {/* Final Summary */}
-                  <div className="p-6 rounded-2xl border bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border-indigo-200 dark:border-indigo-700">
-                    <h4 className="font-semibold mb-4 flex items-center gap-2 text-indigo-900 dark:text-indigo-100">
+                  <div className={`p-6 rounded-2xl border ${
+                    isAuthenticated 
+                      ? 'bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 border-indigo-200 dark:border-indigo-700'
+                      : 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-amber-200 dark:border-amber-700'
+                  }`}>
+                    <h4 className={`font-semibold mb-4 flex items-center gap-2 ${
+                      isAuthenticated 
+                        ? 'text-indigo-900 dark:text-indigo-100'
+                        : 'text-amber-900 dark:text-amber-100'
+                    }`}>
                       <CheckCircle2 className="h-5 w-5" />
                       Ready to Start
                     </h4>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <div className="font-medium text-indigo-700 dark:text-indigo-300">Paper</div>
-                        <div className="text-indigo-900 dark:text-indigo-100">{PAPERS[config.selectedPaper]?.name}</div>
+                        <div className={`font-medium ${
+                          isAuthenticated 
+                            ? 'text-indigo-700 dark:text-indigo-300'
+                            : 'text-amber-700 dark:text-amber-300'
+                        }`}>Paper</div>
+                        <div className={isAuthenticated 
+                          ? 'text-indigo-900 dark:text-indigo-100'
+                          : 'text-amber-900 dark:text-amber-100'
+                        }>{PAPERS[config.selectedPaper]?.name}</div>
                       </div>
                       <div>
-                        <div className="font-medium text-indigo-700 dark:text-indigo-300">Questions</div>
-                        <div className="text-indigo-900 dark:text-indigo-100">{config.questionCount}</div>
+                        <div className={`font-medium ${
+                          isAuthenticated 
+                            ? 'text-indigo-700 dark:text-indigo-300'
+                            : 'text-amber-700 dark:text-amber-300'
+                        }`}>Questions</div>
+                        <div className={isAuthenticated 
+                          ? 'text-indigo-900 dark:text-indigo-100'
+                          : 'text-amber-900 dark:text-amber-100'
+                        }>{config.questionCount}</div>
                       </div>
                       <div className="col-span-2">
-                        <div className="font-medium text-indigo-700 dark:text-indigo-300">Topic</div>
-                        <div className="text-indigo-900 dark:text-indigo-100">
+                        <div className={`font-medium ${
+                          isAuthenticated 
+                            ? 'text-indigo-700 dark:text-indigo-300'
+                            : 'text-amber-700 dark:text-amber-300'
+                        }`}>Topic</div>
+                        <div className={isAuthenticated 
+                          ? 'text-indigo-900 dark:text-indigo-100'
+                          : 'text-amber-900 dark:text-amber-100'
+                        }>
                           {config.selectedTopic === 'all' ? 'All Topics' : config.selectedTopic}
                         </div>
                       </div>
                       <div>
-                        <div className="font-medium text-indigo-700 dark:text-indigo-300">Access Level</div>
-                        <div className="text-indigo-900 dark:text-indigo-100">
-                          {isAuthenticated ? 'All Years' : '2023 Free Trial'}
+                        <div className={`font-medium ${
+                          isAuthenticated 
+                            ? 'text-indigo-700 dark:text-indigo-300'
+                            : 'text-amber-700 dark:text-amber-300'
+                        }`}>Year Access</div>
+                        <div className={isAuthenticated 
+                          ? 'text-indigo-900 dark:text-indigo-100'
+                          : 'text-amber-900 dark:text-amber-100'
+                        }>
+                          {isAuthenticated ? 'All Years' : '2023 Only'}
                         </div>
                       </div>
                       <div>
-                        <div className="font-medium text-indigo-700 dark:text-indigo-300">Explanations</div>
-                        <div className="text-indigo-900 dark:text-indigo-100">{config.showExplanations ? 'Enabled' : 'Disabled'}</div>
+                        <div className={`font-medium ${
+                          isAuthenticated 
+                            ? 'text-indigo-700 dark:text-indigo-300'
+                            : 'text-amber-700 dark:text-amber-300'
+                        }`}>Explanations</div>
+                        <div className={isAuthenticated 
+                          ? 'text-indigo-900 dark:text-indigo-100'
+                          : 'text-amber-900 dark:text-amber-100'
+                        }>{config.showExplanations ? 'Enabled' : 'Disabled'}</div>
                       </div>
                     </div>
 
                     {/* Upgrade prompt for non-authenticated users */}
                     {!isAuthenticated && (
-                      <div className="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
-                        <p className="text-indigo-800 dark:text-indigo-200 text-sm mb-3">
+                      <div className="mt-4 pt-4 border-t border-amber-200 dark:border-amber-700">
+                        <p className="text-amber-800 dark:text-amber-200 text-sm mb-3">
                           Want access to all years and advanced features?
                         </p>
                         <button
@@ -717,8 +741,8 @@ export function QuizSelector({
             </AnimatePresence>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-900/50">
+          {/* Footer - Fixed at bottom */}
+          <div className="flex items-center justify-between p-6 border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-900/50 flex-shrink-0">
             <div className="flex items-center gap-3">
               {step > 1 && (
                 <button
@@ -742,14 +766,9 @@ export function QuizSelector({
               {step < 2 ? (
                 <motion.button
                   onClick={handleNext}
-                  disabled={!canProceed}
-                  whileHover={{ scale: canProceed ? 1.05 : 1 }}
-                  whileTap={{ scale: canProceed ? 0.95 : 1 }}
-                  className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all duration-200 shadow-lg ${
-                    canProceed
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
-                      : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
                 >
                   Next Step
                   <ChevronRight className="h-4 w-4" />
@@ -757,22 +776,12 @@ export function QuizSelector({
               ) : (
                 <motion.button
                   onClick={handleApply}
-                  disabled={!canProceed}
-                  whileHover={{ scale: canProceed ? 1.05 : 1 }}
-                  whileTap={{ scale: canProceed ? 0.95 : 1 }}
-                  className={`flex items-center gap-2 px-6 py-3 font-medium rounded-xl transition-all duration-200 shadow-lg ${
-                    canProceed
-                      ? 'bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white'
-                      : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-medium rounded-xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 shadow-lg"
                 >
                   <Play className="h-4 w-4" />
                   Start Quiz
-                  {!isAuthenticated && canProceed && (
-                    <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
-                      2023 Free
-                    </span>
-                  )}
                 </motion.button>
               )}
             </div>
