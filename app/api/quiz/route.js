@@ -5,8 +5,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from 'next/server';
 
-// Enable edge runtime for better performance
-export const runtime = 'edge';
+// Note: Removed edge runtime because NextAuth requires Node.js APIs
+// export const runtime = 'edge'; // Commented out
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
