@@ -1,4 +1,4 @@
-// app/components/ExplanationDisplay.js - Updated with dark mode support
+// app/components/ExplanationDisplay.js - Updated with dark mode support and overflow fixes
 'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -115,9 +115,9 @@ export function ExplanationDisplay({
   const explanation = explanationData.explanation;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden responsive-content">
       {/* Header with Question Status */}
-      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+      <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl p-6 border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
         <div className="flex items-start gap-4 mb-4">
           <div className="flex-shrink-0 mt-1">
             {userAnswer ? (
@@ -136,11 +136,11 @@ export function ExplanationDisplay({
               </div>
             )}
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 break-words">
               {explanation.concept?.title || "Question Explanation"}
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed break-words whitespace-pre-wrap overflow-hidden">
               {explanation.concept?.description}
             </p>
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
@@ -174,7 +174,7 @@ export function ExplanationDisplay({
               <p className="text-indigo-900 dark:text-indigo-100 font-medium mb-1">
                 Correct Answer: {correctAnswer?.toUpperCase()}
               </p>
-              <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed">
+              <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed break-words">
                 {explanation.correct_answer?.explanation}
               </p>
               {explanation.correct_answer?.supporting_facts && (
@@ -182,7 +182,7 @@ export function ExplanationDisplay({
                   {explanation.correct_answer.supporting_facts.map((fact, index) => (
                     <li key={index} className="flex items-start gap-2">
                       <span className="text-indigo-500 dark:text-indigo-400 mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
-                      {fact}
+                      <span className="break-words">{fact}</span>
                     </li>
                   ))}
                 </ul>
@@ -216,17 +216,17 @@ export function ExplanationDisplay({
                   </div>
                   {getStatusIcon(status)}
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium mb-1">{options[`option_${option}`]}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium mb-1 break-words">{options[`option_${option}`]}</p>
                   {status === 'correct' ? (
-                    <p className="text-sm opacity-90">
+                    <p className="text-sm opacity-90 break-words">
                       ✓ {explanation.correct_answer?.explanation}
                     </p>
                   ) : optionData ? (
                     <div className="text-sm opacity-90">
-                      <p className="mb-1">✗ {optionData.why_wrong}</p>
+                      <p className="mb-1 break-words">✗ {optionData.why_wrong}</p>
                       {optionData.common_misconception && (
-                        <p className="text-xs italic">
+                        <p className="text-xs italic break-words">
                           Common misconception: {optionData.common_misconception}
                         </p>
                       )}
@@ -260,15 +260,16 @@ export function ExplanationDisplay({
                 >
                   {explanation.technical_details.formulas?.map((formula, index) => (
                     <div key={index} className="mb-4 last:mb-0">
-                      <div className="bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 p-4 rounded-xl font-mono text-sm mb-2">
+                      <div className="bg-gray-900 dark:bg-gray-800 text-white dark:text-gray-100 p-4 rounded-xl font-mono text-sm mb-2 overflow-x-auto">
                         <ReactMarkdown
                           remarkPlugins={[remarkMath]}
                           rehypePlugins={[rehypeKatex]}
+                          className="break-words"
                         >
                           {formula.formula}
                         </ReactMarkdown>
                       </div>
-                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-2">{formula.description}</p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-2 break-words">{formula.description}</p>
                       {formula.variables && (
                         <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                           {Object.entries(formula.variables).map(([key, value]) => (
@@ -311,7 +312,7 @@ export function ExplanationDisplay({
                   {explanation.technical_details.process_description && (
                     <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                       <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Process Description</h5>
-                      <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                      <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed break-words">
                         {explanation.technical_details.process_description}
                       </p>
                     </div>
@@ -357,7 +358,7 @@ export function ExplanationDisplay({
                             {table.rows.map((row, i) => (
                               <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                 {row.map((cell, j) => (
-                                  <td key={j} className="border border-gray-300 dark:border-gray-600 p-2 text-gray-700 dark:text-gray-300">
+                                  <td key={j} className="border border-gray-300 dark:border-gray-600 p-2 text-gray-700 dark:text-gray-300 break-words">
                                     {cell}
                                   </td>
                                 ))}
@@ -372,7 +373,7 @@ export function ExplanationDisplay({
                   {explanation.visual_aids.diagrams?.map((diagram, index) => (
                     <div key={index} className="mb-4 last:mb-0">
                       <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{diagram.title}</h5>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{diagram.description}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 break-words">{diagram.description}</p>
                       {diagram.ascii_art && (
                         <div className="bg-gray-900 dark:bg-gray-800 text-green-400 dark:text-green-300 p-4 rounded-xl font-mono text-sm overflow-x-auto">
                           <pre>{diagram.ascii_art}</pre>
@@ -406,8 +407,8 @@ export function ExplanationDisplay({
                   {explanation.practical_applications.map((app, index) => (
                     <div key={index} className="mb-4 last:mb-0 p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-700">
                       <h5 className="font-medium text-green-900 dark:text-green-100 mb-2">{app.industry}</h5>
-                      <p className="text-green-800 dark:text-green-200 text-sm mb-2">{app.use_case}</p>
-                      <p className="text-green-700 dark:text-green-300 text-sm italic">{app.example}</p>
+                      <p className="text-green-800 dark:text-green-200 text-sm mb-2 break-words">{app.use_case}</p>
+                      <p className="text-green-700 dark:text-green-300 text-sm italic break-words">{app.example}</p>
                     </div>
                   ))}
                 </motion.div>
@@ -436,12 +437,12 @@ export function ExplanationDisplay({
                     <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 rounded-xl border border-yellow-200 dark:border-yellow-700">
                       <h5 className="font-medium text-yellow-900 dark:text-yellow-100 mb-2">Memory Aids</h5>
                       {explanation.memory_aids.mnemonics && (
-                        <p className="text-yellow-800 dark:text-yellow-200 text-sm mb-2">
+                        <p className="text-yellow-800 dark:text-yellow-200 text-sm mb-2 break-words">
                           <strong>Mnemonic:</strong> {explanation.memory_aids.mnemonics}
                         </p>
                       )}
                       {explanation.memory_aids.analogies && (
-                        <p className="text-yellow-800 dark:text-yellow-200 text-sm mb-2">
+                        <p className="text-yellow-800 dark:text-yellow-200 text-sm mb-2 break-words">
                           <strong>Analogy:</strong> {explanation.memory_aids.analogies}
                         </p>
                       )}
@@ -450,7 +451,7 @@ export function ExplanationDisplay({
                           <strong>Key Phrases:</strong>
                           <ul className="list-disc list-inside mt-1">
                             {explanation.memory_aids.key_phrases.map((phrase, i) => (
-                              <li key={i}>{phrase}</li>
+                              <li key={i} className="break-words">{phrase}</li>
                             ))}
                           </ul>
                         </div>
@@ -464,7 +465,7 @@ export function ExplanationDisplay({
                         <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Focus Areas</h5>
                         <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 space-y-1">
                           {explanation.study_tips.focus_areas.map((area, i) => (
-                            <li key={i}>{area}</li>
+                            <li key={i} className="break-words">{area}</li>
                           ))}
                         </ul>
                       </div>
@@ -475,7 +476,7 @@ export function ExplanationDisplay({
                         <h5 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Common Mistakes</h5>
                         <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 space-y-1">
                           {explanation.study_tips.common_mistakes.map((mistake, i) => (
-                            <li key={i}>{mistake}</li>
+                            <li key={i} className="break-words">{mistake}</li>
                           ))}
                         </ul>
                       </div>
@@ -485,7 +486,7 @@ export function ExplanationDisplay({
                   {explanation.study_tips.exam_strategy && (
                     <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-700">
                       <h5 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Exam Strategy</h5>
-                      <p className="text-blue-800 dark:text-blue-200 text-sm">{explanation.study_tips.exam_strategy}</p>
+                      <p className="text-blue-800 dark:text-blue-200 text-sm break-words">{explanation.study_tips.exam_strategy}</p>
                     </div>
                   )}
                 </motion.div>
@@ -504,8 +505,8 @@ export function ExplanationDisplay({
               <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <BookOpen className="h-5 w-5 text-gray-600 dark:text-gray-400 mt-0.5" />
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{topic.topic}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{topic.relationship}</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{topic.topic}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 break-words">{topic.relationship}</p>
                   {topic.reference_chapters && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       See: {topic.reference_chapters.join(', ')}
