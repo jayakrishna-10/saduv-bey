@@ -5,9 +5,6 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { NextResponse } from 'next/server';
 
-// Note: Removed edge runtime because NextAuth requires Node.js APIs
-// export const runtime = 'edge'; // Commented out
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -73,7 +70,7 @@ export async function GET(request) {
       console.log(`[TOPICS API] Fetching topics for ${paper}, authenticated=${isAuthenticated}`);
       
       // Build query with potential year restriction
-      let query = supabase.from(tableName).select('tag');
+      let query = supabase.from(tableName).select('tag, year');
       
       // Apply year restriction for non-authenticated users
       if (!isAuthenticated) {
@@ -83,19 +80,27 @@ export async function GET(request) {
       const { data, error } = await query;
       if (error) throw error;
       
+      console.log(`[TOPICS API] Raw data count: ${data.length}`);
+      
       // Extract and normalize unique topics
       const topicsSet = new Set();
+      const topicCounts = {};
+      
       data.forEach(item => {
         if (item.tag) {
           const normalized = normalizeTopicName(item.tag);
           if (normalized) {
             topicsSet.add(normalized);
+            topicCounts[normalized] = (topicCounts[normalized] || 0) + 1;
           }
         }
       });
       
       const uniqueTopics = Array.from(topicsSet).sort();
+      
+      // Log topic distribution for debugging
       console.log(`[TOPICS API] Found ${uniqueTopics.length} unique topics for ${paper} (auth: ${isAuthenticated})`);
+      console.log('[TOPICS API] Topic counts:', topicCounts);
       
       return uniqueTopics;
     }, CACHE_DURATION.TOPICS);
@@ -137,7 +142,7 @@ async function getAllPapersTopics(isAuthenticated) {
         paper3: 'mcqs_p3'
       };
       
-      let query = supabase.from(tableMap[paper]).select('tag');
+      let query = supabase.from(tableMap[paper]).select('tag, year');
       
       // Apply year restriction for non-authenticated users
       if (!isAuthenticated) {
@@ -148,16 +153,21 @@ async function getAllPapersTopics(isAuthenticated) {
         
       if (!error && data) {
         const topicsSet = new Set();
+        const topicCounts = {};
+        
         data.forEach(item => {
           if (item.tag) {
             const normalized = normalizeTopicName(item.tag);
             if (normalized) {
               topicsSet.add(normalized);
+              topicCounts[normalized] = (topicCounts[normalized] || 0) + 1;
             }
           }
         });
         
         allTopics[paper] = Array.from(topicsSet).sort();
+        
+        console.log(`[TOPICS API] ${paper} topics (${allTopics[paper].length}):`, topicCounts);
       }
     }));
     
