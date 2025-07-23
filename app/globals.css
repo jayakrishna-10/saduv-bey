@@ -1,4 +1,4 @@
-/* app/globals.css - Enhanced with new animations and gesture support */
+/* app/globals.css - Enhanced with new animations and responsive navigation support */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -92,11 +92,25 @@ body {
 .z-content { z-index: 10; }
 .z-background { z-index: 1; }
 
-/* Mobile gesture navigation */
+/* ENHANCED: Responsive mobile navigation */
 .mobile-nav-dock {
-  @apply fixed bottom-6 left-4 right-4 z-navigation;
+  @apply fixed z-navigation;
   transform: translateY(0);
   transition: transform var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Responsive positioning and sizing */
+  bottom: 1rem;
+  left: 0.5rem;
+  right: 0.5rem;
+}
+
+/* Tablet and larger mobile screens */
+@media (min-width: 640px) {
+  .mobile-nav-dock {
+    bottom: 1.5rem;
+    left: 1rem;
+    right: 1rem;
+  }
 }
 
 .mobile-nav-dock.hidden {
@@ -105,6 +119,75 @@ body {
 
 .mobile-nav-dock.gesture-active {
   transform: translateY(-8px) scale(1.02);
+}
+
+/* ENHANCED: Responsive navigation buttons */
+.nav-button-responsive {
+  @apply transition-all duration-200 flex items-center justify-center;
+  
+  /* Base mobile styles */
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+}
+
+/* Extra small screens (< 320px) */
+@media (max-width: 319px) {
+  .nav-button-responsive {
+    min-width: 2rem;
+    min-height: 2rem;
+    padding: 0.375rem;
+  }
+  
+  .nav-button-text {
+    display: none;
+  }
+  
+  .mobile-nav-dock {
+    bottom: 0.75rem;
+    left: 0.25rem;
+    right: 0.25rem;
+  }
+  
+  .mobile-nav-dock .nav-container {
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+}
+
+/* Small screens (320px - 359px) */
+@media (min-width: 320px) and (max-width: 359px) {
+  .nav-button-responsive {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0.5rem;
+  }
+  
+  .nav-button-text {
+    display: none;
+  }
+  
+  .mobile-nav-dock .nav-container {
+    padding: 0.5rem;
+    gap: 0.375rem;
+  }
+}
+
+/* Medium small screens (360px - 479px) */
+@media (min-width: 360px) and (max-width: 479px) {
+  .nav-button-responsive {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+  
+  .nav-button-text {
+    display: inline;
+    font-size: 0.75rem;
+  }
+  
+  .mobile-nav-dock .nav-container {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
 }
 
 /* Enhanced swipe gesture support */
@@ -376,9 +459,19 @@ body {
 
 /* Enhanced notification styles */
 .notification {
-  @apply fixed bottom-20 md:bottom-6 right-4 z-navigation;
+  @apply fixed z-navigation;
   @apply glass rounded-2xl p-4 shadow-2xl;
   animation: notificationSlideIn var(--animation-normal) ease-out;
+  
+  /* Responsive positioning */
+  bottom: 5rem;
+  right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .notification {
+    bottom: 1.5rem;
+  }
 }
 
 @keyframes notificationSlideIn {
@@ -534,6 +627,36 @@ body {
   transition: transform var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ENHANCED: Custom responsive breakpoints for navigation */
+@layer utilities {
+  /* Extra small devices (< 320px) */
+  @media (max-width: 319px) {
+    .xs-max\:hidden { display: none !important; }
+    .xs-max\:p-1 { padding: 0.25rem !important; }
+    .xs-max\:text-xs { font-size: 0.75rem !important; }
+    .xs-max\:gap-1 { gap: 0.25rem !important; }
+    .xs-max\:px-1 { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+    .xs-max\:py-1 { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important; }
+  }
+  
+  /* Small devices (320px - 359px) */
+  @media (min-width: 320px) and (max-width: 359px) {
+    .sm-max\:hidden { display: none !important; }
+    .sm-max\:text-xs { font-size: 0.75rem !important; }
+    .sm-max\:gap-1\.5 { gap: 0.375rem !important; }
+    .sm-max\:px-2 { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+  }
+  
+  /* Custom extra small breakpoint utilities */
+  @media (min-width: 360px) {
+    .xs\:inline { display: inline !important; }
+    .xs\:block { display: block !important; }
+    .xs\:flex { display: flex !important; }
+    .xs\:text-sm { font-size: 0.875rem !important; }
+    .xs\:px-3 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  }
+}
+
 /* Accessibility improvements */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -598,6 +721,12 @@ body {
   .btn-interactive:hover::before {
     transform: none;
   }
+  
+  /* Enhanced haptic feedback for mobile buttons */
+  .mobile-nav-dock button:active {
+    @apply scale-95;
+    transition: transform 50ms ease-out;
+  }
 }
 
 /* High DPI display optimizations */
@@ -606,4 +735,51 @@ body {
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
   }
+}
+
+/* ENHANCED: Mobile-specific navigation improvements */
+@media (max-width: 640px) {
+  /* Ensure the navigation bar fits on small screens */
+  .mobile-nav-dock {
+    @apply px-1;
+  }
+  
+  /* Make buttons flex to available space */
+  .mobile-nav-dock .nav-container {
+    @apply min-w-0;
+  }
+  
+  .mobile-nav-dock button {
+    @apply min-w-0 flex-shrink;
+  }
+  
+  /* Prevent text overflow */
+  .mobile-nav-dock button span {
+    @apply truncate;
+    max-width: 4rem;
+  }
+  
+  /* Very small screens adaptations */
+  @media (max-width: 359px) {
+    .mobile-nav-dock button span:not(.sr-only) {
+      display: none;
+    }
+    
+    .mobile-nav-dock button {
+      @apply px-2;
+    }
+    
+    .mobile-nav-dock .nav-container {
+      @apply p-2 gap-1;
+    }
+  }
+}
+
+/* Ensure proper z-index layering for modals */
+.feedback-modal-backdrop {
+  z-index: 100;
+}
+
+.feedback-modal-content {
+  z-index: 101;
 }

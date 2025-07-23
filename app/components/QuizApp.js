@@ -627,6 +627,7 @@ export function QuizApp() {
         onShowSummary={handleViewSummary}
         onShowConfig={() => setShowModifyQuiz(true)}
         onFinishQuiz={handleFinishQuiz}
+        currentQuestion={currentQuestion}
       />
 
       {/* Modals */}
