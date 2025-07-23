@@ -1,4 +1,4 @@
-// app/components/QuizApp.js - Enhanced with overflow fixes
+// FILE: app/components/QuizApp.js
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -532,7 +532,7 @@ export function QuizApp() {
   return (
     <div 
       ref={containerRef}
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 font-sans relative overflow-hidden transition-all duration-500 quiz-container"
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 font-sans relative overflow-hidden transition-all duration-500"
     >
       {/* Dynamic Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
