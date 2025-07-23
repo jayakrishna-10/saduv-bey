@@ -1,4 +1,4 @@
-// FILE: app/components/NavBar.js
+// app/components/NavBar.js - Updated with Notes removed from NCE navigation
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -91,11 +91,6 @@ export default function NavBar() {
                           Test
                         </motion.button>
                       </Link>
-                      <Link href="/nce/notes">
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${ pathname.startsWith('/nce/notes') ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
-                          Notes
-                        </motion.button>
-                      </Link>
                     </div>
                   </div>
                   
@@ -157,11 +152,6 @@ export default function NavBar() {
                   <Link href="/nce/test" onClick={() => setIsMobileMenuOpen(false)}>
                     <div className={`px-3 py-2 rounded-lg transition-all ${ pathname === '/nce/test' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                       Mock Tests
-                    </div>
-                  </Link>
-                  <Link href="/nce/notes" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className={`px-3 py-2 rounded-lg transition-all ${ pathname.startsWith('/nce/notes') ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
-                      Study Notes
                     </div>
                   </Link>
                 </div>
