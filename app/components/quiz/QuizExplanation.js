@@ -1,4 +1,4 @@
-// app/components/quiz/QuizExplanation.js - Collapsible explanation component
+// app/components/quiz/QuizExplanation.js - Collapsible explanation component with overflow fixes
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -167,7 +167,7 @@ export function QuizExplanation({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <div className="p-6 bg-white/50 dark:bg-gray-800/50">
+              <div className="p-6 bg-white/50 dark:bg-gray-800/50 overflow-hidden">
                 {isLoading ? (
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -182,6 +182,7 @@ export function QuizExplanation({
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.1 }}
+                    className="max-w-full overflow-hidden"
                   >
                     {showDetailed ? (
                       <ExplanationDisplay
@@ -307,7 +308,7 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 max-w-full overflow-hidden">
       {/* Quick Answer Summary */}
       {explanation?.explanation?.correct_answer && (
         <motion.div
@@ -321,7 +322,7 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
               <p className="text-indigo-900 dark:text-indigo-100 font-medium mb-1">
                 Correct Answer: {correctAnswer?.toUpperCase()}
               </p>
-              <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed">
+              <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed break-words">
                 {explanation.explanation.correct_answer.explanation}
               </p>
             </div>
@@ -359,12 +360,12 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
                   </span>
                 </div>
                 
-                <p className="text-xs opacity-90 leading-relaxed line-clamp-2">
+                <p className="text-xs opacity-90 leading-relaxed line-clamp-2 break-words">
                   {options[`option_${option}`]}
                 </p>
                 
                 {status === 'incorrect' && optionData?.why_wrong && (
-                  <p className="text-xs mt-1 opacity-75 italic">
+                  <p className="text-xs mt-1 opacity-75 italic break-words">
                     {optionData.why_wrong}
                   </p>
                 )}
@@ -390,7 +391,7 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
             {explanation.explanation.study_tips.focus_areas.slice(0, 2).map((point, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-emerald-500 dark:text-emerald-400 mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
-                {point}
+                <span className="break-words">{point}</span>
               </li>
             ))}
           </ul>
