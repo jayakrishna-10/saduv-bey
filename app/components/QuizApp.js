@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -27,6 +28,7 @@ import {
 
 export function QuizApp() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   
   // Core quiz state
   const [selectedPaper, setSelectedPaper] = useState('paper1');
@@ -61,6 +63,10 @@ export function QuizApp() {
   const [completedQuestionIds, setCompletedQuestionIds] = useState(new Set());
   const [questionProgress, setQuestionProgress] = useState({ total: 0, attempted: 0, current: 1 });
   const [startTime, setStartTime] = useState(null);
+  
+  // Track quiz completion state
+  const [isQuizCompleted, setIsQuizCompleted] = useState(false);
+  const [summaryOpenedAfterCompletion, setSummaryOpenedAfterCompletion] = useState(false);
   
   // Animation and interaction state
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -205,6 +211,7 @@ export function QuizApp() {
 
     if (totalQuestions > 0 && attemptedQuestions === totalQuestions) {
       logDebug('All questions completed');
+      setIsQuizCompleted(true);
       setShowCompletionModal(true);
       if (session) {
         saveQuizAttempt();
@@ -366,6 +373,7 @@ export function QuizApp() {
   const handleNextQuestion = () => {
     const nextIndex = getNextAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds);
     if (nextIndex === null) {
+      setIsQuizCompleted(true);
       setShowCompletionModal(true);
       return;
     }
@@ -399,6 +407,10 @@ export function QuizApp() {
     setSelectedTopic(config.selectedTopic);
     setQuestionCount(config.questionCount);
     
+    // Reset completion state for new quiz
+    setIsQuizCompleted(false);
+    setSummaryOpenedAfterCompletion(false);
+    
     // Fetch topics for the selected paper if needed
     if (config.selectedPaper !== selectedPaper) {
       await fetchTopicsForPaper(config.selectedPaper);
@@ -412,6 +424,9 @@ export function QuizApp() {
     // Close the completion modal first
     setShowCompletionModal(false);
     
+    // Track if summary is being opened after quiz completion
+    setSummaryOpenedAfterCompletion(isQuizCompleted);
+    
     // Save quiz attempt if needed
     if (session && saveStatus !== 'success') {
       saveQuizAttempt();
@@ -421,12 +436,27 @@ export function QuizApp() {
     setShowSummary(true);
   };
 
+  const handleSummaryClose = () => {
+    setShowSummary(false);
+    
+    // If summary was opened after quiz completion, redirect to NCE homepage
+    if (summaryOpenedAfterCompletion) {
+      logDebug('Quiz completed and summary closed - redirecting to NCE homepage');
+      router.push('/nce');
+      return;
+    }
+    
+    // If summary was opened during quiz (via navigation), just close it and stay on quiz
+    logDebug('Summary closed during quiz - staying on current quiz');
+  };
+
   const handleFinishQuiz = () => {
     setShowFinishConfirmation(true);
   };
 
   const handleConfirmFinishQuiz = () => {
     setShowFinishConfirmation(false);
+    setIsQuizCompleted(true);
     if (session) {
       saveQuizAttempt();
     }
@@ -437,7 +467,9 @@ export function QuizApp() {
     setSelectedTopic('all');
     setShowCompletionModal(false);
     setShowFinishConfirmation(false);
-    setShowSummary(false); // Also close summary modal
+    setShowSummary(false);
+    setIsQuizCompleted(false);
+    setSummaryOpenedAfterCompletion(false);
     setSaveStatus(null);
     setSaveError(null);
     setHasQuizStarted(false);
@@ -655,7 +687,7 @@ export function QuizApp() {
       
       <QuizSummary 
         isOpen={showSummary} 
-        onClose={() => setShowSummary(false)} 
+        onClose={handleSummaryClose} 
         answeredQuestions={answeredQuestions} 
         startTime={startTime} 
       />
