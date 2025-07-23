@@ -1,4 +1,4 @@
-// app/components/quiz/QuizNavigation.js - Simplified with only essential action buttons
+// app/components/quiz/QuizNavigation.js - Enhanced with consolidated bottom navigation for desktop
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -6,7 +6,9 @@ import {
   ChevronRight, 
   Lightbulb, 
   Flag,
-  MessageSquare
+  MessageSquare,
+  BarChart3,
+  Settings
 } from 'lucide-react';
 import { QuizFeedbackModal } from './QuizFeedbackModal';
 
@@ -158,7 +160,7 @@ export function QuizNavigation({
     );
   }
 
-  // Desktop Ambient Navigation - Simplified version
+  // Desktop Enhanced Bottom Navigation - Consolidated design
   return (
     <>
       <AnimatePresence>
@@ -211,76 +213,109 @@ export function QuizNavigation({
               </motion.button>
             </motion.div>
 
-            {/* Bottom Action Bar - Only 3 essential buttons */}
+            {/* Enhanced Bottom Navigation Panel */}
             <motion.div
               initial={{ y: 100, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               className="fixed bottom-6 inset-x-0 flex justify-center z-50"
             >
-              <div className="flex items-center gap-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl p-3">
-                {/* Show Answer */}
-                {!showFeedback && !showAnswer && (
+              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl p-4 max-w-4xl w-full mx-6">
+                {/* Progress Section */}
+                <div className="flex items-center justify-center mb-4 pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                  <div className="flex items-center gap-6">
+                    {/* Question Progress */}
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        Question {questionProgress.current} of {questionProgress.total}
+                      </div>
+                      <div className="w-40 h-2.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(questionProgress.current / questionProgress.total) * 100}%` }}
+                          transition={{ duration: 0.5 }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Accuracy Display */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full">
+                      <BarChart3 className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {accuracy}% accuracy
+                      </span>
+                    </div>
+
+                    {/* Questions Attempted */}
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {questionProgress.attempted}/{questionProgress.total} attempted
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons Section */}
+                <div className="flex items-center justify-center gap-4">
+                  {/* Show Answer */}
+                  {!showFeedback && !showAnswer && (
+                    <motion.button
+                      onClick={onShowAnswer}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center gap-2 px-6 py-3 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300 rounded-xl transition-all font-medium"
+                    >
+                      <Lightbulb className="h-5 w-5" />
+                      <span>Show Answer</span>
+                    </motion.button>
+                  )}
+
+                  {/* Report Issue */}
                   <motion.button
-                    onClick={onShowAnswer}
+                    onClick={() => setIsFeedbackModalOpen(true)}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-yellow-100 dark:bg-yellow-900/50 hover:bg-yellow-200 dark:hover:bg-yellow-900/70 text-yellow-700 dark:text-yellow-300 rounded-xl transition-all"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 rounded-xl transition-all font-medium"
                   >
-                    <Lightbulb className="h-5 w-5" />
-                    <span className="text-sm font-medium">Show Answer</span>
+                    <MessageSquare className="h-5 w-5" />
+                    <span>Report Issue</span>
                   </motion.button>
-                )}
 
-                {/* Feedback */}
-                <motion.button
-                  onClick={() => setIsFeedbackModalOpen(true)}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 rounded-xl transition-all"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="text-sm font-medium">Report Issue</span>
-                </motion.button>
+                  {/* View Summary */}
+                  {answeredQuestions.length > 0 && (
+                    <motion.button
+                      onClick={onShowSummary}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center gap-2 px-6 py-3 bg-green-100 dark:bg-green-900/50 hover:bg-green-200 dark:hover:bg-green-900/70 text-green-700 dark:text-green-300 rounded-xl transition-all font-medium"
+                    >
+                      <BarChart3 className="h-5 w-5" />
+                      <span>View Summary</span>
+                    </motion.button>
+                  )}
 
-                {/* Finish Quiz */}
-                {answeredQuestions.length > 0 && (
+                  {/* Quiz Settings */}
                   <motion.button
-                    onClick={onFinishQuiz}
+                    onClick={onShowConfig}
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 rounded-xl transition-all"
+                    className="flex items-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-all font-medium"
                   >
-                    <Flag className="h-5 w-5" />
-                    <span className="text-sm font-medium">Finish Quiz</span>
+                    <Settings className="h-5 w-5" />
+                    <span>Settings</span>
                   </motion.button>
-                )}
-              </div>
-            </motion.div>
 
-            {/* Progress Indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50"
-            >
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl px-6 py-3">
-                <div className="flex items-center gap-4">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    Question {questionProgress.current} of {questionProgress.total}
-                  </div>
-                  <div className="w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${(questionProgress.current / questionProgress.total) * 100}%` }}
-                      transition={{ duration: 0.5 }}
-                    />
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {accuracy}% accuracy
-                  </div>
+                  {/* Finish Quiz */}
+                  {answeredQuestions.length > 0 && (
+                    <motion.button
+                      onClick={onFinishQuiz}
+                      whileHover={{ scale: 1.05, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex items-center gap-2 px-6 py-3 bg-orange-100 dark:bg-orange-900/50 hover:bg-orange-200 dark:hover:bg-orange-900/70 text-orange-700 dark:text-orange-300 rounded-xl transition-all font-medium"
+                    >
+                      <Flag className="h-5 w-5" />
+                      <span>Finish Quiz</span>
+                    </motion.button>
+                  )}
                 </div>
               </div>
             </motion.div>
