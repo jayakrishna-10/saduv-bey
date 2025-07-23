@@ -1,4 +1,4 @@
-// app/components/quiz/QuizQuestion.js - Reduced animations and centered actions
+// app/components/quiz/QuizQuestion.js - Reduced animations and centered actions with overflow fixes
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Clock, Calendar, Tag, Loader2 } from 'lucide-react';
@@ -175,7 +175,7 @@ export function QuizQuestion({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className={`font-light text-gray-900 dark:text-gray-100 leading-relaxed ${
+          className={`font-light text-gray-900 dark:text-gray-100 leading-relaxed break-words ${
             isMobile ? 'text-lg' : 'text-2xl lg:text-3xl'
           }`}
         >
@@ -224,7 +224,7 @@ export function QuizQuestion({
                 )}
               </div>
               
-              <span className={`flex-1 ${isMobile ? 'text-base' : 'text-lg'} transition-all duration-300`}>
+              <span className={`flex-1 ${isMobile ? 'text-base' : 'text-lg'} transition-all duration-300 break-words`}>
                 {question[`option_${option}`]}
               </span>
               
