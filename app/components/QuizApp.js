@@ -409,9 +409,15 @@ export function QuizApp() {
   };
 
   const handleViewSummary = () => {
+    // Close the completion modal first
+    setShowCompletionModal(false);
+    
+    // Save quiz attempt if needed
     if (session && saveStatus !== 'success') {
       saveQuizAttempt();
     }
+    
+    // Show summary modal
     setShowSummary(true);
   };
 
@@ -431,6 +437,7 @@ export function QuizApp() {
     setSelectedTopic('all');
     setShowCompletionModal(false);
     setShowFinishConfirmation(false);
+    setShowSummary(false); // Also close summary modal
     setSaveStatus(null);
     setSaveError(null);
     setHasQuizStarted(false);
