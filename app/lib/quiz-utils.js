@@ -133,7 +133,7 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
         ...(selectedTopic !== 'all' && { topic: selectedTopic })
       });
 
-      console.log(`[QUIZ] Fetching ${questionCount} questions from ${selectedPaper}`);
+      console.log(`[QUIZ] Fetching ${questionCount} questions from ${selectedPaper}, topic: "${selectedTopic}"`);
 
       const response = await fetch(`/api/quiz?${params}`, {
         method: 'GET',
@@ -157,6 +157,16 @@ export const fetchQuizQuestions = async (selectedPaper, questionCount, selectedT
 
       const loadTime = performance.now() - startTime;
       console.log(`[QUIZ] Loaded ${result.questions.length} questions in ${loadTime.toFixed(0)}ms`);
+      
+      // Log the topics and years in the returned questions for debugging
+      const topicDistribution = {};
+      const yearDistribution = {};
+      result.questions.forEach(q => {
+        topicDistribution[q.tag] = (topicDistribution[q.tag] || 0) + 1;
+        yearDistribution[q.year] = (yearDistribution[q.year] || 0) + 1;
+      });
+      console.log('[QUIZ] Returned questions topic distribution:', topicDistribution);
+      console.log('[QUIZ] Returned questions year distribution:', yearDistribution);
 
       // Normalize the data
       const normalizedData = result.questions.map(q => ({
@@ -546,6 +556,11 @@ export const announceToScreenReader = (message) => {
   }, 1000);
 };
 
+// Check if we're in development mode
+export const isDevelopment = () => {
+  return process.env.NODE_ENV === 'development';
+};
+
 export default {
   normalizeChapterName,
   normalizeOptionText,
@@ -574,5 +589,6 @@ export default {
   clearTopicsCache,
   KEYBOARD_SHORTCUTS,
   handleKeyboardShortcut,
-  announceToScreenReader
+  announceToScreenReader,
+  isDevelopment
 };
