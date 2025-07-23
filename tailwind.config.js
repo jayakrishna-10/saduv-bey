@@ -1,3 +1,4 @@
+// tailwind.config.js - Enhanced with custom responsive breakpoints
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -153,8 +154,6 @@ module.exports = {
     },
   },
   plugins: [
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/forms'),
     // Custom plugin for responsive navigation utilities
     function({ addUtilities, theme }) {
       const newUtilities = {
