@@ -1,4 +1,4 @@
-// app/components/NCEHomepage.js - Clean, focused NCE homepage
+// app/components/NCEHomepage.js - Updated with coming soon badges
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -12,7 +12,8 @@ const features = [
     description: 'Interactive questions with instant AI explanations',
     icon: Brain,
     href: '/nce/quiz',
-    color: '#6366f1'
+    color: '#6366f1',
+    status: 'available'
   },
   {
     id: 'test',
@@ -20,7 +21,8 @@ const features = [
     description: 'Full exam simulation with timing and analysis',
     icon: FileText,
     href: '/nce/test',
-    color: '#8b5cf6'
+    color: '#8b5cf6',
+    status: 'available'
   },
   {
     id: 'notes',
@@ -28,7 +30,8 @@ const features = [
     description: 'Organized materials by topics and chapters',
     icon: BookOpen,
     href: '/nce/notes',
-    color: '#10b981'
+    color: '#10b981',
+    status: 'coming-soon'
   },
   {
     id: 'flashcards',
@@ -36,7 +39,8 @@ const features = [
     description: 'Quick review cards for key concepts',
     icon: PenTool,
     href: '/nce/flashcards',
-    color: '#f59e0b'
+    color: '#f59e0b',
+    status: 'coming-soon'
   }
 ];
 
@@ -153,34 +157,62 @@ export default function NCEHomepage() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + index * 0.1 }}
-                className="group cursor-pointer"
+                className="group cursor-pointer relative"
               >
-                <Link href={feature.href}>
-                  <div className="h-full p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/90 hover:shadow-xl transition-all duration-300">
+                {feature.status === 'available' ? (
+                  <Link href={feature.href}>
+                    <div className="h-full p-8 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 hover:bg-white/90 dark:hover:bg-gray-800/90 hover:shadow-xl transition-all duration-300">
+                      <div className="flex items-start gap-6">
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center"
+                          style={{ backgroundColor: `${feature.color}20` }}
+                        >
+                          <feature.icon className="h-8 w-8" style={{ color: feature.color }} />
+                        </motion.div>
+                        
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-4">{feature.title}</h3>
+                          <p className="text-gray-600 dark:text-gray-400 mb-6">{feature.description}</p>
+                          
+                          <motion.div
+                            whileHover={{ x: 5 }}
+                            className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 font-medium group-hover:translate-x-2 transition-all"
+                          >
+                            Get Started
+                            <ChevronRight className="h-4 w-4" />
+                          </motion.div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ) : (
+                  <div className="h-full p-8 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl border border-gray-200/50 dark:border-gray-700/50 relative opacity-75">
+                    {/* Coming Soon Badge */}
+                    <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-white text-sm font-medium rounded-full shadow-lg">
+                      Coming Soon
+                    </div>
+                    
                     <div className="flex items-start gap-6">
-                      <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center"
+                      <div
+                        className="flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center opacity-60"
                         style={{ backgroundColor: `${feature.color}20` }}
                       >
                         <feature.icon className="h-8 w-8" style={{ color: feature.color }} />
-                      </motion.div>
+                      </div>
                       
                       <div className="flex-1">
                         <h3 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-4">{feature.title}</h3>
                         <p className="text-gray-600 dark:text-gray-400 mb-6">{feature.description}</p>
                         
-                        <motion.div
-                          whileHover={{ x: 5 }}
-                          className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 font-medium group-hover:translate-x-2 transition-all"
-                        >
-                          Get Started
-                          <ChevronRight className="h-4 w-4" />
-                        </motion.div>
+                        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-500 font-medium">
+                          Coming Soon
+                          <Clock className="h-4 w-4" />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </Link>
+                )}
               </motion.div>
             ))}
           </div>
