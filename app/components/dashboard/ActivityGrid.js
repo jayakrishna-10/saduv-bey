@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, subDays, eachDayOfInterval, startOfYear, endOfYear } from 'date-fns';
-import { Activity, Calendar, Target, Flame } from 'lucide-react';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
+import { Activity, Calendar, Target, Flame, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function ActivityGrid() {
@@ -11,6 +11,7 @@ export function ActivityGrid() {
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredDate, setHoveredDate] = useState(null);
   const [selectedView, setSelectedView] = useState('questions'); // 'questions' or 'accuracy'
+  const [statistics, setStatistics] = useState(null);
 
   useEffect(() => {
     fetchActivityData();
@@ -39,6 +40,8 @@ export function ActivityGrid() {
           questions: questionsMap,
           accuracy: accuracyMap
         });
+        
+        setStatistics(data.statistics);
       }
     } catch (error) {
       console.error('Error fetching activity data:', error);
@@ -65,23 +68,23 @@ export function ActivityGrid() {
   };
 
   const getColorClass = (level, type) => {
-    const colors = {
-      questions: [
-        'bg-gray-100 dark:bg-gray-800',
-        'bg-indigo-200 dark:bg-indigo-900',
-        'bg-indigo-400 dark:bg-indigo-700',
-        'bg-indigo-600 dark:bg-indigo-500',
-        'bg-indigo-800 dark:bg-indigo-400'
-      ],
-      accuracy: [
-        'bg-gray-100 dark:bg-gray-800',
-        'bg-red-200 dark:bg-red-900',
-        'bg-yellow-200 dark:bg-yellow-900',
-        'bg-green-300 dark:bg-green-800',
-        'bg-green-500 dark:bg-green-600'
-      ]
-    };
-    return colors[type][level];
+    if (type === 'questions') {
+      switch (level) {
+        case 0: return 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700';
+        case 1: return 'bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900 dark:to-indigo-800';
+        case 2: return 'bg-gradient-to-br from-indigo-300 to-indigo-400 dark:from-indigo-700 dark:to-indigo-600';
+        case 3: return 'bg-gradient-to-br from-indigo-500 to-indigo-600 dark:from-indigo-500 dark:to-indigo-400';
+        case 4: return 'bg-gradient-to-br from-indigo-700 to-indigo-800 dark:from-indigo-400 dark:to-indigo-300';
+      }
+    } else {
+      switch (level) {
+        case 0: return 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700';
+        case 1: return 'bg-gradient-to-br from-red-200 to-red-300 dark:from-red-900 dark:to-red-800';
+        case 2: return 'bg-gradient-to-br from-amber-200 to-amber-300 dark:from-amber-900 dark:to-amber-800';
+        case 3: return 'bg-gradient-to-br from-emerald-300 to-emerald-400 dark:from-emerald-800 dark:to-emerald-700';
+        case 4: return 'bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-500';
+      }
+    }
   };
 
   const renderGrid = () => {
@@ -102,12 +105,12 @@ export function ActivityGrid() {
     });
 
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-2">
         {/* Day labels */}
         <div className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400 pr-2">
-          <div className="h-3"></div>
+          <div className="h-4"></div>
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-            <div key={day} className="h-3 flex items-center">
+            <div key={day} className="h-4 flex items-center">
               {i % 2 === 0 ? day : ''}
             </div>
           ))}
@@ -120,18 +123,18 @@ export function ActivityGrid() {
               <div key={weekIndex} className="flex flex-col gap-1">
                 {/* Month label */}
                 {weekIndex === 0 || (week[0] && week[0].getDate() <= 7) ? (
-                  <div className="h-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="h-4 text-xs text-gray-500 dark:text-gray-400">
                     {week[0] ? format(week[0], 'MMM') : ''}
                   </div>
                 ) : (
-                  <div className="h-3"></div>
+                  <div className="h-4"></div>
                 )}
                 
                 {/* Week cells */}
                 {[0, 1, 2, 3, 4, 5, 6].map(dayIndex => {
                   const day = week.find(d => d.getDay() === dayIndex);
                   if (!day) {
-                    return <div key={dayIndex} className="w-3 h-3"></div>;
+                    return <div key={dayIndex} className="w-4 h-4"></div>;
                   }
                   
                   const dateStr = format(day, 'yyyy-MM-dd');
@@ -143,17 +146,13 @@ export function ActivityGrid() {
                   return (
                     <motion.div
                       key={dayIndex}
-                      className={`w-3 h-3 rounded-sm cursor-pointer transition-all ${
+                      className={`w-4 h-4 rounded cursor-pointer transition-all ${
                         getColorClass(level, selectedView)
-                      } ${hoveredDate === dateStr ? 'ring-2 ring-indigo-500 dark:ring-indigo-400' : ''}`}
+                      } ${hoveredDate === dateStr ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 scale-125' : ''}`}
                       onMouseEnter={() => setHoveredDate(dateStr)}
                       onMouseLeave={() => setHoveredDate(null)}
-                      whileHover={{ scale: 1.2 }}
-                      title={`${format(day, 'MMM dd, yyyy')}: ${
-                        selectedView === 'questions' 
-                          ? `${value} questions`
-                          : `${value}% accuracy`
-                      }`}
+                      whileHover={{ scale: 1.3 }}
+                      transition={{ duration: 0.1 }}
                     />
                   );
                 })}
@@ -165,68 +164,59 @@ export function ActivityGrid() {
     );
   };
 
-  const calculateStreak = () => {
-    const today = new Date();
-    let streak = 0;
-    let currentDate = today;
-    
-    while (true) {
-      const dateStr = format(currentDate, 'yyyy-MM-dd');
-      if (activityData.questions[dateStr] && activityData.questions[dateStr] > 0) {
-        streak++;
-        currentDate = subDays(currentDate, 1);
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
-  };
-
-  const calculateTotalDays = () => {
-    return Object.keys(activityData.questions).filter(
-      date => activityData.questions[date] > 0
-    ).length;
-  };
-
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50"
+      >
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Activity Overview
+          Activity Heatmap
         </h3>
         <div className="h-40 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
-  const currentStreak = calculateStreak();
-  const totalActiveDays = calculateTotalDays();
+  const currentStreak = statistics?.currentStreak || 0;
+  const longestStreak = statistics?.longestStreak || 0;
+  const totalActiveDays = statistics?.activeDays || 0;
+  const activityRate = statistics?.activityRate || 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200/50 dark:border-gray-700/50"
+    >
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          Activity Overview
-        </h3>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg">
+            <Calendar className="h-5 w-5 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Activity Heatmap
+          </h3>
+        </div>
         
         {/* View Toggle */}
         <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           <button
             onClick={() => setSelectedView('questions')}
-            className={`px-3 py-1 text-sm rounded transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded transition-all ${
               selectedView === 'questions'
                 ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
             }`}
           >
-            Questions
+            Volume
           </button>
           <button
             onClick={() => setSelectedView('accuracy')}
-            className={`px-3 py-1 text-sm rounded transition-colors ${
+            className={`px-3 py-1.5 text-sm rounded transition-all ${
               selectedView === 'accuracy'
                 ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -237,47 +227,85 @@ export function ActivityGrid() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            <Flame className="h-6 w-6 text-orange-500" />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl p-3 border border-orange-200 dark:border-orange-700"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Flame className="h-4 w-4 text-orange-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-400">Current</span>
+          </div>
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {currentStreak}
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Day Streak</p>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            <Calendar className="h-6 w-6 text-indigo-500" />
+          <div className="text-xs text-gray-500 dark:text-gray-400">days</div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-3 border border-purple-200 dark:border-purple-700"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Target className="h-4 w-4 text-purple-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-400">Best</span>
+          </div>
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            {longestStreak}
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">days</div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-3 border border-blue-200 dark:border-blue-700"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Activity className="h-4 w-4 text-blue-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-400">Active</span>
+          </div>
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {totalActiveDays}
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Active Days</p>
-        </div>
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
-            <Target className="h-6 w-6 text-green-500" />
-            {Math.round((totalActiveDays / 365) * 100)}%
+          <div className="text-xs text-gray-500 dark:text-gray-400">days</div>
+        </motion.div>
+
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-3 border border-green-200 dark:border-green-700"
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <Target className="h-4 w-4 text-green-500" />
+            <span className="text-xs text-gray-600 dark:text-gray-400">Rate</span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Consistency</p>
-        </div>
+          <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            {activityRate}%
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">active</div>
+        </motion.div>
       </div>
 
       {/* Activity Grid */}
-      <div className="overflow-x-auto">
+      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl overflow-x-auto">
         {renderGrid()}
       </div>
 
       {/* Legend */}
-      <div className="mt-6 flex items-center justify-between">
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          {selectedView === 'questions' ? 'Questions per day' : 'Daily accuracy'}
-        </span>
+      <div className="mt-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Info className="h-3 w-3 text-gray-400" />
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {selectedView === 'questions' ? 'Questions per day' : 'Daily accuracy percentage'}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 dark:text-gray-400">Less</span>
           {[0, 1, 2, 3, 4].map(level => (
-            <div
+            <motion.div
               key={level}
-              className={`w-3 h-3 rounded-sm ${getColorClass(level, selectedView)}`}
+              whileHover={{ scale: 1.2 }}
+              className={`w-3 h-3 rounded ${getColorClass(level, selectedView)}`}
             />
           ))}
           <span className="text-xs text-gray-500 dark:text-gray-400">More</span>
@@ -285,29 +313,32 @@ export function ActivityGrid() {
       </div>
 
       {/* Hover Tooltip */}
-      {hoveredDate && (
+      {hoveredDate && activityData.questions[hoveredDate] !== undefined && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute z-10 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg pointer-events-none"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="fixed z-50 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-xl pointer-events-none"
           style={{
             left: '50%',
-            transform: 'translateX(-50%)',
-            bottom: '100%',
-            marginBottom: '8px'
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
           }}
         >
-          <div className="font-medium">
+          <div className="font-medium mb-1">
             {format(new Date(hoveredDate), 'MMMM d, yyyy')}
           </div>
-          <div>
-            {selectedView === 'questions' 
-              ? `${activityData.questions[hoveredDate] || 0} questions attempted`
-              : `${activityData.accuracy[hoveredDate] || 0}% accuracy`
-            }
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+              <span>{activityData.questions[hoveredDate] || 0} questions</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+              <span>{activityData.accuracy[hoveredDate] || 0}% accuracy</span>
+            </div>
           </div>
         </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
