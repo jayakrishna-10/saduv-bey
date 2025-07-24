@@ -20,6 +20,7 @@ import {
 import { isCorrectAnswer, normalizeChapterName } from '@/lib/quiz-utils';
 import { TestReviewNavigation } from './TestReviewNavigation';
 import { ExplanationDisplay } from '../ExplanationDisplay';
+import { QuizFeedbackModal } from '../quiz/QuizFeedbackModal';
 
 export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -30,6 +31,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const [loadingExplanations, setLoadingExplanations] = useState({});
   const [showDetailedExplanation, setShowDetailedExplanation] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   // Mouse position tracking for ambient effects
   useEffect(() => {
@@ -129,7 +131,9 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           goToNext();
           break;
         case 'Escape':
-          if (isPaletteOpen) {
+          if (isFeedbackModalOpen) {
+            setIsFeedbackModalOpen(false);
+          } else if (isPaletteOpen) {
             setPaletteOpen(false);
           } else {
             onExit();
@@ -143,12 +147,16 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           e.preventDefault();
           setShowDetailedExplanation(!showDetailedExplanation);
           break;
+        case 'r':
+          e.preventDefault();
+          setIsFeedbackModalOpen(true);
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPaletteOpen, showDetailedExplanation]);
+  }, [isPaletteOpen, showDetailedExplanation, isFeedbackModalOpen]);
 
   const navigateToQuestion = (index) => {
     if (index >= 0 && index < questions.length) {
@@ -181,6 +189,12 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
 
   const currentExplanation = explanations[currentQuestionId];
   const isLoadingExplanation = loadingExplanations[currentQuestionId];
+
+  // Determine the paper for the current question for feedback modal
+  const currentPaper = currentQuestion.paper || 
+                      (currentQuestion.tag?.toLowerCase().includes('paper1') ? 'paper1' :
+                       currentQuestion.tag?.toLowerCase().includes('paper2') ? 'paper2' :
+                       currentQuestion.tag?.toLowerCase().includes('paper3') ? 'paper3' : 'paper1');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
@@ -459,6 +473,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         hasPrev={filteredIndices.length > 1}
         hasNext={filteredIndices.length > 1}
         onPaletteToggle={() => setPaletteOpen(true)}
+        onFeedbackOpen={() => setIsFeedbackModalOpen(true)}
       />
 
       {/* Question Palette */}
@@ -560,6 +575,14 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Feedback Modal */}
+      <QuizFeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        question={currentQuestion}
+        selectedPaper={currentPaper}
+      />
     </div>
   );
 }
