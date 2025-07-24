@@ -20,16 +20,16 @@ import {
 import { isCorrectAnswer, normalizeChapterName } from '@/lib/quiz-utils';
 import { TestReviewNavigation } from './TestReviewNavigation';
 import { ExplanationDisplay } from '../ExplanationDisplay';
+import { QuizFeedbackModal } from '../quiz/QuizFeedbackModal';
 
 export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showOnlyIncorrect, setShowOnlyIncorrect] = useState(false);
-  const [showOnlyFlagged, setShowOnlyFlagged] = useState(false);
   const [isPaletteOpen, setPaletteOpen] = useState(false);
   const [explanations, setExplanations] = useState({});
   const [loadingExplanations, setLoadingExplanations] = useState({});
   const [showDetailedExplanation, setShowDetailedExplanation] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   // Mouse position tracking for ambient effects
   useEffect(() => {
@@ -43,22 +43,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Filter questions based on review mode
-  const filteredIndices = questions.map((_, index) => index).filter(index => {
-    const q = questions[index];
-    const questionId = q.main_id || q.id;
-    const userAnswer = answers[questionId];
-    const isCorrect = isCorrectAnswer(userAnswer, q.correct_answer);
-    const isFlagged = flaggedQuestions.has(questionId);
-
-    if (showOnlyIncorrect && isCorrect) return false;
-    if (showOnlyFlagged && !isFlagged) return false;
-    return true;
-  });
-
-  const currentFilteredIndex = filteredIndices.indexOf(currentIndex);
-  const actualIndex = currentFilteredIndex >= 0 ? currentIndex : filteredIndices[0] || 0;
-  const currentQuestion = questions[actualIndex] || {};
+  const currentQuestion = questions[currentIndex] || {};
   const currentQuestionId = currentQuestion.main_id || currentQuestion.id;
   const userAnswer = answers[currentQuestionId];
   const isCorrect = isCorrectAnswer(userAnswer, currentQuestion.correct_answer);
@@ -129,7 +114,9 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           goToNext();
           break;
         case 'Escape':
-          if (isPaletteOpen) {
+          if (isFeedbackModalOpen) {
+            setIsFeedbackModalOpen(false);
+          } else if (isPaletteOpen) {
             setPaletteOpen(false);
           } else {
             onExit();
@@ -143,12 +130,16 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           e.preventDefault();
           setShowDetailedExplanation(!showDetailedExplanation);
           break;
+        case 'r':
+          e.preventDefault();
+          setIsFeedbackModalOpen(true);
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPaletteOpen, showDetailedExplanation]);
+  }, [isPaletteOpen, showDetailedExplanation, isFeedbackModalOpen]);
 
   const navigateToQuestion = (index) => {
     if (index >= 0 && index < questions.length) {
@@ -158,17 +149,13 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   };
 
   const goToNext = () => {
-    if (filteredIndices.length === 0) return;
-    const currentPos = filteredIndices.indexOf(actualIndex);
-    const nextPos = (currentPos + 1) % filteredIndices.length;
-    setCurrentIndex(filteredIndices[nextPos]);
+    const nextIndex = (currentIndex + 1) % questions.length;
+    setCurrentIndex(nextIndex);
   };
 
   const goToPrevious = () => {
-    if (filteredIndices.length === 0) return;
-    const currentPos = filteredIndices.indexOf(actualIndex);
-    const prevPos = currentPos === 0 ? filteredIndices.length - 1 : currentPos - 1;
-    setCurrentIndex(filteredIndices[prevPos]);
+    const prevIndex = currentIndex === 0 ? questions.length - 1 : currentIndex - 1;
+    setCurrentIndex(prevIndex);
   };
 
   const getQuestionStatus = (question) => {
@@ -181,6 +168,12 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
 
   const currentExplanation = explanations[currentQuestionId];
   const isLoadingExplanation = loadingExplanations[currentQuestionId];
+
+  // Determine the paper for the current question for feedback modal
+  const currentPaper = currentQuestion.paper || 
+                      (currentQuestion.tag?.toLowerCase().includes('paper1') ? 'paper1' :
+                       currentQuestion.tag?.toLowerCase().includes('paper2') ? 'paper2' :
+                       currentQuestion.tag?.toLowerCase().includes('paper3') ? 'paper3' : 'paper1');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
@@ -204,68 +197,29 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         />
       </div>
 
-      {/* Header */}
-      <div className="relative z-10 bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* Clean Header - Removed view toggle */}
+      <div className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30">
+        <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            {/* Left Section - Back Button and Title */}
+            <div className="flex items-center gap-6">
               <motion.button
                 onClick={onExit}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-2xl transition-all border border-gray-200/50 dark:border-gray-700/50 shadow-sm"
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="font-medium">Back to Summary</span>
               </motion.button>
+              
               <div>
-                <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100">
+                <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-1">
                   Test Review
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Question {currentFilteredIndex + 1} of {filteredIndices.length} 
-                  {filteredIndices.length !== questions.length && ` (${questions.length} total)`}
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Question {currentIndex + 1} of {questions.length}
                 </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <motion.button
-                onClick={() => setShowDetailedExplanation(!showDetailedExplanation)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 ${
-                  showDetailedExplanation
-                    ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300'
-                    : 'bg-white/70 dark:bg-gray-800/70 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {showDetailedExplanation ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                <span className="text-sm font-medium">
-                  {showDetailedExplanation ? 'Simple View' : 'Detailed View'}
-                </span>
-              </motion.button>
-              
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showOnlyIncorrect}
-                    onChange={(e) => setShowOnlyIncorrect(e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">Incorrect only</span>
-                </label>
-                
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={showOnlyFlagged}
-                    onChange={(e) => setShowOnlyFlagged(e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600 text-amber-600 focus:ring-amber-500"
-                  />
-                  <span className="text-gray-700 dark:text-gray-300 font-medium">Flagged only</span>
-                </label>
               </div>
             </div>
           </div>
@@ -273,10 +227,10 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
       </div>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-6xl mx-auto px-4 py-8 pb-32">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-8 pb-32">
         <AnimatePresence mode="wait">
           <motion.div
-            key={actualIndex}
+            key={currentIndex}
             initial={{ opacity: 0, y: 20, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.98 }}
@@ -285,34 +239,34 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           >
             {/* Question Header */}
             <div className="p-8 border-b border-gray-200/50 dark:border-gray-700/50">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-3 py-1 rounded-full">
-                    Question {actualIndex + 1} of {questions.length}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-4 py-2 rounded-full">
+                    Question {currentIndex + 1} of {questions.length}
                   </span>
                   {flaggedQuestions.has(currentQuestionId) && (
-                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-3 py-1 rounded-full">
+                    <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-full">
                       <Flag className="h-4 w-4" />
                       <span className="text-sm font-medium">Flagged</span>
                     </div>
                   )}
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   {isCorrect ? (
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-4 py-2 rounded-full">
+                    <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-5 py-2.5 rounded-full">
                       <CheckCircle className="h-5 w-5" />
-                      <span className="text-sm font-medium">Correct</span>
+                      <span className="font-medium">Correct</span>
                     </div>
                   ) : userAnswer ? (
-                    <div className="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-4 py-2 rounded-full">
+                    <div className="flex items-center gap-3 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-5 py-2.5 rounded-full">
                       <XCircle className="h-5 w-5" />
-                      <span className="text-sm font-medium">Incorrect</span>
+                      <span className="font-medium">Incorrect</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 px-4 py-2 rounded-full">
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 px-5 py-2.5 rounded-full">
                       <AlertCircle className="h-5 w-5" />
-                      <span className="text-sm font-medium">Unanswered</span>
+                      <span className="font-medium">Unanswered</span>
                     </div>
                   )}
                 </div>
@@ -322,7 +276,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                 {normalizeChapterName(currentQuestion.tag)} • {currentQuestion.year}
               </div>
 
-              <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
+              <h3 className="text-xl leading-relaxed text-gray-900 dark:text-gray-100">
                 {currentQuestion.question_text}
               </h3>
             </div>
@@ -370,7 +324,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                           {optionText}
                         </span>
                         
-                        <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-4 mt-3">
                           {isUserAnswer && (
                             <span className={`text-sm font-medium ${
                               isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
@@ -391,19 +345,57 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
               })}
             </div>
 
-            {/* Explanation */}
+            {/* Explanation with integrated view toggle */}
             <div className="border-t border-gray-200/50 dark:border-gray-700/50">
+              {/* Explanation Header with Toggle */}
+              <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center">
+                      <Eye className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Explanation
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Understanding the correct solution
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {!isLoadingExplanation && currentExplanation && (
+                      <motion.button
+                        onClick={() => setShowDetailedExplanation(!showDetailedExplanation)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 font-medium text-sm"
+                      >
+                        {showDetailedExplanation ? (
+                          <>
+                            <EyeOff className="h-4 w-4" />
+                            <span>Simple</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4" />
+                            <span>Detailed</span>
+                          </>
+                        )}
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Explanation Content */}
               <div className="p-8">
-                <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-                  <Eye className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                  Answer Explanation
-                </h4>
-                
                 {isLoadingExplanation ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex items-center gap-3 text-gray-500 dark:text-gray-400 py-8"
+                    className="flex items-center gap-4 text-gray-500 dark:text-gray-400 py-8"
                   >
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <span className="text-lg">Loading detailed explanation...</span>
@@ -456,9 +448,10 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         onPrevious={goToPrevious}
         onNext={goToNext}
         onFinishReview={onExit}
-        hasPrev={filteredIndices.length > 1}
-        hasNext={filteredIndices.length > 1}
+        hasPrev={questions.length > 1}
+        hasNext={questions.length > 1}
         onPaletteToggle={() => setPaletteOpen(true)}
+        onFeedbackOpen={() => setIsFeedbackModalOpen(true)}
       />
 
       {/* Question Palette */}
@@ -492,7 +485,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                   </button>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  {filteredIndices.length} questions shown
+                  {questions.length} questions total
                 </p>
               </div>
 
@@ -502,19 +495,16 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                     const qId = q.main_id || q.id;
                     const status = getQuestionStatus(q);
                     const isFlagged = flaggedQuestions.has(qId);
-                    const isFiltered = filteredIndices.includes(index);
                     
                     return (
                       <motion.button
                         key={index}
                         onClick={() => navigateToQuestion(index)}
-                        disabled={!isFiltered}
-                        whileHover={isFiltered ? { scale: 1.05 } : {}}
-                        whileTap={isFiltered ? { scale: 0.95 } : {}}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         className={`
-                          relative p-4 rounded-xl font-bold transition-all text-sm
-                          ${!isFiltered ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-                          ${index === actualIndex 
+                          relative p-4 rounded-xl font-bold transition-all text-sm cursor-pointer
+                          ${index === currentIndex 
                             ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-gray-800' 
                             : ''
                           }
@@ -560,6 +550,14 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Feedback Modal */}
+      <QuizFeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+        question={currentQuestion}
+        selectedPaper={currentPaper}
+      />
     </div>
   );
 }
