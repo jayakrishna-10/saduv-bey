@@ -1,18 +1,23 @@
-// app/components/NavBar.js - Updated with Notes removed from NCE navigation
+// app/components/NavBar.js - Updated with better integration for new AuthButton
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import AuthButton from './AuthButton'; // Import the new AuthButton
+import AuthButton from './AuthButton';
 
 export default function NavBar() {
   const pathname = usePathname();
   const isNCESection = pathname.startsWith('/nce');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isDark, toggleTheme, isLoading } = useTheme();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <>
@@ -71,6 +76,7 @@ export default function NavBar() {
               </motion.button>
             </div>
             
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6">
               {isNCESection ? (
                 <>
@@ -120,7 +126,8 @@ export default function NavBar() {
               )}
             </div>
 
-            <div className="md:hidden flex items-center gap-2">
+            {/* Mobile Navigation Controls */}
+            <div className="md:hidden flex items-center gap-3">
               <AuthButton />
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -133,6 +140,7 @@ export default function NavBar() {
           </div>
         </div>
 
+        {/* Mobile Menu - Same slide-down pattern */}
         <motion.div
           initial={false}
           animate={{ height: isMobileMenuOpen ? 'auto' : 0, opacity: isMobileMenuOpen ? 1 : 0 }}
@@ -184,6 +192,19 @@ export default function NavBar() {
             )}
           </div>
         </motion.div>
+
+        {/* Mobile Menu Backdrop */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+        </AnimatePresence>
       </nav>
       <div className="h-16" />
     </>
