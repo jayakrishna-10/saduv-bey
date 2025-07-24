@@ -1,8 +1,8 @@
-// app/components/NCEHomepage.js - Updated with coming soon badges
+// app/components/NCEHomepage.js - Updated with spaced repetition entry point
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Brain, FileText, BookOpen, PenTool, Play, ChevronRight, Target, Clock, ExternalLink, Calendar, Award, Briefcase, Globe, Timer } from 'lucide-react';
+import { Brain, FileText, BookOpen, PenTool, Play, ChevronRight, Target, Clock, ExternalLink, Calendar, Award, Briefcase, Globe, Timer, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const features = [
@@ -25,6 +25,15 @@ const features = [
     status: 'available'
   },
   {
+    id: 'spaced-repetition',
+    title: 'Spaced Repetition',
+    description: 'Intelligent review system for better retention',
+    icon: Zap,
+    href: '/nce/spaced-repetition',
+    color: '#f59e0b',
+    status: 'available'
+  },
+  {
     id: 'notes',
     title: 'Study Notes',
     description: 'Organized materials by topics and chapters',
@@ -39,7 +48,7 @@ const features = [
     description: 'Quick review cards for key concepts',
     icon: PenTool,
     href: '/nce/flashcards',
-    color: '#f59e0b',
+    color: '#ef4444',
     status: 'coming-soon'
   }
 ];
@@ -111,7 +120,7 @@ export default function NCEHomepage() {
               transition={{ delay: 0.4 }}
               className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-12"
             >
-              Prepare for the National Certification Examination for Energy Managers and Energy Auditors with organized questions and AI explanations.
+              Prepare for the National Certification Examination for Energy Managers and Energy Auditors with organized questions, AI explanations, and intelligent spaced repetition.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -126,9 +135,9 @@ export default function NCEHomepage() {
                   <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
-              <Link href="/nce/test">
+              <Link href="/nce/spaced-repetition">
                 <button className="px-8 py-4 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full hover:border-gray-400 dark:hover:border-gray-500 transition-all">
-                  Take Mock Test
+                  Smart Review
                 </button>
               </Link>
             </motion.div>
@@ -150,7 +159,7 @@ export default function NCEHomepage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.id}
@@ -362,7 +371,7 @@ export default function NCEHomepage() {
         >
           <h2 className="text-3xl font-light mb-6">Ready to Start?</h2>
           <p className="text-xl text-gray-300 dark:text-gray-600 mb-8">
-            Begin your NCE preparation with organized materials and AI explanations
+            Begin your NCE preparation with organized materials, AI explanations, and intelligent spaced repetition
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/nce/quiz">
@@ -374,13 +383,13 @@ export default function NCEHomepage() {
                 Start Practice Quiz
               </motion.button>
             </Link>
-            <Link href="/nce/test">
+            <Link href="/nce/spaced-repetition">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="px-8 py-4 border-2 border-gray-400 dark:border-gray-600 text-gray-300 dark:text-gray-600 rounded-2xl hover:border-gray-300 dark:hover:border-gray-500 hover:text-white dark:hover:text-gray-500 transition-all"
               >
-                Take Mock Test
+                Smart Review System
               </motion.button>
             </Link>
           </div>
