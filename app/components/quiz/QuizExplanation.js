@@ -1,4 +1,4 @@
-// app/components/quiz/QuizExplanation.js - Collapsible explanation component with overflow fixes
+// app/components/quiz/QuizExplanation.js - Mobile optimized with improved readability
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -35,8 +35,20 @@ export function QuizExplanation({
   const [localExpanded, setLocalExpanded] = useState(false);
   const [contentHeight, setContentHeight] = useState(0);
   const [showDetailed, setShowDetailed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const contentRef = useRef(null);
   const [feedback, setFeedback] = useState(null);
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isExpanded !== localExpanded) {
@@ -62,9 +74,9 @@ export function QuizExplanation({
   };
 
   const getResultIcon = () => {
-    if (!userAnswer) return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-    if (userAnswer === correctAnswer) return <CheckCircle className="h-5 w-5 text-emerald-500" />;
-    return <XCircle className="h-5 w-5 text-red-500" />;
+    if (!userAnswer) return <AlertCircle className="h-4 w-4 md:h-5 md:w-5 text-yellow-500" />;
+    if (userAnswer === correctAnswer) return <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-emerald-500" />;
+    return <XCircle className="h-4 w-4 md:h-5 md:w-5 text-red-500" />;
   };
 
   const getResultText = () => {
@@ -90,50 +102,51 @@ export function QuizExplanation({
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="border-t border-gray-200/50 dark:border-gray-700/50 overflow-hidden"
       >
-        {/* Header Bar */}
+        {/* Header Bar - Mobile optimized */}
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className={`p-4 border-b border-gray-200/30 dark:border-gray-700/30 ${getResultColor()}`}
+          className={`p-3 md:p-4 border-b border-gray-200/30 dark:border-gray-700/30 ${getResultColor()}`}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                className="flex-shrink-0"
               >
                 {getResultIcon()}
               </motion.div>
               
-              <div>
-                <div className="font-medium">{getResultText()}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-sm md:text-base">{getResultText()}</div>
                 {userAnswer && (
-                  <div className="text-sm opacity-90">
+                  <div className="text-xs md:text-sm opacity-90 truncate">
                     Your answer: {userAnswer?.toUpperCase()} • Correct: {correctAnswer?.toUpperCase()}
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
               {!isLoading && explanation && (
                 <motion.button
                   onClick={() => setShowDetailed(!showDetailed)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 rounded-lg transition-all"
+                  className="flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 rounded-lg transition-all"
                 >
                   {showDetailed ? (
                     <>
-                      <EyeOff className="h-4 w-4" />
-                      <span className="text-sm">Less</span>
+                      <EyeOff className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className="text-xs md:text-sm hidden sm:inline">Less</span>
                     </>
                   ) : (
                     <>
-                      <Eye className="h-4 w-4" />
-                      <span className="text-sm">More</span>
+                      <Eye className="h-3 w-3 md:h-4 md:w-4" />
+                      <span className="text-xs md:text-sm hidden sm:inline">More</span>
                     </>
                   )}
                 </motion.button>
@@ -143,20 +156,20 @@ export function QuizExplanation({
                 onClick={handleToggleExpanded}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2 bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 rounded-lg transition-all"
+                className="p-1.5 md:p-2 bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 rounded-lg transition-all"
               >
                 <motion.div
                   animate={{ rotate: localExpanded ? 180 : 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                 </motion.div>
               </motion.button>
             </div>
           </div>
         </motion.div>
 
-        {/* Content Area */}
+        {/* Content Area - Mobile optimized */}
         <AnimatePresence>
           {localExpanded && (
             <motion.div
@@ -167,15 +180,15 @@ export function QuizExplanation({
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="overflow-hidden"
             >
-              <div className="p-6 bg-white/50 dark:bg-gray-800/50 overflow-hidden">
+              <div className="p-3 md:p-6 bg-white/50 dark:bg-gray-800/50 overflow-hidden">
                 {isLoading ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex items-center justify-center py-8"
+                    className="flex items-center justify-center py-6 md:py-8"
                   >
-                    <Loader2 className="h-6 w-6 animate-spin text-indigo-600 dark:text-indigo-400 mr-3" />
-                    <span className="text-gray-600 dark:text-gray-400">Loading explanation...</span>
+                    <Loader2 className="h-5 w-5 md:h-6 md:w-6 animate-spin text-indigo-600 dark:text-indigo-400 mr-3" />
+                    <span className="text-sm md:text-base text-gray-600 dark:text-gray-400">Loading explanation...</span>
                   </motion.div>
                 ) : explanation ? (
                   <motion.div
@@ -199,46 +212,47 @@ export function QuizExplanation({
                         correctAnswer={correctAnswer}
                         userAnswer={userAnswer}
                         onShowDetailed={() => setShowDetailed(true)}
+                        isMobile={isMobile}
                       />
                     )}
 
-                    {/* Feedback Section */}
+                    {/* Feedback Section - Mobile optimized */}
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="mt-6 pt-6 border-t border-gray-200/50 dark:border-gray-700/50"
+                      className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200/50 dark:border-gray-700/50"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-xs md:text-sm text-gray-600 dark:text-gray-400">
                           Was this explanation helpful?
                         </span>
                         
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 md:gap-2">
                           <motion.button
                             onClick={() => handleFeedback(true)}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className={`p-2 rounded-lg transition-all ${
+                            className={`p-1.5 md:p-2 rounded-lg transition-all ${
                               feedback === 'helpful'
                                 ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400'
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            <ThumbsUp className="h-4 w-4" />
+                            <ThumbsUp className="h-3 w-3 md:h-4 md:w-4" />
                           </motion.button>
                           
                           <motion.button
                             onClick={() => handleFeedback(false)}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className={`p-2 rounded-lg transition-all ${
+                            className={`p-1.5 md:p-2 rounded-lg transition-all ${
                               feedback === 'not-helpful'
                                 ? 'bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400'
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            <ThumbsDown className="h-4 w-4" />
+                            <ThumbsDown className="h-3 w-3 md:h-4 md:w-4" />
                           </motion.button>
                         </div>
                       </div>
@@ -249,7 +263,7 @@ export function QuizExplanation({
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="mt-2 text-sm text-gray-600 dark:text-gray-400"
+                            className="mt-2 text-xs md:text-sm text-gray-600 dark:text-gray-400"
                           >
                             {feedback === 'helpful' 
                               ? "Thank you! Your feedback helps us improve." 
@@ -263,10 +277,10 @@ export function QuizExplanation({
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-center py-8"
+                    className="text-center py-6 md:py-8"
                   >
-                    <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <AlertCircle className="h-6 w-6 md:h-8 md:w-8 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
                       Explanation not available for this question.
                     </p>
                   </motion.div>
@@ -280,8 +294,8 @@ export function QuizExplanation({
   );
 }
 
-// Quick explanation component for minimal view
-function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onShowDetailed }) {
+// Quick explanation component for minimal view - Mobile optimized
+function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onShowDetailed, isMobile }) {
   const getOptionStatus = (option) => {
     const isCorrect = option === correctAnswer;
     const isUserAnswer = option === userAnswer;
@@ -301,28 +315,28 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'correct': return <CheckCircle className="h-4 w-4" />;
-      case 'incorrect': return <XCircle className="h-4 w-4" />;
+      case 'correct': return <CheckCircle className="h-3 w-3 md:h-4 md:w-4" />;
+      case 'incorrect': return <XCircle className="h-3 w-3 md:h-4 md:w-4" />;
       default: return null;
     }
   };
 
   return (
-    <div className="space-y-4 max-w-full overflow-hidden">
-      {/* Quick Answer Summary */}
+    <div className="space-y-3 md:space-y-4 max-w-full overflow-hidden">
+      {/* Quick Answer Summary - Mobile optimized */}
       {explanation?.explanation?.correct_answer && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl border border-indigo-200 dark:border-indigo-700"
+          className="p-3 md:p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl md:rounded-2xl border border-indigo-200 dark:border-indigo-700"
         >
-          <div className="flex items-start gap-3">
-            <Lightbulb className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-indigo-900 dark:text-indigo-100 font-medium mb-1">
+          <div className="flex items-start gap-2 md:gap-3">
+            <Lightbulb className="h-4 w-4 md:h-5 md:w-5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-indigo-900 dark:text-indigo-100 font-medium mb-1 text-sm md:text-base">
                 Correct Answer: {correctAnswer?.toUpperCase()}
               </p>
-              <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed break-words">
+              <p className="text-indigo-800 dark:text-indigo-200 text-xs md:text-sm leading-relaxed break-words">
                 {explanation.explanation.correct_answer.explanation}
               </p>
             </div>
@@ -330,14 +344,14 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
         </motion.div>
       )}
 
-      {/* Option Analysis (Simplified) */}
+      {/* Option Analysis (Simplified) - Mobile optimized */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Target className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+        <h4 className="text-sm md:text-base font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <Target className="h-3 w-3 md:h-4 md:w-4 text-indigo-600 dark:text-indigo-400" />
           Quick Option Review
         </h4>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
           {['a', 'b', 'c', 'd'].map((option) => {
             const status = getOptionStatus(option);
             const optionData = explanation?.explanation?.incorrect_options?.[`option_${option}`];
@@ -348,10 +362,10 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.1 * parseInt(option.charCodeAt(0) - 97) }}
-                className={`p-3 rounded-xl border-2 transition-all ${getStatusColor(status)}`}
+                className={`p-2 md:p-3 rounded-lg md:rounded-xl border-2 transition-all ${getStatusColor(status)}`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-full bg-white/70 dark:bg-gray-700/70 flex items-center justify-center text-xs font-medium">
+                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-white/70 dark:bg-gray-700/70 flex items-center justify-center text-xs font-medium flex-shrink-0">
                     {option.toUpperCase()}
                   </div>
                   {getStatusIcon(status)}
@@ -360,7 +374,7 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
                   </span>
                 </div>
                 
-                <p className="text-xs opacity-90 leading-relaxed line-clamp-2 break-words">
+                <p className="text-xs leading-relaxed line-clamp-2 break-words mb-1">
                   {options[`option_${option}`]}
                 </p>
                 
@@ -375,19 +389,19 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
         </div>
       </div>
 
-      {/* Key Learning Points */}
+      {/* Key Learning Points - Mobile optimized */}
       {explanation?.explanation?.study_tips?.focus_areas && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl border border-emerald-200 dark:border-emerald-700"
+          className="p-3 md:p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl md:rounded-2xl border border-emerald-200 dark:border-emerald-700"
         >
-          <h5 className="text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-2 flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
+          <h5 className="text-sm md:text-base font-medium text-emerald-900 dark:text-emerald-100 mb-2 flex items-center gap-2">
+            <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
             Key Learning Points
           </h5>
-          <ul className="text-sm text-emerald-800 dark:text-emerald-200 space-y-1">
+          <ul className="text-xs md:text-sm text-emerald-800 dark:text-emerald-200 space-y-1">
             {explanation.explanation.study_tips.focus_areas.slice(0, 2).map((point, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-emerald-500 dark:text-emerald-400 mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
@@ -398,15 +412,15 @@ function QuickExplanation({ explanation, options, correctAnswer, userAnswer, onS
         </motion.div>
       )}
 
-      {/* Show More Button */}
+      {/* Show More Button - Mobile optimized */}
       <motion.button
         onClick={onShowDetailed}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full p-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300"
+        className="w-full p-2 md:p-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg md:rounded-xl transition-all flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300"
       >
-        <Layers className="h-4 w-4" />
-        <span className="text-sm font-medium">Show Detailed Explanation</span>
+        <Layers className="h-3 w-3 md:h-4 md:w-4" />
+        <span className="text-xs md:text-sm font-medium">Show Detailed Explanation</span>
       </motion.button>
     </div>
   );

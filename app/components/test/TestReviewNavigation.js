@@ -87,8 +87,23 @@ export function TestReviewNavigation({
     </motion.button>
   );
 
-  // Action buttons with responsive text
+  // Grid/Palette button - Always icon only for better space utilization
+  const GridButton = ({ onClick, className, icon: Icon, title }) => (
+    <motion.button 
+      onClick={onClick}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`flex items-center justify-center ${getTextButtonPadding()} rounded-xl transition-all font-medium ${getTextSize()} ${className}`}
+      title={title}
+    >
+      <Icon className={`${getIconSize()}`} />
+    </motion.button>
+  );
+
+  // Action buttons with responsive text - Full text for important actions
   const ActionButton = ({ onClick, className, icon: Icon, children, shortText, title }) => {
+    // For grid button, we always show only icon to save space
+    // For other buttons, show text based on screen size
     const showText = !isExtraSmall;
     const displayText = isSmall ? (shortText || children) : children;
     
@@ -125,18 +140,15 @@ export function TestReviewNavigation({
         
         {/* Center Action Buttons - Responsive Layout */}
         <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1 justify-center">
-          {/* Question Palette Button */}
-          <ActionButton
+          {/* Question Palette Button - ICON ONLY for space optimization */}
+          <GridButton
             onClick={onPaletteToggle}
             icon={Grid}
             className="bg-indigo-100 dark:bg-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 flex-shrink-0"
-            shortText="Grid"
             title="Question Palette"
-          >
-            {isMedium ? "Grid" : "Questions"}
-          </ActionButton>
+          />
 
-          {/* Feedback Button */}
+          {/* Feedback Button - Can show full text now that Grid is icon-only */}
           <ActionButton
             onClick={onFeedbackOpen}
             icon={MessageSquare}
@@ -144,15 +156,15 @@ export function TestReviewNavigation({
             shortText="Report"
             title="Report Issue"
           >
-            Report
+            Report Issue
           </ActionButton>
           
-          {/* Finish Review Button */}
+          {/* Finish Review Button - Can show full text */}
           <ActionButton
             onClick={onFinishReview}
             icon={CheckSquare}
             className="bg-emerald-100 dark:bg-emerald-900/50 hover:bg-emerald-200 dark:hover:bg-emerald-900/70 text-emerald-700 dark:text-emerald-300 flex-shrink-0"
-            shortText="Done"
+            shortText="Finish"
             title="Finish Review"
           >
             {isMedium ? "Finish" : "Finish Review"}
