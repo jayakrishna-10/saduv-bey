@@ -219,12 +219,13 @@ export function QuizApp() {
     }
   };
 
-  const fetchQuestions = async () => {
+  // FIXED: Modified fetchQuestions to accept parameters directly
+  const fetchQuestions = async (paper, qCount, topic) => {
     try {
       setIsLoading(true);
-      logDebug('Fetching questions...', { selectedPaper, questionCount, selectedTopic });
+      logDebug('Fetching questions...', { paper, qCount, topic });
       
-      const fetchedQuestions = await fetchQuizQuestions(selectedPaper, questionCount, selectedTopic);
+      const fetchedQuestions = await fetchQuizQuestions(paper, qCount, topic);
       
       setQuestions(fetchedQuestions);
       setCompletedQuestionIds(new Set());
@@ -251,6 +252,7 @@ export function QuizApp() {
     setSaveError(null);
   };
 
+  // FIXED: Modified loadExplanation to use the correct paper from current state
   const loadExplanation = async (questionId) => {
     setIsLoadingExplanation(true);
     try {
@@ -261,7 +263,7 @@ export function QuizApp() {
         const response = await fetch('/api/quiz', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ questionId, paper: selectedPaper })
+          body: JSON.stringify({ questionId, paper: selectedPaper }) // Use current selectedPaper state
         });
         if (!response.ok) throw new Error('Failed to fetch explanation');
         const result = await response.json();
@@ -401,7 +403,10 @@ export function QuizApp() {
   const handleSwipeLeft = () => handleNextQuestion();
   const handleSwipeRight = () => handlePreviousQuestion();
 
+  // FIXED: Modified handleQuizConfiguration to pass config values directly to fetchQuestions
   const handleQuizConfiguration = async (config) => {
+    logDebug('Handling quiz configuration:', config);
+    
     // Update all configuration state
     setSelectedPaper(config.selectedPaper);
     setSelectedTopic(config.selectedTopic);
@@ -417,7 +422,9 @@ export function QuizApp() {
     }
     
     setShowModifyQuiz(false);
-    fetchQuestions();
+    
+    // FIXED: Pass config values directly instead of relying on state
+    await fetchQuestions(config.selectedPaper, config.questionCount, config.selectedTopic);
   };
 
   const handleViewSummary = () => {
