@@ -5,13 +5,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, 
-  X, 
   CheckCircle, 
   XCircle, 
   Flag,
-  ChevronLeft,
-  ChevronRight,
-  Grid,
   Loader2,
   Eye,
   EyeOff,
@@ -19,6 +15,7 @@ import {
 } from 'lucide-react';
 import { isCorrectAnswer, normalizeChapterName } from '@/lib/quiz-utils';
 import { TestReviewNavigation } from './TestReviewNavigation';
+import { QuestionPalette } from './QuestionPalette';
 import { ExplanationDisplay } from '../ExplanationDisplay';
 import { QuizFeedbackModal } from '../quiz/QuizFeedbackModal';
 
@@ -158,13 +155,35 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
     setCurrentIndex(prevIndex);
   };
 
-  const getQuestionStatus = (question) => {
+  // Custom status function for review mode
+  const getQuestionStatus = (index) => {
+    const question = questions[index];
     const questionId = question.main_id || question.id;
     const userAnswer = answers[questionId];
     
+    // Always show current question status first
+    if (index === currentIndex) return 'current';
+    
+    // Then check answer status
     if (!userAnswer) return 'unanswered';
     return isCorrectAnswer(userAnswer, question.correct_answer) ? 'correct' : 'incorrect';
   };
+
+  // Custom status configuration for review mode
+  const reviewStatusConfig = {
+    current: 'bg-indigo-600 text-white ring-2 ring-indigo-400',
+    correct: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-200 dark:border-emerald-700',
+    incorrect: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-200 dark:border-red-700',
+    unanswered: 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600'
+  };
+
+  // Custom legend for review mode
+  const reviewLegendItems = [
+    { color: 'bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-700', label: 'Correct Answer' },
+    { color: 'bg-red-100 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-700', label: 'Incorrect Answer' },
+    { color: 'bg-gray-100 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600', label: 'Unanswered' },
+    { color: 'bg-indigo-600', label: 'Current' }
+  ];
 
   const currentExplanation = explanations[currentQuestionId];
   const isLoadingExplanation = loadingExplanations[currentQuestionId];
@@ -197,11 +216,10 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         />
       </div>
 
-      {/* Clean Header - Removed view toggle */}
+      {/* Header */}
       <div className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            {/* Left Section - Back Button and Title */}
             <div className="flex items-center gap-6">
               <motion.button
                 onClick={onExit}
@@ -345,9 +363,8 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
               })}
             </div>
 
-            {/* Explanation with integrated view toggle */}
+            {/* Explanation */}
             <div className="border-t border-gray-200/50 dark:border-gray-700/50">
-              {/* Explanation Header with Toggle */}
               <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-800/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -389,7 +406,6 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                 </div>
               </div>
 
-              {/* Explanation Content */}
               <div className="p-8">
                 {isLoadingExplanation ? (
                   <motion.div
@@ -454,102 +470,20 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         onFeedbackOpen={() => setIsFeedbackModalOpen(true)}
       />
 
-      {/* Question Palette */}
-      <AnimatePresence>
-        {isPaletteOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            onClick={() => setPaletteOpen(false)}
-          >
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25 }}
-              className="absolute right-0 top-0 h-full w-full max-w-md bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                    Question Navigator
-                  </h3>
-                  <button
-                    onClick={() => setPaletteOpen(false)}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-xl transition-colors"
-                  >
-                    <X className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-                  </button>
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  {questions.length} questions total
-                </p>
-              </div>
-
-              <div className="p-6">
-                <div className="grid grid-cols-5 gap-3">
-                  {questions.map((q, index) => {
-                    const qId = q.main_id || q.id;
-                    const status = getQuestionStatus(q);
-                    const isFlagged = flaggedQuestions.has(qId);
-                    
-                    return (
-                      <motion.button
-                        key={index}
-                        onClick={() => navigateToQuestion(index)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className={`
-                          relative p-4 rounded-xl font-bold transition-all text-sm cursor-pointer
-                          ${index === currentIndex 
-                            ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-gray-800' 
-                            : ''
-                          }
-                          ${status === 'correct' 
-                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-200 dark:border-emerald-700' 
-                            : status === 'incorrect'
-                            ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-2 border-red-200 dark:border-red-700'
-                            : 'bg-gray-100 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600'
-                          }
-                        `}
-                      >
-                        {index + 1}
-                        {isFlagged && (
-                          <Flag className="absolute -top-1 -right-1 h-4 w-4 text-amber-500 drop-shadow-sm" />
-                        )}
-                      </motion.button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-8 space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-emerald-100 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-700 rounded" />
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">Correct Answer</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-red-100 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-700 rounded" />
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">Incorrect Answer</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-5 h-5 bg-gray-100 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded" />
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">Unanswered</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-5 h-5 bg-gray-100 dark:bg-gray-700/50 border-2 border-gray-200 dark:border-gray-600 rounded">
-                      <Flag className="absolute -top-1 -right-1 h-3 w-3 text-amber-500" />
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300 font-medium">Flagged Question</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Reusable Question Palette */}
+      <QuestionPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        questions={questions}
+        answers={answers}
+        flaggedQuestions={flaggedQuestions}
+        currentQuestionIndex={currentIndex}
+        onQuestionSelect={navigateToQuestion}
+        getQuestionStatus={getQuestionStatus}
+        statusConfig={reviewStatusConfig}
+        legendItems={reviewLegendItems}
+        title="Question Navigator"
+      />
 
       {/* Feedback Modal */}
       <QuizFeedbackModal
