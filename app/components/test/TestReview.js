@@ -1,4 +1,4 @@
-// FILE: app/components/test/TestReview.js
+// app/components/test/TestReview.js - Mobile optimized for better readability
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -9,27 +9,36 @@ import {
   XCircle, 
   Flag,
   Loader2,
-  AlertCircle,
-  Lightbulb,
-  BookOpen,
-  Target,
-  Layers
+  Eye,
+  EyeOff,
+  AlertCircle
 } from 'lucide-react';
 import { isCorrectAnswer, normalizeChapterName } from '@/lib/quiz-utils';
 import { TestReviewNavigation } from './TestReviewNavigation';
 import { QuestionPalette } from './QuestionPalette';
 import { ExplanationDisplay } from '../ExplanationDisplay';
 import { QuizFeedbackModal } from '../quiz/QuizFeedbackModal';
-import { QuizSwipeHandler } from '../quiz/QuizSwipeHandler';
 
 export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaletteOpen, setPaletteOpen] = useState(false);
   const [explanations, setExplanations] = useState({});
   const [loadingExplanations, setLoadingExplanations] = useState({});
-  const [showDetailedExplanation, setShowDetailedExplanation] = useState(false);
+  const [showDetailedExplanation, setShowDetailedExplanation] = useState(true);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Mouse position tracking for ambient effects
   useEffect(() => {
@@ -101,32 +110,6 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
     }
   }, [currentQuestionId, currentQuestion, loadExplanation]);
 
-  // Navigation functions
-  const navigateToQuestion = (index) => {
-    if (index >= 0 && index < questions.length) {
-      setCurrentIndex(index);
-      setPaletteOpen(false);
-      // Reset explanation view when changing questions
-      setShowDetailedExplanation(false);
-    }
-  };
-
-  const goToNext = () => {
-    const nextIndex = (currentIndex + 1) % questions.length;
-    setCurrentIndex(nextIndex);
-    setShowDetailedExplanation(false);
-  };
-
-  const goToPrevious = () => {
-    const prevIndex = currentIndex === 0 ? questions.length - 1 : currentIndex - 1;
-    setCurrentIndex(prevIndex);
-    setShowDetailedExplanation(false);
-  };
-
-  // Swipe handlers
-  const handleSwipeLeft = () => goToNext();
-  const handleSwipeRight = () => goToPrevious();
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -166,6 +149,23 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPaletteOpen, showDetailedExplanation, isFeedbackModalOpen]);
+
+  const navigateToQuestion = (index) => {
+    if (index >= 0 && index < questions.length) {
+      setCurrentIndex(index);
+      setPaletteOpen(false);
+    }
+  };
+
+  const goToNext = () => {
+    const nextIndex = (currentIndex + 1) % questions.length;
+    setCurrentIndex(nextIndex);
+  };
+
+  const goToPrevious = () => {
+    const prevIndex = currentIndex === 0 ? questions.length - 1 : currentIndex - 1;
+    setCurrentIndex(prevIndex);
+  };
 
   // Custom status function for review mode
   const getQuestionStatus = (index) => {
@@ -228,26 +228,28 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         />
       </div>
 
-      {/* Header */}
+      {/* Header - Mobile optimized */}
       <div className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30">
-        <div className="max-w-6xl mx-auto px-6 py-6">
+        <div className={`max-w-6xl mx-auto ${isMobile ? 'px-4 py-4' : 'px-6 py-6'}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6">
               <motion.button
                 onClick={onExit}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-3 px-4 py-2.5 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-2xl transition-all border border-gray-200/50 dark:border-gray-700/50 shadow-sm"
+                className={`flex items-center gap-2 md:gap-3 ${isMobile ? 'px-3 py-2' : 'px-4 py-2.5'} bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300 rounded-xl md:rounded-2xl transition-all border border-gray-200/50 dark:border-gray-700/50 shadow-sm`}
               >
-                <ArrowLeft className="h-5 w-5" />
-                <span className="font-medium">Back to Summary</span>
+                <ArrowLeft className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                <span className={`font-medium ${isMobile ? 'text-sm' : 'text-base'}`}>
+                  {isMobile ? 'Back' : 'Back to Summary'}
+                </span>
               </motion.button>
               
               <div>
-                <h1 className="text-2xl font-light text-gray-900 dark:text-gray-100 mb-1">
+                <h1 className={`font-light text-gray-900 dark:text-gray-100 mb-1 ${isMobile ? 'text-lg' : 'text-2xl'}`}>
                   Test Review
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <p className={`text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                   Question {currentIndex + 1} of {questions.length}
                 </p>
               </div>
@@ -256,209 +258,221 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         </div>
       </div>
 
-      {/* Main Content with Swipe Support */}
-      <QuizSwipeHandler
-        onSwipeLeft={handleSwipeLeft}
-        onSwipeRight={handleSwipeRight}
-        disabled={isPaletteOpen || isFeedbackModalOpen}
-        currentQuestionIndex={currentIndex}
-      >
-        <main className="relative z-10 max-w-6xl mx-auto px-6 py-8 pb-32">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.98 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl overflow-hidden"
-            >
-              {/* Question Header */}
-              <div className="p-8 border-b border-gray-200/50 dark:border-gray-700/50">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-4 py-2 rounded-full">
-                      Question {currentIndex + 1} of {questions.length}
-                    </span>
-                    {flaggedQuestions.has(currentQuestionId) && (
-                      <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-4 py-2 rounded-full">
-                        <Flag className="h-4 w-4" />
-                        <span className="text-sm font-medium">Flagged</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center">
-                    {isCorrect ? (
-                      <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-5 py-2.5 rounded-full">
-                        <CheckCircle className="h-5 w-5" />
-                        <span className="font-medium">Correct</span>
-                      </div>
-                    ) : userAnswer ? (
-                      <div className="flex items-center gap-3 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-5 py-2.5 rounded-full">
-                        <XCircle className="h-5 w-5" />
-                        <span className="font-medium">Incorrect</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 px-5 py-2.5 rounded-full">
-                        <AlertCircle className="h-5 w-5" />
-                        <span className="font-medium">Unanswered</span>
-                      </div>
-                    )}
-                  </div>
+      {/* Main Content - Mobile optimized */}
+      <main className={`relative z-10 max-w-6xl mx-auto ${isMobile ? 'px-4 py-4 pb-20' : 'px-6 py-8 pb-32'}`}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentIndex}
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.98 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl rounded-2xl md:rounded-3xl border border-white/20 dark:border-gray-700/50 shadow-2xl overflow-hidden"
+          >
+            {/* Question Header - Mobile optimized */}
+            <div className={`${isMobile ? 'p-4' : 'p-8'} border-b border-gray-200/50 dark:border-gray-700/50`}>
+              <div className={`flex items-center justify-between ${isMobile ? 'mb-4' : 'mb-6'}`}>
+                <div className="flex items-center gap-2 md:gap-4">
+                  <span className={`font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/50 ${isMobile ? 'px-3 py-1 text-xs' : 'px-4 py-2 text-sm'} rounded-full`}>
+                    Question {currentIndex + 1} of {questions.length}
+                  </span>
+                  {flaggedQuestions.has(currentQuestionId) && (
+                    <div className={`flex items-center gap-1 md:gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 ${isMobile ? 'px-3 py-1' : 'px-4 py-2'} rounded-full`}>
+                      <Flag className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                      <span className={`font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}>Flagged</span>
+                    </div>
+                  )}
                 </div>
                 
-                <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  {normalizeChapterName(currentQuestion.tag)} • {currentQuestion.year}
+                <div className="flex items-center">
+                  {isCorrect ? (
+                    <div className={`flex items-center gap-2 md:gap-3 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 ${isMobile ? 'px-3 py-1.5' : 'px-5 py-2.5'} rounded-full`}>
+                      <CheckCircle className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                      <span className={`font-medium ${isMobile ? 'text-xs' : 'text-base'}`}>Correct</span>
+                    </div>
+                  ) : userAnswer ? (
+                    <div className={`flex items-center gap-2 md:gap-3 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 ${isMobile ? 'px-3 py-1.5' : 'px-5 py-2.5'} rounded-full`}>
+                      <XCircle className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                      <span className={`font-medium ${isMobile ? 'text-xs' : 'text-base'}`}>Incorrect</span>
+                    </div>
+                  ) : (
+                    <div className={`flex items-center gap-2 md:gap-3 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 ${isMobile ? 'px-3 py-1.5' : 'px-5 py-2.5'} rounded-full`}>
+                      <AlertCircle className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'}`} />
+                      <span className={`font-medium ${isMobile ? 'text-xs' : 'text-base'}`}>Unanswered</span>
+                    </div>
+                  )}
                 </div>
-
-                <h3 className="text-xl leading-relaxed text-gray-900 dark:text-gray-100">
-                  {currentQuestion.question_text}
-                </h3>
+              </div>
+              
+              <div className={`text-gray-500 dark:text-gray-400 ${isMobile ? 'mb-4 text-xs' : 'mb-6 text-sm'}`}>
+                {normalizeChapterName(currentQuestion.tag)} • {currentQuestion.year}
               </div>
 
-              {/* Options */}
-              <div className="p-8 space-y-4">
-                {['a', 'b', 'c', 'd'].map((option) => {
-                  const optionText = currentQuestion[`option_${option}`];
-                  const isUserAnswer = userAnswer === option;
-                  const isCorrectOption = currentQuestion.correct_answer?.toLowerCase() === option;
-                  
-                  return (
-                    <motion.div
-                      key={option}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * parseInt(option.charCodeAt(0) - 97) }}
-                      className={`p-6 rounded-2xl border-2 transition-all ${
+              <h3 className={`leading-relaxed text-gray-900 dark:text-gray-100 ${isMobile ? 'text-base' : 'text-xl'}`}>
+                {currentQuestion.question_text}
+              </h3>
+            </div>
+
+            {/* Options - Mobile optimized */}
+            <div className={`${isMobile ? 'p-4' : 'p-8'} space-y-3 md:space-y-4`}>
+              {['a', 'b', 'c', 'd'].map((option) => {
+                const optionText = currentQuestion[`option_${option}`];
+                const isUserAnswer = userAnswer === option;
+                const isCorrectOption = currentQuestion.correct_answer?.toLowerCase() === option;
+                
+                return (
+                  <motion.div
+                    key={option}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 * parseInt(option.charCodeAt(0) - 97) }}
+                    className={`${isMobile ? 'p-3' : 'p-6'} rounded-xl md:rounded-2xl border-2 transition-all ${
+                      isCorrectOption
+                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                        : isUserAnswer && !isCorrect
+                        ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                        : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3 md:gap-4">
+                      <div className={`flex-shrink-0 ${isMobile ? 'w-6 h-6' : 'w-8 h-8'} rounded-full flex items-center justify-center font-bold ${isMobile ? 'text-xs' : 'text-sm'} ${
                         isCorrectOption
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                          ? 'bg-emerald-500 text-white'
                           : isUserAnswer && !isCorrect
-                          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
-                          : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
-                      }`}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                          ? 'bg-red-500 text-white'
+                          : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {option.toUpperCase()}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <span className={`${isMobile ? 'text-sm' : 'text-lg'} ${
                           isCorrectOption
-                            ? 'bg-emerald-500 text-white'
+                            ? 'text-emerald-900 dark:text-emerald-100'
                             : isUserAnswer && !isCorrect
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                            ? 'text-red-900 dark:text-red-100'
+                            : 'text-gray-900 dark:text-gray-100'
                         }`}>
-                          {option.toUpperCase()}
-                        </div>
+                          {optionText}
+                        </span>
                         
-                        <div className="flex-1">
-                          <span className={`text-lg ${
-                            isCorrectOption
-                              ? 'text-emerald-900 dark:text-emerald-100'
-                              : isUserAnswer && !isCorrect
-                              ? 'text-red-900 dark:text-red-100'
-                              : 'text-gray-900 dark:text-gray-100'
-                          }`}>
-                            {optionText}
-                          </span>
-                          
-                          <div className="flex items-center gap-4 mt-3">
-                            {isUserAnswer && (
-                              <span className={`text-sm font-medium ${
-                                isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                              }`}>
-                                {isCorrect ? '✓ Your answer' : '✗ Your answer'}
-                              </span>
-                            )}
-                            {isCorrectOption && !isUserAnswer && (
-                              <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                                ✓ Correct answer
-                              </span>
-                            )}
-                          </div>
+                        <div className={`flex items-center gap-4 ${isMobile ? 'mt-2' : 'mt-3'}`}>
+                          {isUserAnswer && (
+                            <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium ${
+                              isCorrect ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {isCorrect ? '✓ Your answer' : '✗ Your answer'}
+                            </span>
+                          )}
+                          {isCorrectOption && !isUserAnswer && (
+                            <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-emerald-600 dark:text-emerald-400`}>
+                              ✓ Correct answer
+                            </span>
+                          )}
                         </div>
                       </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
 
-              {/* Explanation Section */}
-              <div className="border-t border-gray-200/50 dark:border-gray-700/50">
-                <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-800/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center">
-                      <Lightbulb className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            {/* Explanation - Mobile optimized */}
+            <div className="border-t border-gray-200/50 dark:border-gray-700/50">
+              <div className={`${isMobile ? 'p-4' : 'p-6'} border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-800/50`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center`}>
+                      <Eye className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-indigo-600 dark:text-indigo-400`} />
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      <h4 className={`font-semibold text-gray-900 dark:text-gray-100 ${isMobile ? 'text-base' : 'text-lg'}`}>
                         Explanation
                       </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className={`text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         Understanding the correct solution
                       </p>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-8">
-                  {isLoadingExplanation ? (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center gap-4 text-gray-500 dark:text-gray-400 py-8"
-                    >
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span className="text-lg">Loading detailed explanation...</span>
-                    </motion.div>
-                  ) : currentExplanation && showDetailedExplanation ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <ExplanationDisplay
-                        explanationData={currentExplanation}
-                        questionText={currentQuestion.question_text}
-                        options={{
-                          option_a: currentQuestion.option_a,
-                          option_b: currentQuestion.option_b,
-                          option_c: currentQuestion.option_c,
-                          option_d: currentQuestion.option_d
-                        }}
-                        correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
-                        userAnswer={userAnswer}
-                      />
-                    </motion.div>
-                  ) : currentExplanation ? (
-                    <SimpleExplanation
-                      explanation={currentExplanation}
-                      correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
-                      userAnswer={userAnswer}
+                  <div className="flex items-center gap-2">
+                    {!isLoadingExplanation && currentExplanation && (
+                      <motion.button
+                        onClick={() => setShowDetailedExplanation(!showDetailedExplanation)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className={`flex items-center gap-1 md:gap-2 ${isMobile ? 'px-3 py-1.5' : 'px-4 py-2'} bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 rounded-lg md:rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 font-medium ${isMobile ? 'text-xs' : 'text-sm'}`}
+                      >
+                        {showDetailedExplanation ? (
+                          <>
+                            <EyeOff className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                            <span className="hidden sm:inline">Simple</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                            <span className="hidden sm:inline">Detailed</span>
+                          </>
+                        )}
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${isMobile ? 'p-4' : 'p-8'}`}>
+                {isLoadingExplanation ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className={`flex items-center gap-3 md:gap-4 text-gray-500 dark:text-gray-400 ${isMobile ? 'py-6' : 'py-8'}`}
+                  >
+                    <Loader2 className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} animate-spin`} />
+                    <span className={`${isMobile ? 'text-base' : 'text-lg'}`}>Loading detailed explanation...</span>
+                  </motion.div>
+                ) : currentExplanation && showDetailedExplanation ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <ExplanationDisplay
+                      explanationData={currentExplanation}
+                      questionText={currentQuestion.question_text}
                       options={{
                         option_a: currentQuestion.option_a,
                         option_b: currentQuestion.option_b,
                         option_c: currentQuestion.option_c,
                         option_d: currentQuestion.option_d
                       }}
-                      onShowDetailed={() => setShowDetailedExplanation(true)}
+                      correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
+                      userAnswer={userAnswer}
                     />
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-center py-8"
-                    >
-                      <AlertCircle className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                      <p className="text-gray-600 dark:text-gray-400 text-lg">
-                        Explanation not available for this question.
-                      </p>
-                    </motion.div>
-                  )}
-                </div>
+                  </motion.div>
+                ) : currentExplanation ? (
+                  <SimpleExplanation
+                    explanation={currentExplanation}
+                    correctAnswer={currentQuestion.correct_answer?.toLowerCase()}
+                    userAnswer={userAnswer}
+                    isMobile={isMobile}
+                  />
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}
+                  >
+                    <AlertCircle className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} text-gray-400 dark:text-gray-500 mx-auto mb-4`} />
+                    <p className={`text-gray-600 dark:text-gray-400 ${isMobile ? 'text-base' : 'text-lg'}`}>
+                      Explanation not available for this question.
+                    </p>
+                  </motion.div>
+                )}
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </QuizSwipeHandler>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
       {/* Navigation */}
       <TestReviewNavigation
@@ -497,138 +511,48 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
   );
 }
 
-// Enhanced Simple explanation component with "Show Detailed" button
-function SimpleExplanation({ explanation, correctAnswer, userAnswer, options, onShowDetailed }) {
-  const getOptionStatus = (option) => {
-    const isCorrect = option === correctAnswer;
-    const isUserAnswer = option === userAnswer;
-    
-    if (isCorrect) return 'correct';
-    if (isUserAnswer && !isCorrect) return 'incorrect';
-    return 'neutral';
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'correct': return 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300';
-      case 'incorrect': return 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-700 dark:text-red-300';
-      default: return 'bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'correct': return <CheckCircle className="h-4 w-4" />;
-      case 'incorrect': return <XCircle className="h-4 w-4" />;
-      default: return null;
-    }
-  };
-
+// Simple explanation component for basic view - Mobile optimized
+function SimpleExplanation({ explanation, correctAnswer, userAnswer, isMobile }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
+      className={`space-y-4 md:space-y-6`}
     >
-      {/* Quick Answer Summary */}
-      {explanation?.explanation?.correct_answer && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl border border-indigo-200 dark:border-indigo-700"
-        >
-          <div className="flex items-start gap-3">
-            <Lightbulb className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-indigo-900 dark:text-indigo-100 font-medium mb-1">
-                Correct Answer: {correctAnswer?.toUpperCase()}
-              </p>
-              <p className="text-indigo-800 dark:text-indigo-200 text-sm leading-relaxed break-words">
-                {explanation.explanation.correct_answer.explanation}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Quick Option Analysis */}
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Target className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-          Quick Option Review
-        </h4>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {['a', 'b', 'c', 'd'].map((option) => {
-            const status = getOptionStatus(option);
-            const optionData = explanation?.explanation?.incorrect_options?.[`option_${option}`];
-            
-            return (
-              <motion.div
-                key={option}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 * parseInt(option.charCodeAt(0) - 97) }}
-                className={`p-3 rounded-xl border-2 transition-all ${getStatusColor(status)}`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-full bg-white/70 dark:bg-gray-700/70 flex items-center justify-center text-xs font-medium">
-                    {option.toUpperCase()}
-                  </div>
-                  {getStatusIcon(status)}
-                  <span className="text-xs font-medium truncate">
-                    {status === 'correct' ? 'Correct' : status === 'incorrect' ? 'Your choice' : ''}
-                  </span>
-                </div>
-                
-                <p className="text-xs opacity-90 leading-relaxed line-clamp-2 break-words">
-                  {options[`option_${option}`]}
-                </p>
-                
-                {status === 'incorrect' && optionData?.why_wrong && (
-                  <p className="text-xs mt-1 opacity-75 italic break-words">
-                    {optionData.why_wrong}
-                  </p>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Key Learning Points */}
-      {explanation?.explanation?.study_tips?.focus_areas && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-2xl border border-emerald-200 dark:border-emerald-700"
-        >
-          <h5 className="text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-2 flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            Key Learning Points
+      {explanation?.explanation?.concept && (
+        <div className={`${isMobile ? 'p-4' : 'p-6'} bg-indigo-50 dark:bg-indigo-900/30 rounded-xl md:rounded-2xl border border-indigo-200 dark:border-indigo-700`}>
+          <h5 className={`font-semibold text-indigo-900 dark:text-indigo-100 mb-2 md:mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>
+            {explanation.explanation.concept.title}
           </h5>
-          <ul className="text-sm text-emerald-800 dark:text-emerald-200 space-y-1">
-            {explanation.explanation.study_tips.focus_areas.slice(0, 2).map((point, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-emerald-500 dark:text-emerald-400 mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0" />
-                <span className="break-words">{point}</span>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
+          {explanation.explanation.concept.description && (
+            <p className={`text-indigo-800 dark:text-indigo-200 ${isMobile ? 'text-sm' : 'text-base'}`}>
+              {explanation.explanation.concept.description}
+            </p>
+          )}
+        </div>
       )}
-
-      {/* Show Detailed Explanation Button */}
-      <motion.button
-        onClick={onShowDetailed}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full p-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-all flex items-center justify-center gap-2 text-gray-700 dark:text-gray-300 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
-      >
-        <Layers className="h-5 w-5" />
-        <span className="font-medium">Show Detailed Explanation</span>
-      </motion.button>
+      
+      {explanation?.explanation?.correct_answer?.explanation && (
+        <div className={`${isMobile ? 'p-4' : 'p-6'} bg-emerald-50 dark:bg-emerald-900/30 rounded-xl md:rounded-2xl border border-emerald-200 dark:border-emerald-700`}>
+          <h5 className={`font-semibold text-emerald-900 dark:text-emerald-100 mb-2 md:mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>
+            Why {correctAnswer?.toUpperCase()} is correct:
+          </h5>
+          <p className={`text-emerald-800 dark:text-emerald-200 ${isMobile ? 'text-sm' : 'text-base'}`}>
+            {explanation.explanation.correct_answer.explanation}
+          </p>
+        </div>
+      )}
+      
+      {userAnswer && userAnswer !== correctAnswer && explanation?.explanation?.incorrect_options?.[`option_${userAnswer}`] && (
+        <div className={`${isMobile ? 'p-4' : 'p-6'} bg-red-50 dark:bg-red-900/30 rounded-xl md:rounded-2xl border border-red-200 dark:border-red-700`}>
+          <h5 className={`font-semibold text-red-900 dark:text-red-100 mb-2 md:mb-3 ${isMobile ? 'text-base' : 'text-lg'}`}>
+            Why {userAnswer?.toUpperCase()} is incorrect:
+          </h5>
+          <p className={`text-red-800 dark:text-red-200 ${isMobile ? 'text-sm' : 'text-base'}`}>
+            {explanation.explanation.incorrect_options[`option_${userAnswer}`].why_wrong}
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 }
