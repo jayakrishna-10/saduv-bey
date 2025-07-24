@@ -224,8 +224,10 @@ export default function TestApp() {
     }
   }, [session, questions, answers, flaggedQuestions, testConfig, timeRemaining, logDebug]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - Only active when not in review mode
   useEffect(() => {
+    if (testState === TEST_STATES.REVIEW) return; // Let TestReview handle its own keyboard shortcuts
+    
     const handleKeyDown = (e) => {
       if (testState !== TEST_STATES.RUNNING) return;
       
@@ -290,7 +292,7 @@ export default function TestApp() {
     );
   }
 
-  // Show review mode
+  // Show review mode - TestReview handles its own gesture navigation
   if (testState === TEST_STATES.REVIEW) {
     return (
       <TestReview
@@ -302,7 +304,7 @@ export default function TestApp() {
     );
   }
   
-  // Main test interface
+  // Main test interface - Only use QuizSwipeHandler when running the test
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 font-sans relative overflow-hidden">
       {/* Dynamic Background Effects */}
@@ -329,7 +331,7 @@ export default function TestApp() {
         <QuizSwipeHandler
           onSwipeLeft={() => navigateToQuestion(currentQuestionIndex + 1)}
           onSwipeRight={() => navigateToQuestion(currentQuestionIndex - 1)}
-          disabled={false}
+          disabled={isPaletteOpen || isFinishConfirmOpen} // Disable when modals are open
           currentQuestionIndex={currentQuestionIndex}
         >
           <div className="flex-1 px-4 md:px-8 py-8 pb-32 md:pb-8">
