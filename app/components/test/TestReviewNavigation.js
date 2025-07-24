@@ -2,7 +2,7 @@
 'use client';
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CheckSquare, Grid } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckSquare, Grid, MessageSquare } from 'lucide-react';
 
 export function TestReviewNavigation({ 
   onPrevious, 
@@ -10,7 +10,8 @@ export function TestReviewNavigation({
   onFinishReview, 
   hasPrev, 
   hasNext, 
-  onPaletteToggle 
+  onPaletteToggle,
+  onFeedbackOpen
 }) {
   return (
     <motion.div 
@@ -40,6 +41,17 @@ export function TestReviewNavigation({
         >
           <Grid className="h-4 w-4" />
           <span className="text-sm">Questions</span>
+        </motion.button>
+
+        {/* Feedback Button */}
+        <motion.button 
+          onClick={onFeedbackOpen}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-900/70 text-blue-700 dark:text-blue-300 rounded-xl transition-all font-medium"
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span className="text-sm">Report</span>
         </motion.button>
         
         {/* Finish Review Button */}
