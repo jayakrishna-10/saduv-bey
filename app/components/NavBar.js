@@ -1,9 +1,9 @@
-// app/components/NavBar.js - Updated with Notes removed from NCE navigation
+// app/components/NavBar.js - Updated with spaced repetition navigation
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BookOpen, Menu, X, Moon, Sun } from 'lucide-react';
+import { Home, BookOpen, Menu, X, Moon, Sun, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import AuthButton from './AuthButton'; // Import the new AuthButton
@@ -91,6 +91,12 @@ export default function NavBar() {
                           Test
                         </motion.button>
                       </Link>
+                      <Link href="/nce/spaced-repetition">
+                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${ pathname === '/nce/spaced-repetition' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
+                          <Zap className="h-3 w-3 mr-1" />
+                          Smart Review
+                        </motion.button>
+                      </Link>
                     </div>
                   </div>
                   
@@ -152,6 +158,12 @@ export default function NavBar() {
                   <Link href="/nce/test" onClick={() => setIsMobileMenuOpen(false)}>
                     <div className={`px-3 py-2 rounded-lg transition-all ${ pathname === '/nce/test' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
                       Mock Tests
+                    </div>
+                  </Link>
+                  <Link href="/nce/spaced-repetition" onClick={() => setIsMobileMenuOpen(false)}>
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${ pathname === '/nce/spaced-repetition' ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800' }`}>
+                      <Zap className="h-4 w-4" />
+                      Smart Review
                     </div>
                   </Link>
                 </div>
