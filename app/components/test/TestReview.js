@@ -356,7 +356,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                     </div>
                     <div>
                       <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        Answer Explanation
+                        Explanation
                       </h4>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         Understanding the correct solution
