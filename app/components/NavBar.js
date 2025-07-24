@@ -1,4 +1,4 @@
-// app/components/NavBar.js - Fixed mobile dropdown visibility
+// app/components/NavBar.js - Fixed backdrop blur interference
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -35,6 +35,20 @@ export default function NavBar() {
 
   return (
     <>
+      {/* Mobile Menu Backdrop -  Positioned below navbar but above content */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[90] md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+            style={{ top: '4rem' }} // Start below the navbar (64px = 4rem)
+          />
+        )}
+      </AnimatePresence>
+
       <nav className="fixed top-0 z-navigation w-full bg-white/30 dark:bg-gray-900/30 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
@@ -154,7 +168,7 @@ export default function NavBar() {
           </div>
         </div>
 
-        {/* Mobile Menu - Fixed with proper z-index and positioning */}
+        {/* Mobile Menu - No backdrop blur interference */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
@@ -212,19 +226,6 @@ export default function NavBar() {
                 </div>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Mobile Menu Backdrop - Fixed z-index */}
-        <AnimatePresence>
-          {isMobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100] md:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
-            />
           )}
         </AnimatePresence>
       </nav>
