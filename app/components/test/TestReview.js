@@ -197,7 +197,7 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
         />
       </div>
 
-      {/* Clean Header */}
+      {/* Clean Header - Removed view toggle */}
       <div className="relative z-10 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/30 dark:border-gray-700/30">
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
@@ -221,23 +221,6 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
                   Question {currentIndex + 1} of {questions.length}
                 </p>
               </div>
-            </div>
-            
-            {/* Right Section - View Toggle */}
-            <div className="flex items-center">
-              <motion.button
-                onClick={() => setShowDetailedExplanation(!showDetailedExplanation)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl transition-all border border-gray-200/50 dark:border-gray-700/50 shadow-sm font-medium ${
-                  showDetailedExplanation
-                    ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700'
-                    : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {showDetailedExplanation ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                <span>{showDetailedExplanation ? 'Simple View' : 'Detailed View'}</span>
-              </motion.button>
             </div>
           </div>
         </div>
@@ -362,14 +345,52 @@ export function TestReview({ questions, answers, flaggedQuestions, onExit }) {
               })}
             </div>
 
-            {/* Explanation */}
+            {/* Explanation with integrated view toggle */}
             <div className="border-t border-gray-200/50 dark:border-gray-700/50">
+              {/* Explanation Header with Toggle */}
+              <div className="p-6 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center">
+                      <Eye className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        Answer Explanation
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Understanding the correct solution
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {!isLoadingExplanation && currentExplanation && (
+                      <motion.button
+                        onClick={() => setShowDetailedExplanation(!showDetailedExplanation)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/70 dark:bg-gray-800/70 hover:bg-white/90 dark:hover:bg-gray-800/90 rounded-xl transition-all border border-gray-200/50 dark:border-gray-700/50 font-medium text-sm"
+                      >
+                        {showDetailedExplanation ? (
+                          <>
+                            <EyeOff className="h-4 w-4" />
+                            <span>Simple</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4" />
+                            <span>Detailed</span>
+                          </>
+                        )}
+                      </motion.button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Explanation Content */}
               <div className="p-8">
-                <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-3">
-                  <Eye className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-                  Answer Explanation
-                </h4>
-                
                 {isLoadingExplanation ? (
                   <motion.div
                     initial={{ opacity: 0 }}
