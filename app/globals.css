@@ -1,4 +1,4 @@
-/* app/globals.css - Enhanced with new animations and responsive navigation support */
+/* app/globals.css - Enhanced with mobile explanation optimizations */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -32,6 +32,11 @@
   --haptic-light: 10ms;
   --haptic-medium: 20ms;
   --haptic-heavy: 30ms;
+  
+  /* Mobile explanation spacing */
+  --mobile-explanation-padding: 0.75rem;
+  --mobile-explanation-gap: 0.5rem;
+  --mobile-explanation-border-radius: 0.75rem;
 }
 
 /* Dark mode variables */
@@ -344,14 +349,169 @@ body {
   animation: fadeInUp 0.5s ease-out;
 }
 
-/* Text overflow handling for explanations */
+/* ENHANCED: Mobile explanation optimizations */
+.mobile-explanation-container {
+  /* Optimized for mobile readability */
+  max-width: 100vw;
+  overflow-x: hidden;
+  padding: 0 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .mobile-explanation-container {
+    padding: 0;
+  }
+  
+  /* Reduce spacing between explanation sections on mobile */
+  .explanation-section-spacing {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  /* Mobile-optimized explanation cards */
+  .explanation-card-mobile {
+    padding: 0.75rem;
+    border-radius: var(--mobile-explanation-border-radius);
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Option analysis mobile optimization */
+  .explanation-option-mobile {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+  }
+  
+  /* Typography optimizations for mobile explanations */
+  .explanation-title-mobile {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+  }
+  
+  .explanation-text-mobile {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+  }
+  
+  .explanation-body-mobile {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+  
+  /* Mobile table optimizations */
+  .explanation-table-mobile {
+    font-size: 0.75rem;
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .explanation-table-mobile th,
+  .explanation-table-mobile td {
+    padding: 0.5rem;
+    min-width: 120px;
+  }
+  
+  /* Mobile formula display */
+  .explanation-formula-mobile {
+    font-size: 0.75rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  
+  /* Mobile code blocks */
+  .explanation-code-mobile {
+    font-size: 0.6875rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  
+  /* Mobile button optimizations */
+  .explanation-button-mobile {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Mobile expandable sections */
+  .explanation-expandable-mobile .section-header {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .explanation-expandable-mobile .section-content {
+    padding: 0.75rem;
+  }
+}
+
+/* Extra small mobile screens (< 360px) */
+@media (max-width: 359px) {
+  .mobile-explanation-container {
+    padding: 0;
+  }
+  
+  .explanation-card-mobile {
+    padding: 0.5rem;
+    margin-bottom: 0.375rem;
+  }
+  
+  .explanation-option-mobile {
+    padding: 0.375rem;
+    margin-bottom: 0.375rem;
+  }
+  
+  .explanation-title-mobile {
+    font-size: 0.8125rem;
+  }
+  
+  .explanation-text-mobile {
+    font-size: 0.6875rem;
+  }
+  
+  .explanation-body-mobile {
+    font-size: 0.75rem;
+  }
+  
+  .explanation-table-mobile th,
+  .explanation-table-mobile td {
+    padding: 0.375rem;
+    min-width: 100px;
+  }
+  
+  .explanation-formula-mobile,
+  .explanation-code-mobile {
+    padding: 0.5rem;
+    font-size: 0.625rem;
+  }
+  
+  .explanation-button-mobile {
+    font-size: 0.6875rem;
+    padding: 0.375rem 0.5rem;
+  }
+  
+  .explanation-expandable-mobile .section-header {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+  
+  .explanation-expandable-mobile .section-content {
+    padding: 0.5rem;
+  }
+}
+
+/* Text overflow handling for explanations - Enhanced */
 .explanation-content p,
 .explanation-content li,
 .explanation-content td,
-.explanation-content div {
+.explanation-content div,
+.explanation-content span {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
+  max-width: 100%;
 }
 
 /* Enhanced modal animations */
@@ -531,6 +691,15 @@ body {
   @apply text-gray-100;
 }
 
+/* ENHANCED: Mobile KaTeX optimization */
+@media (max-width: 768px) {
+  .katex-display {
+    @apply my-3 text-sm;
+    font-size: 0.875em;
+    line-height: 1.3;
+  }
+}
+
 /* Formula and code block overflow handling */
 .katex,
 .katex-html {
@@ -541,6 +710,19 @@ body {
 pre {
   @apply overflow-x-auto;
   max-width: 100%;
+}
+
+/* ENHANCED: Mobile pre and code optimization */
+@media (max-width: 768px) {
+  pre {
+    font-size: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+  }
+  
+  code {
+    font-size: 0.75rem;
+  }
 }
 
 /* Enhanced text selection */
@@ -687,7 +869,7 @@ pre {
   max-width: 100%;
 }
 
-/* Mobile-specific explanation content adjustments */
+/* ENHANCED: Mobile-specific explanation content adjustments */
 @media (max-width: 360px) {
   .explanation-content {
     font-size: 0.875rem;
@@ -702,11 +884,49 @@ pre {
   }
   
   .explanation-content .p-6 {
-    padding: 1rem;
+    padding: 0.75rem;
   }
   
   .explanation-content .p-4 {
-    padding: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  .explanation-content .p-3 {
+    padding: 0.375rem;
+  }
+  
+  .explanation-content .mb-4 {
+    margin-bottom: 0.5rem;
+  }
+  
+  .explanation-content .mb-3 {
+    margin-bottom: 0.375rem;
+  }
+  
+  .explanation-content .gap-4 {
+    gap: 0.5rem;
+  }
+  
+  .explanation-content .gap-3 {
+    gap: 0.375rem;
+  }
+  
+  /* Very compact option analysis for tiny screens */
+  .explanation-option-card {
+    padding: 0.375rem;
+    margin-bottom: 0.25rem;
+    border-radius: 0.375rem;
+  }
+  
+  .explanation-option-card .option-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.625rem;
+  }
+  
+  .explanation-option-card .option-text {
+    font-size: 0.6875rem;
+    line-height: 1;
   }
 }
 
@@ -864,5 +1084,72 @@ pre {
   
   .question-option {
     border-width: 3px;
+  }
+  
+  /* High contrast for explanations */
+  .explanation-content {
+    border-width: 2px;
+  }
+  
+  .explanation-option-mobile {
+    border-width: 2px;
+  }
+}
+
+/* ENHANCED: Mobile line height and spacing optimizations */
+@media (max-width: 768px) {
+  /* Better reading experience on mobile */
+  .explanation-content p {
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+  }
+  
+  .explanation-content li {
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+  }
+  
+  .explanation-content h1,
+  .explanation-content h2,
+  .explanation-content h3,
+  .explanation-content h4,
+  .explanation-content h5,
+  .explanation-content h6 {
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+    margin-top: 1rem;
+  }
+  
+  .explanation-content h1:first-child,
+  .explanation-content h2:first-child,
+  .explanation-content h3:first-child,
+  .explanation-content h4:first-child,
+  .explanation-content h5:first-child,
+  .explanation-content h6:first-child {
+    margin-top: 0;
+  }
+  
+  /* Improved spacing for lists */
+  .explanation-content ul,
+  .explanation-content ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.25rem;
+  }
+  
+  .explanation-content ul li,
+  .explanation-content ol li {
+    margin-bottom: 0.25rem;
+  }
+  
+  /* Better blockquote styling */
+  .explanation-content blockquote {
+    border-left: 3px solid #e5e7eb;
+    padding-left: 0.75rem;
+    margin: 0.75rem 0;
+    font-style: italic;
+  }
+  
+  .dark .explanation-content blockquote {
+    border-left-color: #374151;
   }
 }
