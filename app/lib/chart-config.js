@@ -1,17 +1,8 @@
 // FILE: app/lib/chart-config.js
-
-/**
- * Get Chart.js configuration options
- * @param {string} type - Chart type (line, bar, etc.)
- * @param {Object} customOptions - Custom options to override defaults
- * @returns {Object} Chart.js options configuration
- */
-export function getChartOptions(type = 'line', customOptions = {}) {
+export const getChartOptions = (type, customOptions = {}) => {
   const baseOptions = {
     responsive: true,
-    maintainAspectRatio: customOptions.maintainAspectRatio !== undefined 
-      ? customOptions.maintainAspectRatio 
-      : true,
+    maintainAspectRatio: customOptions.maintainAspectRatio !== false,
     interaction: {
       mode: 'index',
       intersect: false,
@@ -19,274 +10,240 @@ export function getChartOptions(type = 'line', customOptions = {}) {
     plugins: {
       legend: {
         display: customOptions.enableLegend || false,
-        position: 'top',
+        position: customOptions.legendPosition || 'top',
         labels: {
-          usePointStyle: true,
           padding: 15,
           font: {
-            size: 12
+            size: 12,
+            family: 'Inter, system-ui, sans-serif'
           },
-          color: (context) => {
-            return context.chart.canvas.closest('.dark') ? '#e5e7eb' : '#374151';
-          }
+          usePointStyle: true,
+          pointStyle: 'circle'
         }
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        titleFont: {
+          size: 14,
+          weight: 'bold',
+          family: 'Inter, system-ui, sans-serif'
+        },
+        bodyFont: {
+          size: 13,
+          family: 'Inter, system-ui, sans-serif'
+        },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: true,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        ...customOptions.tooltip
       },
       title: {
         display: !!customOptions.title,
         text: customOptions.title || '',
         font: {
           size: 16,
-          weight: 'normal'
+          weight: 'bold',
+          family: 'Inter, system-ui, sans-serif'
         },
         padding: {
-          top: 10,
-          bottom: 30
+          bottom: 20
         },
-        color: (context) => {
-          return context.chart.canvas.closest('.dark') ? '#f3f4f6' : '#111827';
-        }
-      },
-      tooltip: {
-        backgroundColor: (context) => {
-          return context.chart.canvas.closest('.dark') ? 'rgba(31, 41, 55, 0.95)' : 'rgba(17, 24, 39, 0.95)';
-        },
-        titleColor: '#f3f4f6',
-        bodyColor: '#e5e7eb',
-        padding: 12,
-        cornerRadius: 8,
-        displayColors: true,
-        callbacks: {
-          label: function(context) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.parsed.y !== null) {
-              label += context.parsed.y + '%';
-            }
-            return label;
-          }
-        }
+        color: 'rgb(75, 85, 99)' // gray-600
       }
     },
-    scales: {
+    scales: {}
+  };
+
+  // Configure scales based on chart type
+  if (type === 'line' || type === 'bar') {
+    baseOptions.scales = {
       x: {
-        display: true,
         grid: {
           display: false,
           drawBorder: false
         },
         ticks: {
           font: {
-            size: 11
+            size: 11,
+            family: 'Inter, system-ui, sans-serif'
           },
-          color: (context) => {
-            return context.chart.canvas.closest('.dark') ? '#9ca3af' : '#6b7280';
-          }
+          color: 'rgb(156, 163, 175)', // gray-400
+          padding: 8,
+          ...customOptions.xAxisTicks
         },
         title: {
           display: !!customOptions.xAxisLabel,
           text: customOptions.xAxisLabel || '',
           font: {
-            size: 12
+            size: 12,
+            weight: 'medium',
+            family: 'Inter, system-ui, sans-serif'
           },
-          color: (context) => {
-            return context.chart.canvas.closest('.dark') ? '#e5e7eb' : '#374151';
-          }
-        }
+          color: 'rgb(107, 114, 128)', // gray-500
+          padding: { top: 10 }
+        },
+        ...customOptions.xAxis
       },
       y: {
-        display: true,
-        position: customOptions.yAxisPosition || 'left',
+        beginAtZero: true,
         grid: {
-          color: (context) => {
-            return context.chart.canvas.closest('.dark') ? 'rgba(107, 114, 128, 0.2)' : 'rgba(229, 231, 235, 0.5)';
-          },
-          drawBorder: false
+          color: 'rgba(156, 163, 175, 0.1)', // gray-400 with opacity
+          drawBorder: false,
+          drawTicks: false
         },
         ticks: {
           font: {
-            size: 11
+            size: 11,
+            family: 'Inter, system-ui, sans-serif'
           },
-          color: (context) => {
-            return context.chart.canvas.closest('.dark') ? '#9ca3af' : '#6b7280';
-          },
-          callback: function(value) {
-            return value + '%';
-          }
+          color: 'rgb(156, 163, 175)', // gray-400
+          padding: 8,
+          ...customOptions.yAxisTicks
         },
         title: {
           display: !!customOptions.yAxisLabel,
           text: customOptions.yAxisLabel || '',
           font: {
-            size: 12
+            size: 12,
+            weight: 'medium',
+            family: 'Inter, system-ui, sans-serif'
           },
-          color: (context) => {
-            return context.chart.canvas.closest('.dark') ? '#e5e7eb' : '#374151';
-          }
+          color: 'rgb(107, 114, 128)', // gray-500
+          padding: { right: 10 }
         },
-        beginAtZero: true,
-        max: 100
+        ...customOptions.yAxis
       }
-    }
-  };
-
-  // Type-specific configurations
-  if (type === 'bar' && customOptions.indexAxis === 'y') {
-    // Horizontal bar chart
-    baseOptions.indexAxis = 'y';
-    baseOptions.scales.x.max = 100;
-    baseOptions.scales.y.grid = {
-      display: false,
-      drawBorder: false
-    };
-    baseOptions.scales.x.grid = {
-      color: (context) => {
-        return context.chart.canvas.closest('.dark') ? 'rgba(107, 114, 128, 0.2)' : 'rgba(229, 231, 235, 0.5)';
-      },
-      drawBorder: false
     };
   }
 
-  // Handle onClick if provided
+  // Apply horizontal bar specific options
+  if (customOptions.indexAxis === 'y') {
+    baseOptions.indexAxis = 'y';
+    // Swap x and y configurations for horizontal bars
+    const tempX = baseOptions.scales.x;
+    baseOptions.scales.x = baseOptions.scales.y;
+    baseOptions.scales.y = tempX;
+  }
+
+  // Merge with custom scales
+  if (customOptions.scales) {
+    baseOptions.scales = {
+      ...baseOptions.scales,
+      ...customOptions.scales
+    };
+  }
+
+  // Add onClick handler if provided
   if (customOptions.onClick) {
     baseOptions.onClick = customOptions.onClick;
   }
 
-  // Handle onHover if provided
-  if (customOptions.onHover) {
-    baseOptions.onHover = customOptions.onHover;
-  }
-
   return baseOptions;
-}
+};
 
-/**
- * Get color palette for charts
- * @param {number} count - Number of colors needed
- * @returns {Array} Array of color strings
- */
-export function getChartColors(count = 5) {
-  const colors = [
-    'rgb(99, 102, 241)',   // indigo-500
-    'rgb(34, 197, 94)',    // green-500
-    'rgb(251, 191, 36)',   // amber-400
-    'rgb(239, 68, 68)',    // red-500
-    'rgb(147, 51, 234)',   // purple-600
-    'rgb(14, 165, 233)',   // sky-500
-    'rgb(236, 72, 153)',   // pink-500
-    'rgb(245, 158, 11)',   // amber-500
-    'rgb(59, 130, 246)',   // blue-500
-    'rgb(16, 185, 129)'    // emerald-500
-  ];
-
-  return colors.slice(0, count);
-}
-
-/**
- * Get gradient configuration for charts
- * @param {CanvasRenderingContext2D} ctx - Canvas context
- * @param {string} color - Base color
- * @returns {CanvasGradient} Gradient object
- */
-export function getGradient(ctx, color) {
-  const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
-  const rgb = color.match(/\d+/g);
-  
-  if (rgb) {
-    gradient.addColorStop(0, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.3)`);
-    gradient.addColorStop(1, `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.01)`);
+// Color palettes for consistent theming
+export const chartColors = {
+  primary: {
+    main: 'rgb(99, 102, 241)', // indigo-500
+    light: 'rgba(99, 102, 241, 0.2)',
+    dark: 'rgb(79, 70, 229)' // indigo-600
+  },
+  secondary: {
+    main: 'rgb(168, 85, 247)', // purple-500
+    light: 'rgba(168, 85, 247, 0.2)',
+    dark: 'rgb(147, 51, 234)' // purple-600
+  },
+  success: {
+    main: 'rgb(34, 197, 94)', // green-500
+    light: 'rgba(34, 197, 94, 0.2)',
+    dark: 'rgb(22, 163, 74)' // green-600
+  },
+  warning: {
+    main: 'rgb(251, 146, 60)', // orange-400
+    light: 'rgba(251, 146, 60, 0.2)',
+    dark: 'rgb(249, 115, 22)' // orange-500
+  },
+  danger: {
+    main: 'rgb(239, 68, 68)', // red-500
+    light: 'rgba(239, 68, 68, 0.2)',
+    dark: 'rgb(220, 38, 38)' // red-600
+  },
+  info: {
+    main: 'rgb(59, 130, 246)', // blue-500
+    light: 'rgba(59, 130, 246, 0.2)',
+    dark: 'rgb(37, 99, 235)' // blue-600
   }
+};
+
+// Gradient configurations
+export const chartGradients = {
+  primary: ['rgb(99, 102, 241)', 'rgb(139, 92, 246)'], // indigo to violet
+  secondary: ['rgb(168, 85, 247)', 'rgb(217, 70, 239)'], // purple to fuchsia
+  success: ['rgb(34, 197, 94)', 'rgb(16, 185, 129)'], // green to emerald
+  warning: ['rgb(251, 146, 60)', 'rgb(251, 191, 36)'], // orange to amber
+  danger: ['rgb(239, 68, 68)', 'rgb(236, 72, 153)'], // red to pink
+  info: ['rgb(59, 130, 246)', 'rgb(6, 182, 212)'] // blue to cyan
+};
+
+// Create gradient for charts
+export const createGradient = (ctx, chartArea, colors) => {
+  if (!chartArea) return colors[0];
+  
+  const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+  gradient.addColorStop(0, colors[0]);
+  gradient.addColorStop(1, colors[1]);
   
   return gradient;
-}
+};
 
-/**
- * Format data for Chart.js
- * @param {Array} data - Raw data array
- * @param {Object} options - Formatting options
- * @returns {Object} Formatted dataset
- */
-export function formatChartData(data, options = {}) {
-  const {
-    label = 'Dataset',
-    borderColor = 'rgb(99, 102, 241)',
-    backgroundColor = 'rgba(99, 102, 241, 0.1)',
-    fill = true,
-    tension = 0.3
-  } = options;
+// Animation configurations
+export const chartAnimations = {
+  smooth: {
+    duration: 750,
+    easing: 'easeInOutQuart'
+  },
+  fast: {
+    duration: 400,
+    easing: 'easeOutQuart'
+  },
+  slow: {
+    duration: 1200,
+    easing: 'easeInOutCubic'
+  }
+};
 
-  return {
-    label,
-    data,
-    borderColor,
-    backgroundColor,
-    fill,
-    tension,
+// Default dataset styling
+export const getDatasetDefaults = (type, index = 0) => {
+  const colorKeys = Object.keys(chartColors);
+  const colorKey = colorKeys[index % colorKeys.length];
+  const color = chartColors[colorKey];
+
+  const defaults = {
+    borderWidth: 2,
+    borderColor: color.main,
+    backgroundColor: color.light,
+    pointBackgroundColor: color.main,
+    pointBorderColor: '#fff',
+    pointHoverBackgroundColor: '#fff',
+    pointHoverBorderColor: color.main,
     pointRadius: 4,
     pointHoverRadius: 6,
-    pointBackgroundColor: borderColor,
-    pointBorderColor: '#fff',
-    pointBorderWidth: 2,
-    pointHoverBackgroundColor: borderColor,
-    pointHoverBorderColor: '#fff',
-    pointHoverBorderWidth: 2
+    tension: 0.4
   };
-}
 
-/**
- * Get responsive breakpoints for charts
- * @returns {Object} Breakpoint configuration
- */
-export function getChartBreakpoints() {
-  return {
-    mobile: {
-      maxWidth: 640,
-      aspectRatio: 1.5,
-      fontSize: 10
-    },
-    tablet: {
-      maxWidth: 1024,
-      aspectRatio: 2,
-      fontSize: 11
-    },
-    desktop: {
-      minWidth: 1024,
-      aspectRatio: 2.5,
-      fontSize: 12
-    }
-  };
-}
-
-/**
- * Apply dark mode to chart instance
- * @param {Chart} chart - Chart.js instance
- * @param {boolean} isDark - Dark mode state
- */
-export function applyDarkMode(chart, isDark) {
-  if (!chart) return;
-
-  const textColor = isDark ? '#e5e7eb' : '#374151';
-  const gridColor = isDark ? 'rgba(107, 114, 128, 0.2)' : 'rgba(229, 231, 235, 0.5)';
-
-  // Update scales
-  if (chart.options.scales) {
-    Object.values(chart.options.scales).forEach(scale => {
-      if (scale.ticks) scale.ticks.color = textColor;
-      if (scale.title) scale.title.color = textColor;
-      if (scale.grid) scale.grid.color = gridColor;
-    });
+  if (type === 'bar') {
+    return {
+      ...defaults,
+      borderRadius: 6,
+      borderSkipped: false,
+      maxBarThickness: 40
+    };
   }
 
-  // Update plugins
-  if (chart.options.plugins) {
-    if (chart.options.plugins.legend) {
-      chart.options.plugins.legend.labels.color = textColor;
-    }
-    if (chart.options.plugins.title) {
-      chart.options.plugins.title.color = textColor;
-    }
-  }
-
-  chart.update();
-}
+  return defaults;
+};
