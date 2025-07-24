@@ -1,4 +1,4 @@
-// app/components/quiz/QuizQuestion.js - Reduced animations and centered actions with overflow fixes
+// app/components/quiz/QuizQuestion.js - Mobile consistency update with explanation components
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Clock, Calendar, Tag, Loader2 } from 'lucide-react';
@@ -84,13 +84,13 @@ export function QuizQuestion({
 
   if (isTransitioning) {
     return (
-      <div className="p-6 md:p-12">
+      <div className={`${isMobile ? 'p-4' : 'p-6 md:p-12'}`}>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-16"
+          className="text-center py-12 md:py-16"
         >
-          <Loader2 className="h-8 w-8 border-4 border-gray-300 dark:border-gray-600 border-t-indigo-600 dark:border-t-indigo-400 rounded-full mx-auto mb-4 animate-spin" />
+          <Loader2 className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} border-4 border-gray-300 dark:border-gray-600 border-t-indigo-600 dark:border-t-indigo-400 rounded-full mx-auto mb-4 animate-spin`} />
           <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">Loading next question...</p>
         </motion.div>
       </div>
@@ -98,21 +98,21 @@ export function QuizQuestion({
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-12">
-      {/* Progress Indicator */}
+    <div className={`${isMobile ? 'p-3' : 'p-4 md:p-8 lg:p-12'}`}>
+      {/* Progress Indicator - Mobile optimized */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
+        className={`${isMobile ? 'mb-4' : 'mb-6'}`}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium">
+        <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-4'}`}>
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className={`${isMobile ? 'px-2 py-1' : 'px-3 py-1'} bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full ${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>
               {questionProgress.current} / {questionProgress.total}
             </div>
             {question.year && (
-              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400 text-sm">
-                <Calendar className="h-3 w-3" />
+              <div className={`flex items-center gap-1 text-gray-500 dark:text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                <Calendar className={`${isMobile ? 'h-3 w-3' : 'h-3 w-3'}`} />
                 <span>{question.year}</span>
               </div>
             )}
@@ -128,7 +128,7 @@ export function QuizQuestion({
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full h-1.5 bg-gray-200/60 dark:bg-gray-700/60 rounded-full overflow-hidden">
+        <div className={`w-full ${isMobile ? 'h-1' : 'h-1.5'} bg-gray-200/60 dark:bg-gray-700/60 rounded-full overflow-hidden`}>
           <motion.div
             className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
             initial={{ width: 0 }}
@@ -138,16 +138,16 @@ export function QuizQuestion({
         </div>
       </motion.div>
 
-      {/* Question Header */}
+      {/* Question Header - Mobile optimized */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mb-8"
+        className={`${isMobile ? 'mb-6' : 'mb-8'}`}
       >
         {/* Desktop Chapter Info */}
         {!isMobile && (
-          <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <div className={`flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 ${isMobile ? 'mb-3' : 'mb-4'}`}>
             <span className="font-medium">Question {questionIndex + 1}</span>
             {question.tag && (
               <>
@@ -170,7 +170,7 @@ export function QuizQuestion({
           </div>
         )}
 
-        {/* Question Text */}
+        {/* Question Text - Mobile optimized */}
         <motion.h2 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -183,12 +183,11 @@ export function QuizQuestion({
         </motion.h2>
       </motion.div>
 
-      {/* Options - Removed staggered animation delays */}
-      <div className={`space-y-3 ${isMobile ? 'mb-6' : 'mb-8'}`}>
+      {/* Options - Mobile optimized */}
+      <div className={`space-y-3 ${isMobile ? 'mb-4' : 'mb-8'}`}>
         {['a', 'b', 'c', 'd'].map((option) => (
           <motion.button
             key={option}
-            // Removed individual delays for less distraction
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3 }}
@@ -196,16 +195,16 @@ export function QuizQuestion({
             disabled={showAnswer || isTransitioning || loadingOption}
             whileHover={
               !selectedOption && !isTransitioning && !loadingOption ? 
-              { scale: 1.005, x: 2 } : // Reduced hover effect
+              { scale: 1.005, x: 2 } : 
               {}
             }
             whileTap={
               !selectedOption && !isTransitioning && !loadingOption ? 
-              { scale: 0.995 } : // Reduced tap effect
+              { scale: 0.995 } : 
               {}
             }
             className={`
-              w-full p-4 md:p-6 rounded-2xl border-2 text-left transition-all duration-300 
+              w-full ${isMobile ? 'p-3' : 'p-4 md:p-6'} rounded-xl md:rounded-2xl border-2 text-left transition-all duration-300 
               backdrop-blur-sm touch-manipulation relative overflow-hidden
               ${getOptionClass(option)} 
               ${(isTransitioning || loadingOption) ? 'pointer-events-none' : ''}
@@ -213,12 +212,12 @@ export function QuizQuestion({
           >
             <div className="flex items-center gap-3 md:gap-4 relative z-10">
               <div className={`
-                w-8 h-8 md:w-10 md:h-10 rounded-full border-2 flex items-center justify-center 
-                text-sm md:text-base font-medium transition-all duration-300 relative
+                ${isMobile ? 'w-7 h-7' : 'w-8 h-8 md:w-10 md:h-10'} rounded-full border-2 flex items-center justify-center 
+                ${isMobile ? 'text-xs' : 'text-sm md:text-base'} font-medium transition-all duration-300 relative
                 ${getOptionIconClass(option)}
               `}>
                 {loadingOption === option ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} animate-spin`} />
                 ) : (
                   option.toUpperCase()
                 )}
@@ -236,7 +235,7 @@ export function QuizQuestion({
                     animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-emerald-600 dark:text-emerald-400" />
+                    <CheckCircle className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5 md:h-6 md:w-6'} text-emerald-600 dark:text-emerald-400`} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -245,37 +244,37 @@ export function QuizQuestion({
         ))}
       </div>
 
-      {/* Selection Confirmation */}
+      {/* Selection Confirmation - Mobile optimized */}
       <AnimatePresence>
         {selectedOption && !showFeedback && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="text-center py-4"
+            className={`text-center ${isMobile ? 'py-3' : 'py-4'}`}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full text-sm font-medium">
-              <CheckCircle className="h-4 w-4" />
+            <div className={`inline-flex items-center gap-2 ${isMobile ? 'px-3 py-2' : 'px-4 py-2'} bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full ${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>
+              <CheckCircle className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
               Answer selected: {selectedOption.toUpperCase()}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Quick Stats (Mobile Only) */}
+      {/* Quick Stats (Mobile Only) - Mobile optimized */}
       {isMobile && questionProgress && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200/50 dark:border-gray-700/50"
+          className="flex items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400 pt-3 border-t border-gray-200/50 dark:border-gray-700/50"
         >
           <div className="text-center">
-            <div className="font-medium text-gray-900 dark:text-gray-100">{questionProgress.attempted}</div>
+            <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{questionProgress.attempted}</div>
             <div className="text-xs">Answered</div>
           </div>
           <div className="text-center">
-            <div className="font-medium text-gray-900 dark:text-gray-100">{questionProgress.total - questionProgress.attempted}</div>
+            <div className="font-medium text-gray-900 dark:text-gray-100 text-sm">{questionProgress.total - questionProgress.attempted}</div>
             <div className="text-xs">Remaining</div>
           </div>
         </motion.div>
