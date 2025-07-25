@@ -89,76 +89,66 @@ export function ActivityGrid() {
 
   const renderGrid = () => {
     const today = new Date();
-    const yearAgo = subDays(today, 364); // 52 weeks
-    const days = eachDayOfInterval({ start: yearAgo, end: today });
+    const thirtyDaysAgo = subDays(today, 29); // 30 days including today
+    const days = eachDayOfInterval({ start: thirtyDaysAgo, end: today });
     
-    // Group days by week
+    // Group days by week (7 days each)
     const weeks = [];
     let currentWeek = [];
     
     days.forEach((day, index) => {
       currentWeek.push(day);
-      if (day.getDay() === 6 || index === days.length - 1) {
+      if (currentWeek.length === 7 || index === days.length - 1) {
         weeks.push(currentWeek);
         currentWeek = [];
       }
     });
 
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         {/* Day labels */}
-        <div className="flex flex-col gap-1 text-xs text-gray-500 dark:text-gray-400 pr-2">
-          <div className="h-4"></div>
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-            <div key={day} className="h-4 flex items-center">
-              {i % 2 === 0 ? day : ''}
-            </div>
-          ))}
+        <div className="flex gap-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <div className="w-8 text-center">Mon</div>
+          <div className="w-8 text-center">Tue</div>
+          <div className="w-8 text-center">Wed</div>
+          <div className="w-8 text-center">Thu</div>
+          <div className="w-8 text-center">Fri</div>
+          <div className="w-8 text-center">Sat</div>
+          <div className="w-8 text-center">Sun</div>
         </div>
 
         {/* Grid */}
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-1">
-            {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-1">
-                {/* Month label */}
-                {weekIndex === 0 || (week[0] && week[0].getDate() <= 7) ? (
-                  <div className="h-4 text-xs text-gray-500 dark:text-gray-400">
-                    {week[0] ? format(week[0], 'MMM') : ''}
-                  </div>
-                ) : (
-                  <div className="h-4"></div>
-                )}
+        <div className="space-y-1">
+          {weeks.map((week, weekIndex) => (
+            <div key={weekIndex} className="flex gap-1">
+              {[0, 1, 2, 3, 4, 5, 6].map(dayIndex => {
+                const day = week[dayIndex];
+                if (!day) {
+                  return <div key={dayIndex} className="w-8 h-8"></div>;
+                }
                 
-                {/* Week cells */}
-                {[0, 1, 2, 3, 4, 5, 6].map(dayIndex => {
-                  const day = week.find(d => d.getDay() === dayIndex);
-                  if (!day) {
-                    return <div key={dayIndex} className="w-4 h-4"></div>;
-                  }
-                  
-                  const dateStr = format(day, 'yyyy-MM-dd');
-                  const value = selectedView === 'questions' 
-                    ? activityData.questions[dateStr] || 0
-                    : activityData.accuracy[dateStr] || 0;
-                  const level = getIntensityLevel(value, selectedView);
-                  
-                  return (
-                    <motion.div
-                      key={dayIndex}
-                      className={`w-4 h-4 rounded cursor-pointer transition-all ${
-                        getColorClass(level, selectedView)
-                      } ${hoveredDate === dateStr ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 scale-125' : ''}`}
-                      onMouseEnter={() => setHoveredDate(dateStr)}
-                      onMouseLeave={() => setHoveredDate(null)}
-                      whileHover={{ scale: 1.3 }}
-                      transition={{ duration: 0.1 }}
-                    />
-                  );
-                })}
-              </div>
-            ))}
-          </div>
+                const dateStr = format(day, 'yyyy-MM-dd');
+                const value = selectedView === 'questions' 
+                  ? activityData.questions[dateStr] || 0
+                  : activityData.accuracy[dateStr] || 0;
+                const level = getIntensityLevel(value, selectedView);
+                
+                return (
+                  <motion.div
+                    key={dayIndex}
+                    className={`w-8 h-8 rounded cursor-pointer transition-all ${
+                      getColorClass(level, selectedView)
+                    } ${hoveredDate === dateStr ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 scale-110' : ''}`}
+                    onMouseEnter={() => setHoveredDate(dateStr)}
+                    onMouseLeave={() => setHoveredDate(null)}
+                    whileHover={{ scale: 1.1 }}
+                    transition={{ duration: 0.1 }}
+                    title={`${format(day, 'MMM d, yyyy')}: ${value}${selectedView === 'questions' ? ' questions' : '% accuracy'}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -198,7 +188,7 @@ export function ActivityGrid() {
             <Calendar className="h-5 w-5 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Activity Heatmap
+            30-Day Activity
           </h3>
         </div>
         
@@ -287,7 +277,7 @@ export function ActivityGrid() {
       </div>
 
       {/* Activity Grid */}
-      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl overflow-x-auto">
+      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
         {renderGrid()}
       </div>
 
