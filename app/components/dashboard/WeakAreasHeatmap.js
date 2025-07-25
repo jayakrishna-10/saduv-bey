@@ -4,12 +4,13 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AlertTriangle, ChevronRight, Target, BookOpen } from 'lucide-react';
-import { CHAPTER_WEIGHTAGES } from '@/lib/dashboard-utils';
+import { calculateChapterImpacts } from '@/lib/weightage-utils';
 
 export function WeakAreasHeatmap({ analytics }) {
   const [heatmapData, setHeatmapData] = useState([]);
   const [selectedPaper, setSelectedPaper] = useState('all');
   const [hoveredChapter, setHoveredChapter] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (analytics?.chapterStatsByPaper) {
@@ -17,47 +18,22 @@ export function WeakAreasHeatmap({ analytics }) {
     }
   }, [analytics, selectedPaper]);
 
-  const processHeatmapData = () => {
+  const processHeatmapData = async () => {
     if (!analytics?.chapterStatsByPaper) return;
 
-    let allChapters = [];
-
-    if (selectedPaper === 'all') {
-      // Combine all papers
-      Object.entries(analytics.chapterStatsByPaper).forEach(([paper, chapters]) => {
-        Object.entries(chapters).forEach(([chapterName, stats]) => {
-          const weightage = CHAPTER_WEIGHTAGES[paper]?.[chapterName] || 0;
-          allChapters.push({
-            chapter: chapterName,
-            paper,
-            accuracy: stats.accuracy || 0,
-            questions: stats.totalQuestions || 0,
-            weightage,
-            impact: weightage * (100 - (stats.accuracy || 0)) / 100 // Higher impact for low accuracy + high weightage
-          });
-        });
-      });
-    } else {
-      // Single paper
-      const chapters = analytics.chapterStatsByPaper[selectedPaper] || {};
-      Object.entries(chapters).forEach(([chapterName, stats]) => {
-        const weightage = CHAPTER_WEIGHTAGES[selectedPaper]?.[chapterName] || 0;
-        allChapters.push({
-          chapter: chapterName,
-          paper: selectedPaper,
-          accuracy: stats.accuracy || 0,
-          questions: stats.totalQuestions || 0,
-          weightage,
-          impact: weightage * (100 - (stats.accuracy || 0)) / 100
-        });
-      });
+    setIsLoading(true);
+    try {
+      // Use the new utility function to calculate chapter impacts
+      const chapters = await calculateChapterImpacts(analytics.chapterStatsByPaper, selectedPaper);
+      
+      // Take top 10 weak areas (highest impact first)
+      setHeatmapData(chapters.slice(0, 10));
+    } catch (error) {
+      console.error('Error calculating chapter impacts:', error);
+      setHeatmapData([]);
+    } finally {
+      setIsLoading(false);
     }
-
-    // Sort by impact (highest impact = needs most attention)
-    allChapters.sort((a, b) => b.impact - a.impact);
-    
-    // Take top 10 weak areas
-    setHeatmapData(allChapters.slice(0, 10));
   };
 
   const getAccuracyColor = (accuracy) => {
@@ -74,6 +50,20 @@ export function WeakAreasHeatmap({ analytics }) {
     if (accuracy >= 60) return 'text-yellow-600 dark:text-yellow-400';
     if (accuracy >= 50) return 'text-orange-600 dark:text-orange-400';
     return 'text-red-600 dark:text-red-400';
+  };
+
+  const getImpactLevel = (impact) => {
+    if (impact >= 50) return 'Critical';
+    if (impact >= 30) return 'High';
+    if (impact >= 15) return 'Medium';
+    return 'Low';
+  };
+
+  const getImpactColor = (impact) => {
+    if (impact >= 50) return 'text-red-600 dark:text-red-400';
+    if (impact >= 30) return 'text-orange-600 dark:text-orange-400';
+    if (impact >= 15) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
   };
 
   const papers = [
@@ -111,7 +101,11 @@ export function WeakAreasHeatmap({ analytics }) {
         </select>
       </div>
 
-      {heatmapData.length > 0 ? (
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+        </div>
+      ) : heatmapData.length > 0 ? (
         <div className="space-y-3">
           {heatmapData.map((item, index) => (
             <motion.div
@@ -144,6 +138,12 @@ export function WeakAreasHeatmap({ analytics }) {
                     <span>•</span>
                     <span>{item.weightage}% weightage</span>
                   </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Impact:</span>
+                    <span className={`text-xs font-medium ${getImpactColor(item.impact)}`}>
+                      {getImpactLevel(item.impact)} ({item.impact.toFixed(1)})
+                    </span>
+                  </div>
                 </div>
                 
                 {/* Action Icon */}
@@ -151,11 +151,11 @@ export function WeakAreasHeatmap({ analytics }) {
               </div>
               
               {/* Impact Bar */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-orange-400 to-red-500"
                   initial={{ width: 0 }}
-                  animate={{ width: `${item.impact * 10}%` }}
+                  animate={{ width: `${Math.min(100, item.impact)}%` }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
                 />
               </div>
@@ -175,18 +175,20 @@ export function WeakAreasHeatmap({ analytics }) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed z-50 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl pointer-events-none"
+          className="fixed z-50 p-3 bg-gray-900 text-white text-sm rounded-lg shadow-xl pointer-events-none max-w-xs"
           style={{
             left: '50%',
             transform: 'translateX(-50%)',
           }}
         >
           <div className="font-medium mb-1">{hoveredChapter.chapter}</div>
-          <div className="text-xs opacity-90">
-            Impact Score: {(hoveredChapter.impact * 10).toFixed(1)}/10
-          </div>
-          <div className="text-xs opacity-90 mt-1">
-            Click to practice this chapter
+          <div className="text-xs opacity-90 space-y-1">
+            <div>Impact Score: {hoveredChapter.impact.toFixed(1)}/100</div>
+            <div>Accuracy: {hoveredChapter.accuracy.toFixed(1)}%</div>
+            <div>Weightage: {hoveredChapter.weightage}%</div>
+            <div className="pt-1 border-t border-gray-700">
+              Click to practice this chapter
+            </div>
           </div>
         </motion.div>
       )}
@@ -204,6 +206,18 @@ export function WeakAreasHeatmap({ analytics }) {
           Practice Weakest Chapter
         </motion.a>
       )}
+
+      {/* Info Footer */}
+      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          Impact = Weightage × (100 - Accuracy) / 100 • Higher impact = needs attention
+        </div>
+        {heatmapData.length > 0 && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center mt-1">
+            Weightages sourced from NCE database
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }
