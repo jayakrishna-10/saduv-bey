@@ -14,7 +14,7 @@ import {
 } from 'chart.js';
 import { Target, TrendingUp, AlertCircle, ChevronRight, BookOpen, Loader2 } from 'lucide-react';
 import { getChartOptions } from '@/lib/chart-config';
-import { CHAPTER_WEIGHTAGES } from '@/lib/dashboard-utils';
+import { getPaperWeightages } from '@/lib/weightage-utils';
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,25 +30,51 @@ export function ChapterAccuracyBar({ chapterStats, onChapterClick }) {
   const [selectedPaper, setSelectedPaper] = useState('paper1');
   const [chartData, setChartData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [paperWeightages, setPaperWeightages] = useState({});
 
   useEffect(() => {
-    if (chapterStats) {
-      processChapterData();
-    }
+    loadWeightagesAndProcessData();
   }, [chapterStats, selectedPaper]);
 
-  const processChapterData = () => {
+  const loadWeightagesAndProcessData = async () => {
+    if (!chapterStats) {
+      setChartData(null);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Fetch weightages for the selected paper
+      const weightages = await getPaperWeightages(selectedPaper);
+      setPaperWeightages(weightages);
+      
+      // Process chart data with the fetched weightages
+      processChapterData(weightages);
+    } catch (error) {
+      console.error('Error loading weightages:', error);
+      // Use empty weightages as fallback
+      processChapterData({});
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const processChapterData = (weightages) => {
     if (!chapterStats || !chapterStats[selectedPaper]) {
       setChartData(null);
       return;
     }
 
-    // Get all chapters for the selected paper from CHAPTER_WEIGHTAGES
-    const paperChapters = CHAPTER_WEIGHTAGES[selectedPaper] || {};
-    const chapterNames = Object.keys(paperChapters);
+    // Get all chapters for the selected paper from weightages
+    const chapterNames = Object.keys(weightages);
+    
+    // If no weightages available, fall back to chapters from stats
+    const availableChapters = chapterNames.length > 0 
+      ? chapterNames 
+      : Object.keys(chapterStats[selectedPaper] || {});
     
     // Get stats for each chapter
-    const chapterDataArray = chapterNames.map(chapterName => {
+    const chapterDataArray = availableChapters.map(chapterName => {
       const stats = chapterStats[selectedPaper][chapterName] || {
         accuracy: 0,
         totalQuestions: 0,
@@ -60,7 +86,7 @@ export function ChapterAccuracyBar({ chapterStats, onChapterClick }) {
         accuracy: stats.accuracy || 0,
         totalQuestions: stats.totalQuestions || 0,
         correctAnswers: stats.correctAnswers || 0,
-        weightage: paperChapters[chapterName] || 0
+        weightage: weightages[chapterName] || 0
       };
     });
 
@@ -235,6 +261,13 @@ export function ChapterAccuracyBar({ chapterStats, onChapterClick }) {
                 </span>
               </div>
             </div>
+
+            {/* Weightages Info */}
+            {Object.keys(paperWeightages).length > 0 && (
+              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+                Chapter weightages sourced from NCE database
+              </div>
+            )}
           </div>
         )}
       </div>
