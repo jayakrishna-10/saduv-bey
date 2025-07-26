@@ -181,7 +181,7 @@ export function StudyRecommendations({ analytics }) {
       {/* Quick Actions */}
       <div className="mt-6 grid grid-cols-2 gap-3">
         <motion.a
-          href="/quiz"
+          href="/nce/quiz"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
@@ -191,7 +191,7 @@ export function StudyRecommendations({ analytics }) {
         </motion.a>
         
         <motion.a
-          href="/test"
+          href="/nce/test"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           className="flex items-center justify-center gap-2 py-3 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
