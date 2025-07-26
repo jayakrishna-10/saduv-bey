@@ -259,7 +259,7 @@ export default function NCEHomepage() {
                       >
                         {paper.paper}
                       </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">100 MCQs • 3 hours</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">50 MCQs • 8 Short Answer Questions • 6 Long Answer Questions • 3 hours</span>
                     </div>
                     <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{paper.title}</h4>
                   </div>
@@ -283,14 +283,14 @@ export default function NCEHomepage() {
                   <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-1" />
                   <div>
                     <div className="font-medium text-gray-900 dark:text-gray-100">Schedule</div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">Usually held twice a year</div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">Usually held once a year</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400 mt-1" />
                   <div>
                     <div className="font-medium text-gray-900 dark:text-gray-100">Passing Criteria</div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">50% in each paper + 60% overall</div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">50% in each paper</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
