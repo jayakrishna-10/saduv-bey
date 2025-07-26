@@ -26,6 +26,30 @@ function logWithTimestamp(level, message, data = null) {
   }
 }
 
+// In-memory cache to track recent save attempts and prevent duplicates
+const recentSaveAttempts = new Map();
+const SAVE_DEDUP_WINDOW = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to clean up old entries from the cache
+function cleanupSaveAttempts() {
+  const now = Date.now();
+  for (const [key, timestamp] of recentSaveAttempts.entries()) {
+    if (now - timestamp > SAVE_DEDUP_WINDOW) {
+      recentSaveAttempts.delete(key);
+    }
+  }
+}
+
+// Helper function to generate a unique key for save attempt deduplication
+function generateSaveAttemptKey(userId, type, attemptData) {
+  if (type === 'quiz') {
+    return `${userId}-quiz-${attemptData.paper}-${attemptData.selectedTopic}-${attemptData.questionCount}-${attemptData.totalQuestions}-${attemptData.score}-${attemptData.timeTaken}`;
+  } else if (type === 'test') {
+    return `${userId}-test-${attemptData.testType}-${attemptData.testMode}-${attemptData.totalQuestions}-${attemptData.score}-${attemptData.timeTaken}`;
+  }
+  return `${userId}-${type}-${Date.now()}`;
+}
+
 // Helper function to normalize chapter names
 function normalizeChapterName(tag) {
   if (!tag) return '';
@@ -41,10 +65,12 @@ function normalizeChapterName(tag) {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
 function isAnswerCorrect(userAnswer, correctAnswer) {
   if (!userAnswer || !correctAnswer) return false;
   return userAnswer.toLowerCase() === correctAnswer.toLowerCase();
 }
+
 // Helper function to update chapter performance
 async function updateChapterPerformance(userId, attemptData, type) {
   try {
@@ -114,7 +140,7 @@ async function updateChapterPerformance(userId, attemptData, type) {
       const accuracy = (stats.correct / stats.attempted) * 100;
       const timeSpent = Math.round(stats.attempted * timePerQuestion);
       
-      // Check if record exists
+      // Check if record exists for today
       const { data: existing } = await supabase
         .from('daily_chapter_performance')
         .select('*')
@@ -313,6 +339,9 @@ export async function POST(request) {
   logWithTimestamp('info', '=== STARTING POST REQUEST ===');
   
   try {
+    // Clean up old save attempts periodically
+    cleanupSaveAttempts();
+
     // Step 1: Get and validate session
     logWithTimestamp('info', 'Attempting to get server session...');
     const session = await getServerSession(authOptions);
@@ -371,7 +400,28 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing attemptData field' }, { status: 400 });
     }
 
-    // Step 3: Validate environment variables
+    // Step 3: Check for duplicate save attempts
+    const saveAttemptKey = generateSaveAttemptKey(userId, type, attemptData);
+    const now = Date.now();
+    
+    if (recentSaveAttempts.has(saveAttemptKey)) {
+      const lastAttemptTime = recentSaveAttempts.get(saveAttemptKey);
+      if (now - lastAttemptTime < SAVE_DEDUP_WINDOW) {
+        logWithTimestamp('warn', 'Duplicate save attempt detected and blocked', {
+          saveAttemptKey,
+          timeSinceLastAttempt: now - lastAttemptTime
+        });
+        return NextResponse.json({ 
+          error: 'Duplicate save attempt detected',
+          message: 'This attempt was already saved recently'
+        }, { status: 409 });
+      }
+    }
+
+    // Mark this save attempt
+    recentSaveAttempts.set(saveAttemptKey, now);
+
+    // Step 4: Validate environment variables
     logWithTimestamp('info', 'Validating environment variables:', {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -384,7 +434,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Database configuration error' }, { status: 500 });
     }
 
-    // Step 4: Prepare data based on type
+    // Step 5: Prepare data based on type
     let tableName;
     let dataToInsert;
 
@@ -431,7 +481,8 @@ export async function POST(request) {
         score: attemptData.score,
         timeTaken: attemptData.timeTaken,
         questionsDataLength: attemptData.questionsData?.length || 0,
-        answersLength: attemptData.answers?.length || 0
+        answersLength: attemptData.answers?.length || 0,
+        saveAttemptKey
       });
 
     } else if (type === 'test') {
@@ -461,7 +512,8 @@ export async function POST(request) {
         totalQuestions: attemptData.totalQuestions,
         score: attemptData.score,
         timeTaken: attemptData.timeTaken,
-        timeLimit: attemptData.timeLimit
+        timeLimit: attemptData.timeLimit,
+        saveAttemptKey
       });
 
     } else {
@@ -469,7 +521,7 @@ export async function POST(request) {
       return NextResponse.json({ error: `Invalid attempt type: ${type}` }, { status: 400 });
     }
 
-    // Step 5: Validate data before insertion
+    // Step 6: Validate data before insertion
     logWithTimestamp('info', 'Validating data before insertion...');
     
     if (!dataToInsert.user_id) {
@@ -477,7 +529,7 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User ID validation failed' }, { status: 400 });
     }
 
-    // Step 6: Attempt database insertion
+    // Step 7: Attempt database insertion
     logWithTimestamp('info', 'Attempting database insertion...', {
       tableName,
       dataKeys: Object.keys(dataToInsert),
@@ -494,7 +546,7 @@ export async function POST(request) {
       .select()
       .single();
 
-    // Step 7: Handle database response
+    // Step 8: Handle database response
     if (error) {
       logWithTimestamp('error', 'Database insertion error:', {
         code: error.code,
@@ -503,6 +555,9 @@ export async function POST(request) {
         hint: error.hint,
         tableName
       });
+      
+      // Remove the save attempt marker on error so it can be retried
+      recentSaveAttempts.delete(saveAttemptKey);
       
       return NextResponse.json({ 
         error: `Database error: ${error.message}`,
@@ -513,18 +568,28 @@ export async function POST(request) {
 
     if (!data) {
       logWithTimestamp('error', 'No data returned from successful insertion');
+      // Remove the save attempt marker on error so it can be retried
+      recentSaveAttempts.delete(saveAttemptKey);
       return NextResponse.json({ error: 'No data returned from database' }, { status: 500 });
     }
 
     logWithTimestamp('info', 'Database insertion successful:', {
       insertedId: data.id,
       tableName,
-      userId: data.user_id
+      userId: data.user_id,
+      saveAttemptKey
     });
     
-    // Step 8: Update chapter performance and analytics
-    await updateChapterPerformance(userId, attemptData, type);
-    await updateLearningAnalytics(userId);
+    // Step 9: Update chapter performance and analytics (async to avoid blocking response)
+    // Use setTimeout to make this truly async and not block the response
+    setTimeout(async () => {
+      try {
+        await updateChapterPerformance(userId, attemptData, type);
+        await updateLearningAnalytics(userId);
+      } catch (asyncError) {
+        logWithTimestamp('error', 'Error in async updates:', asyncError);
+      }
+    }, 0);
 
     return NextResponse.json({ 
       message: `${type} attempt saved successfully`, 
@@ -532,7 +597,9 @@ export async function POST(request) {
       debug: {
         userId,
         tableName,
-        insertedAt: new Date().toISOString()
+        insertedAt: new Date().toISOString(),
+        saveAttemptKey,
+        deduplicationUsed: true
       }
     }, { status: 201 });
 

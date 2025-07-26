@@ -278,6 +278,75 @@ export const fetchQuestionExplanation = async (questionId, paper) => {
   });
 };
 
+/**
+ * Enhanced quiz attempt saving with deduplication and proper error handling
+ * This prevents duplicate saves that were causing wrong dashboard stats
+ */
+export const saveQuizAttemptWithDedup = async (params) => {
+  const { session, answeredQuestions, startTime, selectedPaper, selectedTopic, questionCount, questions } = params;
+  
+  if (!session?.user?.id || !answeredQuestions || answeredQuestions.length === 0) {
+    throw new Error('Invalid save parameters');
+  }
+
+  // Create a unique key for this specific quiz attempt
+  const userId = session.user.id;
+  const attemptTimestamp = startTime ? startTime.getTime() : Date.now();
+  const quizSignature = `${selectedPaper}-${selectedTopic}-${questionCount}-${answeredQuestions.length}`;
+  const requestKey = `save-quiz-${userId}-${attemptTimestamp}-${quizSignature}`;
+  
+  console.log(`[QUIZ-SAVE] Attempting to save quiz with key: ${requestKey}`);
+  
+  return dedupeRequest(requestKey, async () => {
+    try {
+      const summary = generateQuizSummary(answeredQuestions, startTime);
+      
+      const attemptData = {
+        paper: selectedPaper,
+        selectedTopic: selectedTopic,
+        questionCount: questionCount,
+        questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
+          id, main_id, question_text, correct_answer, tag, year 
+        })),
+        answers: answeredQuestions.map(({ questionId, selectedOption, isCorrect }) => ({ 
+          questionId, selectedOption, isCorrect 
+        })),
+        correctAnswers: summary.correctAnswers,
+        totalQuestions: answeredQuestions.length,
+        score: summary.score,
+        timeTaken: summary.timeTaken,
+      };
+
+      console.log(`[QUIZ-SAVE] Saving quiz attempt:`, {
+        paper: selectedPaper,
+        questionCount: questionCount,
+        answeredCount: answeredQuestions.length,
+        score: summary.score,
+        timeTaken: summary.timeTaken
+      });
+
+      const response = await fetch('/api/user/attempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'quiz', attemptData }),
+      });
+
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} - ${responseData.error || 'Unknown error'}`);
+      }
+
+      console.log(`[QUIZ-SAVE] Quiz attempt saved successfully with ID: ${responseData.data?.id}`);
+      return responseData.data?.id || `saved-${Date.now()}`;
+      
+    } catch (error) {
+      console.error('[QUIZ-SAVE] Error saving quiz attempt:', error);
+      throw error;
+    }
+  });
+};
+
 // Legacy function name kept for backward compatibility
 export const fetchTopicsAndYears = async (selectedPaper) => {
   const topics = await fetchTopics(selectedPaper);
@@ -561,6 +630,7 @@ export default {
   fetchTopicsAndYears,
   prefetchAllTopics,
   fetchQuestionExplanation,
+  saveQuizAttemptWithDedup,
   generateQuizSummary,
   analyzePerformance,
   cn,

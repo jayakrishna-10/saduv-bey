@@ -24,12 +24,13 @@ export async function GET(request) {
 
     const userId = session.user.id;
     const { searchParams } = new URL(request.url);
-    const year = parseInt(searchParams.get('year') || new Date().getFullYear());
+    const requestedDays = parseInt(searchParams.get('days') || '30');
 
-    // Get date range for the last 365 days (not just current year)
+    // Get date range for the last 30 days (or requested days, max 90)
+    const daysToFetch = Math.min(requestedDays, 90); // Cap at 90 days for performance
     const endDate = new Date();
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 364); // 365 days including today
+    startDate.setDate(startDate.getDate() - (daysToFetch - 1)); // Include today
 
     // First, check if we have any study sessions at all
     const { data: hasData } = await supabase
@@ -101,7 +102,7 @@ export async function GET(request) {
       });
     }
 
-    // Calculate statistics
+    // Calculate statistics for the fetched period
     const totalDays = questionsGrid.length;
     const activeDays = studySessions ? studySessions.length : 0;
     const totalQuestions = studySessions ? studySessions.reduce((sum, s) => sum + s.questions_answered, 0) : 0;
@@ -109,14 +110,14 @@ export async function GET(request) {
       ? studySessions.reduce((sum, s) => sum + s.average_accuracy, 0) / studySessions.length
       : 0;
 
-    // Calculate streaks
+    // Calculate streaks for the period
     const streaks = calculateStreaks(studySessions || []);
 
-    // Get monthly summaries
+    // Get monthly summaries (limit to requested period)
     const monthlySummaries = calculateMonthlySummaries(studySessions || []);
 
     return NextResponse.json({
-      questionsGrid, // Changed from activityGrid
+      questionsGrid,
       accuracyGrid,
       statistics: {
         totalDays,
@@ -125,10 +126,12 @@ export async function GET(request) {
         averageAccuracy: Math.round(averageAccuracy),
         currentStreak: streaks.current,
         longestStreak: streaks.longest,
-        activityRate: Math.round((activeDays / totalDays) * 100)
+        activityRate: Math.round((activeDays / totalDays) * 100),
+        period: `${daysToFetch} days`,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0]
       },
-      monthlySummaries,
-      year
+      monthlySummaries
     }, { status: 200 });
 
   } catch (error) {
