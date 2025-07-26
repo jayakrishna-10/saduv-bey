@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchQuizQuestions, isCorrectAnswer } from '@/lib/quiz-utils';
+import { dedupeRequest } from '@/lib/request-dedup';
 import { Loader2 } from 'lucide-react';
 
 import { TestSelector } from './test/TestSelector';
@@ -37,6 +38,7 @@ export default function TestApp() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [saveStatus, setSaveStatus] = useState(null);
+  const [saveAttemptId, setSaveAttemptId] = useState(null); // Track successful save
 
   // UI State
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +47,7 @@ export default function TestApp() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   const timerRef = useRef(null);
+  const saveInProgressRef = useRef(false); // Prevent concurrent saves
   
   // Enhanced logging
   const logDebug = useCallback((message, data = null) => {
@@ -103,6 +106,11 @@ export default function TestApp() {
     try {
       logDebug('Starting test with config:', config);
       
+      // Reset save state for new test
+      setSaveAttemptId(null);
+      setSaveStatus(null);
+      saveInProgressRef.current = false;
+      
       // Fetch questions based on configuration
       const fetchedQuestions = await fetchQuizQuestions(
         config.paper, 
@@ -157,72 +165,102 @@ export default function TestApp() {
     
     logDebug('Finishing test');
     
-    if (session?.user?.id) {
-      await saveTestAttempt();
+    // Only save if we have a session and haven't saved already
+    if (session?.user?.id && !saveAttemptId) {
+      await saveTestAttemptWithDedup();
     }
     setTestState(TEST_STATES.FINISHED);
-  }, [session, logDebug]);
+  }, [session, saveAttemptId, logDebug]);
   
-  const saveTestAttempt = useCallback(async () => {
-    if (!session?.user?.id) return;
+  // Enhanced save function with deduplication and safeguards
+  const saveTestAttemptWithDedup = useCallback(async (trigger = 'auto') => {
+    // Prevent duplicate saves
+    if (saveInProgressRef.current || saveAttemptId || !session?.user?.id) {
+      logDebug(`Test save skipped - saveInProgress: ${saveInProgressRef.current}, saveAttemptId: ${!!saveAttemptId}, session: ${!!session?.user?.id}`, { trigger });
+      return;
+    }
+
+    // Create a unique key for this specific test attempt
+    const userId = session.user.id;
+    const attemptTimestamp = startTime || Date.now();
+    const answeredQuestions = Object.keys(answers).length;
+    const testSignature = `${testConfig.paper}-${testConfig.mode}-${questions.length}-${answeredQuestions}`;
+    const requestKey = `save-test-${userId}-${attemptTimestamp}-${testSignature}`;
     
-    setSaveStatus('saving');
+    logDebug(`Starting test save attempt with key: ${requestKey}`, { trigger, answeredQuestions });
     
     try {
-      // Use the isCorrectAnswer utility function for proper comparison
-      const correctAnswersCount = questions.reduce((count, q) => {
-        const userAnswer = answers[q.main_id || q.id];
-        return isCorrectAnswer(userAnswer, q.correct_answer) ? count + 1 : count;
-      }, 0);
-      
-      const incorrectAnswersCount = Object.keys(answers).length - correctAnswersCount;
-      const unansweredCount = questions.length - Object.keys(answers).length;
-      const score = questions.length > 0 ? Math.round((correctAnswersCount / questions.length) * 100) : 0;
-      const timeTaken = testConfig.timeLimit - timeRemaining;
-      
-      const attemptData = {
-        testMode: testConfig.mode,
-        testType: testConfig.paper,
-        testConfig: testConfig,
-        questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
-          id, main_id, question_text, correct_answer, tag, year 
-        })),
-        answers: answers,
-        flaggedQuestions: Array.from(flaggedQuestions),
-        correct: correctAnswersCount,
-        incorrect: incorrectAnswersCount,
-        unanswered: unansweredCount,
-        totalQuestions: questions.length,
-        score: score,
-        timeTaken: timeTaken,
-        timeLimit: testConfig.timeLimit,
-      };
+      // Set safeguards
+      saveInProgressRef.current = true;
+      setSaveStatus('saving');
 
-      logDebug('Saving test attempt:', {
-        correctAnswers: correctAnswersCount,
-        score: score,
-        timeTaken: timeTaken
+      // Use deduplication
+      const attemptId = await dedupeRequest(requestKey, async () => {
+        // Use the isCorrectAnswer utility function for proper comparison
+        const correctAnswersCount = questions.reduce((count, q) => {
+          const userAnswer = answers[q.main_id || q.id];
+          return isCorrectAnswer(userAnswer, q.correct_answer) ? count + 1 : count;
+        }, 0);
+        
+        const incorrectAnswersCount = Object.keys(answers).length - correctAnswersCount;
+        const unansweredCount = questions.length - Object.keys(answers).length;
+        const score = questions.length > 0 ? Math.round((correctAnswersCount / questions.length) * 100) : 0;
+        const timeTaken = testConfig.timeLimit - timeRemaining;
+        
+        const attemptData = {
+          testMode: testConfig.mode,
+          testType: testConfig.paper,
+          testConfig: testConfig,
+          questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
+            id, main_id, question_text, correct_answer, tag, year 
+          })),
+          answers: answers,
+          flaggedQuestions: Array.from(flaggedQuestions),
+          correct: correctAnswersCount,
+          incorrect: incorrectAnswersCount,
+          unanswered: unansweredCount,
+          totalQuestions: questions.length,
+          score: score,
+          timeTaken: timeTaken,
+          timeLimit: testConfig.timeLimit,
+        };
+
+        logDebug('Saving test attempt:', {
+          correctAnswers: correctAnswersCount,
+          score: score,
+          timeTaken: timeTaken,
+          trigger
+        });
+
+        const response = await fetch('/api/user/attempts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'test', attemptData }),
+        });
+        
+        const responseData = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status} - ${responseData.error || 'Unknown error'}`);
+        }
+
+        logDebug('Test attempt saved successfully with ID:', responseData.data?.id);
+        return responseData.data?.id || `saved-${Date.now()}`;
       });
 
-      const response = await fetch('/api/user/attempts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'test', attemptData }),
-      });
-      
-      if (response.ok) {
-        setSaveStatus('success');
-        logDebug('Test attempt saved successfully');
-      } else {
-        setSaveStatus('error');
-        logDebug('Failed to save test attempt:', response.status);
-      }
+      // Mark as successfully saved
+      setSaveAttemptId(attemptId);
+      setSaveStatus('success');
+      logDebug('Test attempt saved successfully', { attemptId, trigger });
+
     } catch (error) {
       setSaveStatus('error');
       logDebug('Error saving test attempt:', error);
       console.error("Failed to save test attempt:", error);
+    } finally {
+      saveInProgressRef.current = false;
     }
-  }, [session, questions, answers, flaggedQuestions, testConfig, timeRemaining, logDebug]);
+  }, [session, questions, answers, flaggedQuestions, testConfig, timeRemaining, saveAttemptId, startTime, logDebug]);
 
   // Keyboard shortcuts - Only active when not in review mode
   useEffect(() => {
