@@ -68,7 +68,7 @@ export function DashboardHeader({ session, analytics }) {
         {/* Quick Action Buttons */}
         <div className="hidden md:flex items-center gap-3">
           <motion.a
-            href="/quiz"
+            href="/nce/quiz"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-medium text-sm shadow-lg hover:shadow-xl transition-shadow"
@@ -76,7 +76,7 @@ export function DashboardHeader({ session, analytics }) {
             Start Quiz
           </motion.a>
           <motion.a
-            href="/test"
+            href="/nce/test"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-xl font-medium text-sm shadow-lg hover:shadow-xl transition-shadow border border-gray-200 dark:border-gray-700"
