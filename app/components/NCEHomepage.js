@@ -283,7 +283,7 @@ export default function NCEHomepage() {
                   <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400 mt-1" />
                   <div>
                     <div className="font-medium text-gray-900 dark:text-gray-100">Schedule</div>
-                    <div className="text-gray-600 dark:text-gray-400 text-sm">Usually held once a year</div>
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">27th(Saturday) & 28th(Sunday) September 2025</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -320,17 +320,17 @@ export default function NCEHomepage() {
                 {
                   title: "Bureau of Energy Efficiency",
                   description: "Official exam conducting body",
-                  url: "https://beeindia.gov.in"
+                  url: "https://www.aipnpc.org/"
                 },
                 {
                   title: "NCE Registration",
                   description: "Exam notifications and registration",
-                  url: "https://beeindia.gov.in/content/nce-energy-manager-energy-auditor"
+                  url: "https://www.nceexam.in"
                 },
                 {
                   title: "Syllabus & Pattern",
                   description: "Detailed exam information",
-                  url: "https://beeindia.gov.in/sites/default/files/NCE%20Brochure%202023.pdf"
+                  url: "https://sql1.aipnpc.org/Amended_Prospectus_25NCE_V2.pdf"
                 }
               ].map((resource, index) => (
                 <a
