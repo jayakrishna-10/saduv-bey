@@ -259,7 +259,7 @@ export default function NCEHomepage() {
                       >
                         {paper.paper}
                       </span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">50 MCQs • 8 Short Answer Questions • 6 Long Answer Questions • 3 hours</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">50 MCQs • 8 SAQs • 6 LAQs • 3 hours</span>
                     </div>
                     <h4 className="font-medium text-gray-900 dark:text-gray-100 text-sm">{paper.title}</h4>
                   </div>
