@@ -52,10 +52,7 @@ const PredictedScoreRadial = React.memo(({ analytics }) => {
     }
   }), []);
 
-  const totalScore = useMemo(() => {
-    if (!predictedScores) return 0;
-    return Math.round((predictedScores.paper1 + predictedScores.paper2 + predictedScores.paper3) / 100 * 150);
-  }, [predictedScores]);
+
 
   const improvementTip = useMemo(() => {
     if (!predictedScores) return '';
@@ -203,7 +200,7 @@ const PredictedScoreRadial = React.memo(({ analytics }) => {
         </div>
       </div>
 
-      {/* Compact Layout with Papers and Summary */}
+      {/* Individual Papers Layout */}
       <div className="space-y-4">
         {/* Papers Grid - Horizontal on larger screens */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -212,30 +209,12 @@ const PredictedScoreRadial = React.memo(({ analytics }) => {
           ))}
         </div>
 
-        {/* Compact Summary Section */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Total Score */}
-          <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg">
-            <div className="text-center">
-              <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                Total Predicted Score
-              </div>
-              <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {totalScore} / 150
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Combined across all papers
-              </div>
-            </div>
-          </div>
-
-          {/* Improvement Tip */}
-          <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg">
-            <div className="flex items-start gap-2">
-              <TrendingUp className="h-3 w-3 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-indigo-800 dark:text-indigo-200 leading-tight">
-                {improvementTip}
-              </div>
+        {/* Improvement Tip */}
+        <div className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg">
+          <div className="flex items-start gap-2">
+            <TrendingUp className="h-3 w-3 text-indigo-600 dark:text-indigo-400 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-indigo-800 dark:text-indigo-200 leading-tight">
+              {improvementTip}
             </div>
           </div>
         </div>
