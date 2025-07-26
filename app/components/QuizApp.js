@@ -23,7 +23,8 @@ import {
   isCorrectAnswer,
   generateQuizSummary,
   getNextAvailableQuestion,
-  getPreviousAvailableQuestion
+  getPreviousAvailableQuestion,
+  saveQuizAttemptWithDedup
 } from '@/lib/quiz-utils';
 
 export function QuizApp() {
@@ -73,9 +74,10 @@ export function QuizApp() {
   const [isUserIdle, setIsUserIdle] = useState(false);
   const [lastInteraction, setLastInteraction] = useState(Date.now());
   
-  // Save state
+  // Save state - Enhanced with deduplication
   const [saveStatus, setSaveStatus] = useState(null);
   const [saveError, setSaveError] = useState(null);
+  const [saveAttemptId, setSaveAttemptId] = useState(null); // Track successful save
   
   // Track if quiz has started
   const [hasQuizStarted, setHasQuizStarted] = useState(false);
@@ -83,6 +85,7 @@ export function QuizApp() {
   // Refs
   const containerRef = useRef(null);
   const idleTimeoutRef = useRef(null);
+  const saveInProgressRef = useRef(false); // Prevent concurrent saves
 
   // Enhanced logging
   const logDebug = useCallback((message, data = null) => {
@@ -198,7 +201,7 @@ export function QuizApp() {
     }
   }, [questions, hasQuizStarted]);
 
-  const updateProgress = () => {
+  const updateProgress = useCallback(() => {
     const totalQuestions = questions.length;
     const attemptedQuestions = questions.filter(q => completedQuestionIds.has(q.main_id || q.id)).length;
     const currentPosition = currentQuestionIndex + 1;
@@ -209,15 +212,59 @@ export function QuizApp() {
       current: currentPosition
     });
 
-    if (totalQuestions > 0 && attemptedQuestions === totalQuestions) {
-      logDebug('All questions completed');
+    // Auto-complete quiz when all questions are answered
+    if (totalQuestions > 0 && attemptedQuestions === totalQuestions && !isQuizCompleted) {
+      logDebug('All questions completed - triggering completion');
       setIsQuizCompleted(true);
       setShowCompletionModal(true);
-      if (session) {
-        saveQuizAttempt();
+      
+      // Save quiz attempt with deduplication
+      if (session?.user?.id && !saveAttemptId) {
+        saveQuizAttemptWithSafeguard('auto_complete');
       }
     }
-  };
+  }, [questions, completedQuestionIds, currentQuestionIndex, isQuizCompleted, session, saveAttemptId]);
+
+  // Enhanced save function with deduplication and safeguards
+  const saveQuizAttemptWithSafeguard = useCallback(async (trigger = 'manual') => {
+    // Prevent duplicate saves
+    if (saveInProgressRef.current || saveAttemptId || !session?.user?.id || answeredQuestions.length === 0) {
+      logDebug(`Save skipped - saveInProgress: ${saveInProgressRef.current}, saveAttemptId: ${!!saveAttemptId}, session: ${!!session?.user?.id}, answers: ${answeredQuestions.length}`, { trigger });
+      return;
+    }
+
+    logDebug(`Starting save attempt`, { trigger, answerCount: answeredQuestions.length });
+    
+    try {
+      // Set safeguards
+      saveInProgressRef.current = true;
+      setSaveStatus('saving');
+      setSaveError(null);
+
+      // Use the deduplication utility
+      const attemptId = await saveQuizAttemptWithDedup({
+        session,
+        answeredQuestions,
+        startTime,
+        selectedPaper,
+        selectedTopic,
+        questionCount,
+        questions
+      });
+
+      // Mark as successfully saved
+      setSaveAttemptId(attemptId);
+      setSaveStatus('success');
+      logDebug('Quiz attempt saved successfully', { attemptId, trigger });
+
+    } catch (error) {
+      logDebug('Error saving quiz attempt:', error);
+      setSaveStatus('error');
+      setSaveError(error.message);
+    } finally {
+      saveInProgressRef.current = false;
+    }
+  }, [session, answeredQuestions, startTime, selectedPaper, selectedTopic, questionCount, questions, saveAttemptId, logDebug]);
 
   // FIXED: Modified fetchQuestions to accept parameters directly
   const fetchQuestions = async (paper, qCount, topic) => {
@@ -250,6 +297,8 @@ export function QuizApp() {
     setIsExplanationExpanded(false);
     setSaveStatus(null);
     setSaveError(null);
+    setSaveAttemptId(null); // Reset save tracking
+    saveInProgressRef.current = false; // Reset save guard
   };
 
   // FIXED: Modified loadExplanation to use the correct paper from current state
@@ -274,52 +323,6 @@ export function QuizApp() {
       setCurrentExplanation({ explanation: { concept: { title: "Error Loading" } } });
     }
     setIsLoadingExplanation(false);
-  };
-
-  const saveQuizAttempt = async () => {
-    if (!session?.user?.id || answeredQuestions.length === 0) return;
-    
-    setSaveStatus('saving');
-    setSaveError(null);
-
-    try {
-      const summary = generateQuizSummary(answeredQuestions, startTime);
-      
-      const attemptData = {
-        paper: selectedPaper,
-        selectedTopic: selectedTopic,
-        questionCount: questionCount,
-        questionsData: questions.map(({ id, main_id, question_text, correct_answer, tag, year }) => ({ 
-          id, main_id, question_text, correct_answer, tag, year 
-        })),
-        answers: answeredQuestions.map(({ questionId, selectedOption, isCorrect }) => ({ 
-          questionId, selectedOption, isCorrect 
-        })),
-        correctAnswers: summary.correctAnswers,
-        totalQuestions: answeredQuestions.length,
-        score: summary.score,
-        timeTaken: summary.timeTaken,
-      };
-
-      const response = await fetch('/api/user/attempts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'quiz', attemptData }),
-      });
-
-      const responseData = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status} - ${responseData.error || 'Unknown error'}`);
-      }
-
-      setSaveStatus('success');
-      logDebug('Quiz attempt saved successfully');
-    } catch (error) {
-      logDebug('Error saving quiz attempt:', error);
-      setSaveStatus('error');
-      setSaveError(error.message);
-    }
   };
 
   const handleOptionSelect = async (option) => {
@@ -416,6 +419,12 @@ export function QuizApp() {
     setIsQuizCompleted(false);
     setSummaryOpenedAfterCompletion(false);
     
+    // Reset save state for new quiz
+    setSaveAttemptId(null);
+    setSaveStatus(null);
+    setSaveError(null);
+    saveInProgressRef.current = false;
+    
     // Fetch topics for the selected paper if needed
     if (config.selectedPaper !== selectedPaper) {
       await fetchTopicsForPaper(config.selectedPaper);
@@ -427,20 +436,32 @@ export function QuizApp() {
     await fetchQuestions(config.selectedPaper, config.questionCount, config.selectedTopic);
   };
 
+  // FIXED: Simplified handleViewSummary to avoid duplicate saves
   const handleViewSummary = () => {
-    // Close the completion modal first
     setShowCompletionModal(false);
-    
-    // Track if summary is being opened after quiz completion
     setSummaryOpenedAfterCompletion(isQuizCompleted);
-    
-    // Save quiz attempt if needed
-    if (session && saveStatus !== 'success') {
-      saveQuizAttempt();
-    }
-    
-    // Show summary modal
     setShowSummary(true);
+    
+    // Only save if not already saved and we have a session
+    if (session?.user?.id && !saveAttemptId && answeredQuestions.length > 0) {
+      saveQuizAttemptWithSafeguard('view_summary');
+    }
+  };
+
+  const handleFinishQuiz = () => {
+    setShowFinishConfirmation(true);
+  };
+
+  // FIXED: Simplified handleConfirmFinishQuiz to avoid duplicate saves
+  const handleConfirmFinishQuiz = () => {
+    setShowFinishConfirmation(false);
+    setIsQuizCompleted(true);
+    setShowCompletionModal(true);
+    
+    // Only save if not already saved and we have a session
+    if (session?.user?.id && !saveAttemptId && answeredQuestions.length > 0) {
+      saveQuizAttemptWithSafeguard('manual_finish');
+    }
   };
 
   const handleSummaryClose = () => {
@@ -457,19 +478,6 @@ export function QuizApp() {
     logDebug('Summary closed during quiz - staying on current quiz');
   };
 
-  const handleFinishQuiz = () => {
-    setShowFinishConfirmation(true);
-  };
-
-  const handleConfirmFinishQuiz = () => {
-    setShowFinishConfirmation(false);
-    setIsQuizCompleted(true);
-    if (session) {
-      saveQuizAttempt();
-    }
-    setShowCompletionModal(true);
-  };
-
   const resetQuiz = () => {
     setSelectedTopic('all');
     setShowCompletionModal(false);
@@ -479,15 +487,29 @@ export function QuizApp() {
     setSummaryOpenedAfterCompletion(false);
     setSaveStatus(null);
     setSaveError(null);
+    setSaveAttemptId(null);
     setHasQuizStarted(false);
+    saveInProgressRef.current = false;
     setShowModifyQuiz(true); // Show selector again for new quiz
   };
+
+  // Enhanced retry save function
+  const retrySave = useCallback(() => {
+    if (session?.user?.id && answeredQuestions.length > 0) {
+      // Reset save state and retry
+      setSaveAttemptId(null);
+      setSaveStatus(null);
+      setSaveError(null);
+      saveInProgressRef.current = false;
+      saveQuizAttemptWithSafeguard('retry');
+    }
+  }, [session, answeredQuestions, saveQuizAttemptWithSafeguard]);
 
   const currentQuestion = questions[currentQuestionIndex] || {};
   const hasNextQuestion = getNextAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds) !== null;
   const hasPrevQuestion = getPreviousAvailableQuestion(questions, currentQuestionIndex, completedQuestionIds) !== null;
 
-  // Save Status Indicator
+  // Enhanced Save Status Indicator
   const SaveStatusIndicator = () => {
     if (!session) return null;
     
@@ -522,7 +544,7 @@ export function QuizApp() {
                 </div>
                 <p className="text-xs mt-1 opacity-90">{saveError}</p>
                 <button 
-                  onClick={saveQuizAttempt}
+                  onClick={retrySave}
                   className="text-xs bg-red-600/80 dark:bg-red-500/80 text-white px-2 py-1 rounded-lg mt-2 hover:bg-red-700/80 dark:hover:bg-red-600/80 flex items-center transition-all"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
